@@ -2,11 +2,12 @@ import React from "react";
 
 export default function HangLooseLogo({ size = 40, className = "" }) {
   return (
-    <div className={`inline-flex items-center gap-2 ${className}`}>
-      <span style={{ fontSize: size }} className="select-none" role="img" aria-label="stinkrz">🤙</span>
-      <span className="font-heading font-bold text-primary tracking-tight" style={{ fontSize: size * 0.6 }}>
-        Stinkrz
-      </span>
+    <div className={`inline-flex items-center ${className}`}>
+      <img
+        src="https://media.base44.com/images/public/69faa8a3ff7324c96aef6556/ced780340_logo.jpg"
+        alt="Stinkrz"
+        style={{ height: size, width: "auto", objectFit: "contain" }}
+      />
     </div>
   );
 }
