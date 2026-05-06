@@ -24,6 +24,7 @@ import ResetPassword from "@/pages/ResetPassword";
 import Terms from "@/pages/Terms";
 import Privacy from "@/pages/Privacy";
 import Feed from "@/pages/Feed";
+import Settings from "@/pages/Settings";
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -73,6 +74,7 @@ const AuthenticatedApp = () => {
           <Route path="/profile" element={<Profile />} />
           <Route path="/report" element={<ReportPage />} />
           <Route path="/admin/reports" element={<AdminReports />} />
+          <Route path="/settings" element={<Settings />} />
           <Route path="/onboarding" element={<Onboarding />} />
         </Route>
       </Route>

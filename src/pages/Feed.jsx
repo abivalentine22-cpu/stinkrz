@@ -32,12 +32,36 @@ export default function Feed() {
     enabled: !!me,
   });
 
+  const { data: userPrefs = null } = useQuery({
+    queryKey: ["user-preferences", me?.email],
+    queryFn: async () => {
+      const results = await base44.entities.UserPreferences.filter({
+        user_email: me?.email,
+      });
+      return results[0] || null;
+    },
+    enabled: !!me?.email,
+  });
+
   // Filter expired posts and blocked users client-side
   const activePosts = posts.filter((p) => {
     if (isBlocked(p.user_email)) return false;
     if (p.expires_at && new Date(p.expires_at) < new Date()) return false;
     return true;
   });
+
+  // Separate recommended vs all posts
+  const recommendedPosts = activePosts.filter(
+    (p) =>
+      p.user_email !== me?.email &&
+      userPrefs?.preferred_scent_categories?.includes(p.scent_category)
+  );
+  const otherPosts = activePosts.filter(
+    (p) =>
+      p.user_email !== me?.email &&
+      !userPrefs?.preferred_scent_categories?.includes(p.scent_category)
+  );
+  const ownPosts = activePosts.filter((p) => p.user_email === me?.email);
 
   const postMutation = useMutation({
     mutationFn: async (data) => {
@@ -103,22 +127,67 @@ export default function Feed() {
       )}
 
       {/* Feed */}
-      <div className="space-y-3">
-        {activePosts.length === 0 ? (
+      <div className="space-y-5">
+        {/* Your posts */}
+        {ownPosts.length > 0 && (
+          <div>
+            <p className="font-heading text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Your Posts</p>
+            <div className="space-y-3">
+              {ownPosts.map((post) => (
+                <StatusCard
+                  key={post.id}
+                  post={post}
+                  currentUserEmail={me?.email}
+                  onDelete={(id) => deleteMutation.mutate(id)}
+                  onMessage={handleMessage}
+                />
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Recommended matches */}
+        {recommendedPosts.length > 0 && (
+          <div>
+            <p className="font-heading text-xs font-semibold text-primary uppercase tracking-wide mb-2">🎯 Recommended Matches</p>
+            <div className="space-y-3">
+              {recommendedPosts.map((post) => (
+                <StatusCard
+                  key={post.id}
+                  post={post}
+                  currentUserEmail={me?.email}
+                  onDelete={(id) => deleteMutation.mutate(id)}
+                  onMessage={handleMessage}
+                  isRecommended={true}
+                />
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* All other posts */}
+        {otherPosts.length > 0 && (
+          <div>
+            <p className="font-heading text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">All Vibes</p>
+            <div className="space-y-3">
+              {otherPosts.map((post) => (
+                <StatusCard
+                  key={post.id}
+                  post={post}
+                  currentUserEmail={me?.email}
+                  onDelete={(id) => deleteMutation.mutate(id)}
+                  onMessage={handleMessage}
+                />
+              ))}
+            </div>
+          </div>
+        )}
+
+        {activePosts.length === 0 && (
           <div className="flex flex-col items-center justify-center py-20 text-center text-muted-foreground">
             <p className="text-4xl mb-3">💨</p>
             <p className="font-body text-sm">No active vibes yet. Be the first to post!</p>
           </div>
-        ) : (
-          activePosts.map((post) => (
-            <StatusCard
-              key={post.id}
-              post={post}
-              currentUserEmail={me?.email}
-              onDelete={(id) => deleteMutation.mutate(id)}
-              onMessage={handleMessage}
-            />
-          ))
         )}
       </div>
     </div>

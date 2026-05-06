@@ -1,0 +1,20 @@
+{
+  "name": "UserPreferences",
+  "type": "object",
+  "properties": {
+    "user_email": {
+      "type": "string",
+      "description": "Email of the user"
+    },
+    "preferred_scent_categories": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Array of preferred scent categories"
+    }
+  },
+  "required": [
+    "user_email"
+  ]
+}

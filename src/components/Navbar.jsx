@@ -12,6 +12,7 @@ const NAV_ITEMS = [
   { label: "Live Feed", path: "/feed", icon: Zap },
   { label: "Messages", path: "/messages", icon: MessageCircle },
   { label: "Help", path: "/help", icon: HelpCircle },
+  { label: "Settings", path: "/settings", icon: null },
 ];
 
 export default function Navbar() {
@@ -34,8 +35,9 @@ export default function Navbar() {
               <Link
                 key={item.path}
                 to={item.path}
-                className={`font-body text-sm transition-colors ${active ? "text-foreground font-semibold" : "text-muted-foreground hover:text-foreground"}`}
+                className={`font-body text-sm transition-colors flex items-center gap-1.5 ${active ? "text-foreground font-semibold" : "text-muted-foreground hover:text-foreground"}`}
               >
+                {item.path === "/settings" && <span className="text-base">⚙️</span>}
                 {item.label}
               </Link>
             );
@@ -79,7 +81,7 @@ export default function Navbar() {
                   variant={active ? "default" : "ghost"}
                   className={`w-full justify-start gap-3 font-body ${active ? "" : "text-muted-foreground"}`}
                 >
-                  <Icon className="w-4 h-4" />
+                  {Icon ? <Icon className="w-4 h-4" /> : <span className="text-lg">⚙️</span>}
                   {item.label}
                 </Button>
               </Link>

@@ -12,7 +12,7 @@ const SCENT_COLORS = {
   Neutral: "#94a3b8",
 };
 
-export default function StatusCard({ post, currentUserEmail, onDelete, onMessage }) {
+export default function StatusCard({ post, currentUserEmail, onDelete, onMessage, isRecommended }) {
   const navigate = useNavigate();
   const isOwn = post.user_email === currentUserEmail;
   const timeLeft = post.expires_at
@@ -21,7 +21,9 @@ export default function StatusCard({ post, currentUserEmail, onDelete, onMessage
   const scentColor = SCENT_COLORS[post.scent_category] || "#94a3b8";
 
   return (
-    <div className="bg-card border border-border rounded-2xl p-4 hover:border-primary/20 transition-colors">
+    <div className={`bg-card border rounded-2xl p-4 hover:border-primary/20 transition-colors ${
+      isRecommended ? "border-primary/40 bg-primary/5" : "border-border"
+    }`}>
       <div className="flex items-start gap-3">
         {/* Avatar */}
         <div
