@@ -21,6 +21,8 @@ import SignIn from "@/pages/SignIn";
 import Register from "@/pages/Register";
 import ForgotPassword from "@/pages/ForgotPassword";
 import ResetPassword from "@/pages/ResetPassword";
+import Terms from "@/pages/Terms";
+import Privacy from "@/pages/Privacy";
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -53,9 +55,11 @@ const AuthenticatedApp = () => {
       <Route path="/forgot-password" element={<ForgotPassword />} />
       <Route path="/reset-password" element={<ResetPassword />} />
 
-      {/* Public scent block */}
+      {/* Public pages */}
       <Route element={<Layout />}>
         <Route path="/scent-block" element={<ScentBlock />} />
+        <Route path="/terms" element={<Terms />} />
+        <Route path="/privacy" element={<Privacy />} />
       </Route>
 
       {/* Protected routes */}

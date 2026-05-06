@@ -175,8 +175,8 @@ export default function Home() {
         <p className="font-body text-xs text-muted-foreground">© 2026 Stinkrz. All scents reserved.</p>
         <div className="flex gap-5">
           <Link to="/help" className="text-xs text-muted-foreground hover:text-foreground transition-colors">Help</Link>
-          <Link to="/help" className="text-xs text-muted-foreground hover:text-foreground transition-colors">Safety</Link>
-          <Link to="/help" className="text-xs text-muted-foreground hover:text-foreground transition-colors">Terms</Link>
+          <Link to="/privacy" className="text-xs text-muted-foreground hover:text-foreground transition-colors">Privacy</Link>
+          <Link to="/terms" className="text-xs text-muted-foreground hover:text-foreground transition-colors">Terms</Link>
         </div>
       </footer>
     </div>
