@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { MapContainer, TileLayer, Marker, useMap } from "react-leaflet";
 import L from "leaflet";
-import ProfileModal from "@/components/scent/ProfileModal";
+import ProfileDrawer from "@/components/scent/ProfileDrawer";
 import FilterChips from "@/components/scent/FilterChips";
 import { DEMO_PROFILES } from "@/lib/demoData";
 import { useNavigate } from "react-router-dom";
@@ -261,8 +261,8 @@ export default function ScentBlock() {
         )}
       </div>
 
-      {/* Profile modal */}
-      <ProfileModal
+      {/* Profile drawer */}
+      <ProfileDrawer
         profile={selectedProfile}
         open={!!selectedProfile}
         onClose={() => setSelectedProfile(null)}
