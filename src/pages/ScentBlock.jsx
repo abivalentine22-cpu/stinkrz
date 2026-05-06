@@ -6,6 +6,7 @@ import FilterChips from "@/components/scent/FilterChips";
 import { base44 } from "@/api/base44Client";
 import { useNavigate } from "react-router-dom";
 import { Crosshair, Eye, Navigation, NavigationOff } from "lucide-react";
+import { useScentMatchNotifications } from "@/hooks/useScentMatchNotifications";
 
 // Fix Leaflet default icon issue with bundlers
 delete L.Icon.Default.prototype._getIconUrl;
@@ -125,6 +126,9 @@ export default function ScentBlock() {
   const watchIdRef = useRef(null);
   const locationSaveRef = useRef(null);
   const navigate = useNavigate();
+
+  // Real-time scent match push notifications
+  useScentMatchNotifications(userPos, myProfile);
 
   // Load current user + all profiles
   useEffect(() => {
