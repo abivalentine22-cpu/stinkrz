@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, PenSquare, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
@@ -10,6 +10,7 @@ import { useToast } from "@/components/ui/use-toast";
 export default function Messages() {
   const [activeConversation, setActiveConversation] = useState(null); // { partnerEmail, partnerProfile }
   const [me, setMe] = useState(null);
+  const [showNewMsg, setShowNewMsg] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -82,10 +83,46 @@ export default function Messages() {
       <div className="flex h-full border-x border-border">
         {/* Sidebar */}
         <div className={`w-full md:w-80 border-r border-border flex flex-col ${activeConversation ? "hidden md:flex" : "flex"}`}>
-          <div className="px-4 py-4 border-b border-border">
-            <h1 className="font-heading text-xl font-bold">Messages</h1>
-            <p className="font-body text-xs text-muted-foreground mt-0.5">Your recent whiffs 💨</p>
+          <div className="px-4 py-4 border-b border-border flex items-center justify-between">
+            <div>
+              <h1 className="font-heading text-xl font-bold">Messages</h1>
+              <p className="font-body text-xs text-muted-foreground mt-0.5">Your recent whiffs 💨</p>
+            </div>
+            <Button size="icon" variant="ghost" onClick={() => setShowNewMsg(true)} title="New message">
+              <PenSquare className="w-4 h-4" />
+            </Button>
           </div>
+
+          {/* New Message picker */}
+          {showNewMsg && (
+            <div className="border-b border-border bg-muted/30 p-3">
+              <div className="flex items-center justify-between mb-2">
+                <p className="font-body text-xs font-semibold text-muted-foreground">Start a new chat</p>
+                <button onClick={() => setShowNewMsg(false)}><X className="w-3.5 h-3.5 text-muted-foreground" /></button>
+              </div>
+              <div className="space-y-1 max-h-48 overflow-y-auto">
+                {allProfiles
+                  .filter(p => p.user_email !== me?.email)
+                  .map(profile => (
+                    <button
+                      key={profile.user_email}
+                      onClick={() => {
+                        setActiveConversation({ partnerEmail: profile.user_email, partnerProfile: profile });
+                        setShowNewMsg(false);
+                      }}
+                      className="w-full flex items-center gap-3 p-2 rounded-lg hover:bg-muted transition-colors text-left"
+                    >
+                      <div className="w-8 h-8 rounded-full bg-muted overflow-hidden shrink-0 flex items-center justify-center">
+                        {profile.avatar_url
+                          ? <img src={profile.avatar_url} alt="" className="w-full h-full object-cover" />
+                          : <span className="text-sm">🤙</span>}
+                      </div>
+                      <span className="font-body text-sm">{profile.display_name}</span>
+                    </button>
+                  ))}
+              </div>
+            </div>
+          )}
           <div className="flex-1 overflow-y-auto p-2">
             {conversations.length === 0 ? (
               <div className="flex flex-col items-center justify-center h-full text-center p-6 text-muted-foreground">

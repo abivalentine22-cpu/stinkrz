@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { VIBE_OPTIONS, PERSONALITY_PROMPTS } from "@/lib/demoData";
-import { Camera, Save, LogOut, Droplets } from "lucide-react";
+import { Camera, Save, LogOut, Droplets, Shield } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import { useAuth } from "@/lib/AuthContext";
 
@@ -39,6 +39,7 @@ export default function Profile() {
     vibe_badges: [],
     shower_frequency: "Classified",
     scent_preferences: [],
+    fuzzy_location: false,
   });
 
   useEffect(() => {
@@ -52,6 +53,7 @@ export default function Profile() {
         vibe_badges: myProfile.vibe_badges || [],
         shower_frequency: myProfile.shower_frequency || "Classified",
         scent_preferences: myProfile.scent_preferences || [],
+        fuzzy_location: myProfile.fuzzy_location || false,
       });
     }
   }, [myProfile]);
@@ -80,6 +82,7 @@ export default function Profile() {
       vibe_badges: form.vibe_badges,
       shower_frequency: form.shower_frequency,
       scent_preferences: form.scent_preferences,
+      fuzzy_location: form.fuzzy_location,
     });
   };
 
@@ -203,6 +206,23 @@ export default function Profile() {
               </Badge>
             ))}
           </div>
+        </div>
+
+        {/* Proximity Privacy */}
+        <div className="flex items-center justify-between bg-muted/50 rounded-xl p-4 border border-border">
+          <div className="flex items-center gap-3">
+            <Shield className="w-5 h-5 text-primary shrink-0" />
+            <div>
+              <p className="font-body text-sm font-semibold">Approximate Location</p>
+              <p className="font-body text-xs text-muted-foreground">Show your location within ~½ mile for extra privacy</p>
+            </div>
+          </div>
+          <button
+            onClick={() => setForm((f) => ({ ...f, fuzzy_location: !f.fuzzy_location }))}
+            className={`w-11 h-6 rounded-full transition-colors shrink-0 relative ${form.fuzzy_location ? "bg-primary" : "bg-muted-foreground/30"}`}
+          >
+            <span className={`absolute top-0.5 w-5 h-5 rounded-full bg-white transition-all ${form.fuzzy_location ? "left-5.5 left-[22px]" : "left-0.5"}`} />
+          </button>
         </div>
 
         <Button onClick={handleSave} disabled={saveMutation.isPending} className="w-full gap-2 font-body font-semibold">

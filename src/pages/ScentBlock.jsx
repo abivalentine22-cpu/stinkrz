@@ -133,8 +133,23 @@ export default function ScentBlock() {
       const all = await base44.entities.ScentProfile.list();
       const mine = all.find(p => p.user_email === user.email);
       setMyProfile(mine || null);
-      // Show everyone except yourself
-      setProfiles(all.filter(p => p.user_email !== user.email && p.location_lat && p.location_lng));
+      // Show everyone except yourself, apply fuzzy location if enabled
+      setProfiles(
+        all
+          .filter(p => p.user_email !== user.email && p.location_lat && p.location_lng)
+          .map(p => {
+            if (p.fuzzy_location) {
+              // Offset by up to ~0.5 mile (roughly 0.007 degrees)
+              const fuzz = 0.005;
+              return {
+                ...p,
+                location_lat: p.location_lat + (Math.random() - 0.5) * fuzz * 2,
+                location_lng: p.location_lng + (Math.random() - 0.5) * fuzz * 2,
+              };
+            }
+            return p;
+          })
+      );
     }
     loadData();
   }, []);
@@ -176,6 +191,14 @@ export default function ScentBlock() {
     setTracking(false);
   };
 
+  // Restore last known position from localStorage immediately
+  useEffect(() => {
+    const saved = localStorage.getItem("stinkrz_last_pos");
+    if (saved) {
+      try { setUserPos(JSON.parse(saved)); } catch (_) {}
+    }
+  }, []);
+
   // Get position once on mount & save it
   useEffect(() => {
     if (navigator.geolocation) {
@@ -183,6 +206,7 @@ export default function ScentBlock() {
         (pos) => {
           const { latitude: lat, longitude: lng } = pos.coords;
           setUserPos({ lat, lng });
+          localStorage.setItem("stinkrz_last_pos", JSON.stringify({ lat, lng }));
           saveLocation(lat, lng);
         },
         () => {}
@@ -241,7 +265,7 @@ export default function ScentBlock() {
         {/* You marker */}
         <Marker
           position={[youPos.lat, youPos.lng]}
-          icon={createPinIcon({ display_name: "You", is_online: true, scent_category: "Neutral" }, true)}
+          icon={createPinIcon({ display_name: "You", is_online: true, scent_category: "Neutral", avatar_url: myProfile?.avatar_url }, true)}
         />
 
         {/* Profile markers */}

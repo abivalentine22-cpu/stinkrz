@@ -81,6 +81,11 @@
     "location_lng": {
       "type": "number"
     },
+    "fuzzy_location": {
+      "type": "boolean",
+      "default": false,
+      "description": "If true, show approximate location (within ~0.5 mile) instead of exact"
+    },
     "is_online": {
       "type": "boolean",
       "default": false
