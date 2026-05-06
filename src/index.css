@@ -9,74 +9,74 @@
     --font-heading: 'Space Grotesk', sans-serif;
     --font-body: 'Inter', sans-serif;
 
-    --background: 240 10% 6%;
-    --foreground: 45 20% 95%;
-    --card: 240 8% 10%;
-    --card-foreground: 45 20% 95%;
-    --popover: 240 8% 10%;
-    --popover-foreground: 45 20% 95%;
-    --primary: 155 80% 50%;
-    --primary-foreground: 240 10% 6%;
-    --secondary: 280 60% 55%;
-    --secondary-foreground: 45 20% 95%;
-    --muted: 240 6% 16%;
-    --muted-foreground: 240 5% 55%;
-    --accent: 45 90% 55%;
-    --accent-foreground: 240 10% 6%;
-    --destructive: 0 75% 55%;
-    --destructive-foreground: 45 20% 95%;
-    --border: 240 6% 18%;
-    --input: 240 6% 18%;
-    --ring: 155 80% 50%;
-    --chart-1: 155 80% 50%;
-    --chart-2: 280 60% 55%;
+    --background: 0 0% 5%;
+    --foreground: 0 0% 95%;
+    --card: 0 0% 9%;
+    --card-foreground: 0 0% 95%;
+    --popover: 0 0% 9%;
+    --popover-foreground: 0 0% 95%;
+    --primary: 151 100% 50%;
+    --primary-foreground: 0 0% 5%;
+    --secondary: 271 76% 53%;
+    --secondary-foreground: 0 0% 95%;
+    --muted: 0 0% 13%;
+    --muted-foreground: 0 0% 50%;
+    --accent: 151 100% 50%;
+    --accent-foreground: 0 0% 5%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 95%;
+    --border: 0 0% 15%;
+    --input: 0 0% 13%;
+    --ring: 151 100% 50%;
+    --chart-1: 151 100% 50%;
+    --chart-2: 271 76% 53%;
     --chart-3: 45 90% 55%;
-    --chart-4: 0 75% 55%;
+    --chart-4: 0 84% 60%;
     --chart-5: 200 70% 50%;
-    --radius: 0.75rem;
-    --sidebar-background: 240 8% 8%;
-    --sidebar-foreground: 45 20% 95%;
-    --sidebar-primary: 155 80% 50%;
-    --sidebar-primary-foreground: 240 10% 6%;
-    --sidebar-accent: 240 6% 16%;
-    --sidebar-accent-foreground: 45 20% 95%;
-    --sidebar-border: 240 6% 18%;
-    --sidebar-ring: 155 80% 50%;
+    --radius: 1rem;
+    --sidebar-background: 0 0% 7%;
+    --sidebar-foreground: 0 0% 95%;
+    --sidebar-primary: 151 100% 50%;
+    --sidebar-primary-foreground: 0 0% 5%;
+    --sidebar-accent: 0 0% 13%;
+    --sidebar-accent-foreground: 0 0% 95%;
+    --sidebar-border: 0 0% 15%;
+    --sidebar-ring: 151 100% 50%;
   }
 
   .dark {
-    --background: 240 10% 6%;
-    --foreground: 45 20% 95%;
-    --card: 240 8% 10%;
-    --card-foreground: 45 20% 95%;
-    --popover: 240 8% 10%;
-    --popover-foreground: 45 20% 95%;
-    --primary: 155 80% 50%;
-    --primary-foreground: 240 10% 6%;
-    --secondary: 280 60% 55%;
-    --secondary-foreground: 45 20% 95%;
-    --muted: 240 6% 16%;
-    --muted-foreground: 240 5% 55%;
-    --accent: 45 90% 55%;
-    --accent-foreground: 240 10% 6%;
-    --destructive: 0 75% 55%;
-    --destructive-foreground: 45 20% 95%;
-    --border: 240 6% 18%;
-    --input: 240 6% 18%;
-    --ring: 155 80% 50%;
-    --chart-1: 155 80% 50%;
-    --chart-2: 280 60% 55%;
+    --background: 0 0% 5%;
+    --foreground: 0 0% 95%;
+    --card: 0 0% 9%;
+    --card-foreground: 0 0% 95%;
+    --popover: 0 0% 9%;
+    --popover-foreground: 0 0% 95%;
+    --primary: 151 100% 50%;
+    --primary-foreground: 0 0% 5%;
+    --secondary: 271 76% 53%;
+    --secondary-foreground: 0 0% 95%;
+    --muted: 0 0% 13%;
+    --muted-foreground: 0 0% 50%;
+    --accent: 151 100% 50%;
+    --accent-foreground: 0 0% 5%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 95%;
+    --border: 0 0% 15%;
+    --input: 0 0% 13%;
+    --ring: 151 100% 50%;
+    --chart-1: 151 100% 50%;
+    --chart-2: 271 76% 53%;
     --chart-3: 45 90% 55%;
-    --chart-4: 0 75% 55%;
+    --chart-4: 0 84% 60%;
     --chart-5: 200 70% 50%;
-    --sidebar-background: 240 8% 8%;
-    --sidebar-foreground: 45 20% 95%;
-    --sidebar-primary: 155 80% 50%;
-    --sidebar-primary-foreground: 240 10% 6%;
-    --sidebar-accent: 240 6% 16%;
-    --sidebar-accent-foreground: 45 20% 95%;
-    --sidebar-border: 240 6% 18%;
-    --sidebar-ring: 155 80% 50%;
+    --sidebar-background: 0 0% 7%;
+    --sidebar-foreground: 0 0% 95%;
+    --sidebar-primary: 151 100% 50%;
+    --sidebar-primary-foreground: 0 0% 5%;
+    --sidebar-accent: 0 0% 13%;
+    --sidebar-accent-foreground: 0 0% 95%;
+    --sidebar-border: 0 0% 15%;
+    --sidebar-ring: 151 100% 50%;
   }
 }
 
@@ -94,12 +94,29 @@
   width: 6px;
 }
 ::-webkit-scrollbar-track {
-  background: hsl(240 8% 10%);
+  background: hsl(0 0% 8%);
 }
 ::-webkit-scrollbar-thumb {
-  background: hsl(240 6% 25%);
+  background: hsl(0 0% 20%);
   border-radius: 3px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: hsl(240 6% 35%);
+  background: hsl(0 0% 30%);
+}
+
+/* Pill inputs */
+input[type="text"],
+input[type="email"],
+input[type="password"],
+input[type="number"],
+textarea {
+  border-radius: 9999px;
+}
+textarea {
+  border-radius: 1rem !important;
+}
+
+/* Pill buttons */
+.btn-pill, button:not([class*="rounded"]) {
+  border-radius: 9999px;
 }
