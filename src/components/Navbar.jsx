@@ -25,20 +25,16 @@ export default function Navbar() {
         </Link>
 
         {/* Desktop nav */}
-        <div className="hidden md:flex items-center gap-1">
+        <div className="hidden md:flex items-center gap-6">
           {NAV_ITEMS.map((item) => {
-            const Icon = item.icon;
             const active = location.pathname === item.path;
             return (
-              <Link key={item.path} to={item.path}>
-                <Button
-                  variant={active ? "default" : "ghost"}
-                  size="sm"
-                  className={`gap-2 font-body ${active ? "" : "text-muted-foreground hover:text-foreground"}`}
-                >
-                  <Icon className="w-4 h-4" />
-                  {item.label}
-                </Button>
+              <Link
+                key={item.path}
+                to={item.path}
+                className={`font-body text-sm transition-colors ${active ? "text-foreground font-semibold" : "text-muted-foreground hover:text-foreground"}`}
+              >
+                {item.label}
               </Link>
             );
           })}
@@ -47,15 +43,13 @@ export default function Navbar() {
         <div className="hidden md:flex items-center gap-2">
           {user ? (
             <Link to="/profile">
-              <Button variant="outline" size="sm" className="gap-2 font-body">
-                <User className="w-4 h-4" />
+              <Button size="sm" className="font-body font-semibold px-5">
                 Profile
               </Button>
             </Link>
           ) : (
             <Link to="/sign-in">
-              <Button size="sm" className="gap-2 font-body font-semibold">
-                <User className="w-4 h-4" />
+              <Button size="sm" className="font-body font-semibold px-5">
                 Log In
               </Button>
             </Link>
