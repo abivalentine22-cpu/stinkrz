@@ -1,0 +1,47 @@
+{
+  "name": "Report",
+  "type": "object",
+  "properties": {
+    "reporter_email": {
+      "type": "string"
+    },
+    "reported_user_email": {
+      "type": "string"
+    },
+    "reported_user_name": {
+      "type": "string"
+    },
+    "reason": {
+      "type": "string",
+      "enum": [
+        "Harassment",
+        "Fake profile",
+        "Inappropriate content",
+        "Spam",
+        "Threatening behavior",
+        "Other"
+      ]
+    },
+    "details": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "reviewed",
+        "resolved",
+        "dismissed"
+      ],
+      "default": "pending"
+    },
+    "admin_notes": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "reporter_email",
+    "reported_user_email",
+    "reason"
+  ]
+}

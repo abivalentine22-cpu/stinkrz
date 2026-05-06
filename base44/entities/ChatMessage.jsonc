@@ -1,0 +1,31 @@
+{
+  "name": "ChatMessage",
+  "type": "object",
+  "properties": {
+    "sender_email": {
+      "type": "string"
+    },
+    "receiver_email": {
+      "type": "string"
+    },
+    "content": {
+      "type": "string"
+    },
+    "is_sticker": {
+      "type": "boolean",
+      "default": false
+    },
+    "sticker_id": {
+      "type": "string"
+    },
+    "read": {
+      "type": "boolean",
+      "default": false
+    }
+  },
+  "required": [
+    "sender_email",
+    "receiver_email",
+    "content"
+  ]
+}

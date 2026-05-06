@@ -1,47 +1,78 @@
-import { Toaster } from "@/components/ui/toaster"
-import { QueryClientProvider } from '@tanstack/react-query'
-import { queryClientInstance } from '@/lib/query-client'
-import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
-import PageNotFound from './lib/PageNotFound';
-import { AuthProvider, useAuth } from '@/lib/AuthContext';
-import UserNotRegisteredError from '@/components/UserNotRegisteredError';
-// Add page imports here
+import { Toaster } from "@/components/ui/toaster";
+import { QueryClientProvider } from "@tanstack/react-query";
+import { queryClientInstance } from "@/lib/query-client";
+import { BrowserRouter as Router, Route, Routes, Navigate } from "react-router-dom";
+import PageNotFound from "./lib/PageNotFound";
+import { AuthProvider, useAuth } from "@/lib/AuthContext";
+import UserNotRegisteredError from "@/components/UserNotRegisteredError";
+import ProtectedRoute from "@/components/ProtectedRoute";
+import Layout from "@/components/Layout";
+
+// Pages
+import Home from "@/pages/Home";
+import ScentBlock from "@/pages/ScentBlock";
+import Messages from "@/pages/Messages";
+import Help from "@/pages/Help";
+import Profile from "@/pages/Profile";
+import ReportPage from "@/pages/ReportPage";
+import AdminReports from "@/pages/AdminReports";
+import Onboarding from "@/pages/Onboarding";
+import SignIn from "@/pages/SignIn";
+import Register from "@/pages/Register";
+import ForgotPassword from "@/pages/ForgotPassword";
+import ResetPassword from "@/pages/ResetPassword";
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
 
-  // Show loading spinner while checking app public settings or auth
   if (isLoadingPublicSettings || isLoadingAuth) {
     return (
-      <div className="fixed inset-0 flex items-center justify-center">
-        <div className="w-8 h-8 border-4 border-slate-200 border-t-slate-800 rounded-full animate-spin"></div>
+      <div className="fixed inset-0 flex items-center justify-center bg-background">
+        <div className="flex flex-col items-center gap-3">
+          <span className="text-4xl animate-bounce">🤙</span>
+          <div className="w-8 h-8 border-4 border-primary/20 border-t-primary rounded-full animate-spin" />
+        </div>
       </div>
     );
   }
 
-  // Handle authentication errors
   if (authError) {
-    if (authError.type === 'user_not_registered') {
+    if (authError.type === "user_not_registered") {
       return <UserNotRegisteredError />;
-    } else if (authError.type === 'auth_required') {
-      // Redirect to login automatically
+    } else if (authError.type === "auth_required") {
       navigateToLogin();
       return null;
     }
   }
 
-  // Render the main app
   return (
     <Routes>
-      {/* Add your page Route elements here */}
+      {/* Public auth routes */}
+      <Route path="/sign-in" element={<SignIn />} />
+      <Route path="/register" element={<Register />} />
+      <Route path="/forgot-password" element={<ForgotPassword />} />
+      <Route path="/reset-password" element={<ResetPassword />} />
+
+      {/* Protected routes */}
+      <Route element={<ProtectedRoute unauthenticatedElement={<Navigate to="/sign-in" replace />} />}>
+        <Route element={<Layout />}>
+          <Route path="/" element={<Home />} />
+          <Route path="/scent-block" element={<ScentBlock />} />
+          <Route path="/messages" element={<Messages />} />
+          <Route path="/help" element={<Help />} />
+          <Route path="/profile" element={<Profile />} />
+          <Route path="/report" element={<ReportPage />} />
+          <Route path="/admin/reports" element={<AdminReports />} />
+          <Route path="/onboarding" element={<Onboarding />} />
+        </Route>
+      </Route>
+
       <Route path="*" element={<PageNotFound />} />
     </Routes>
   );
 };
 
-
 function App() {
-
   return (
     <AuthProvider>
       <QueryClientProvider client={queryClientInstance}>
@@ -51,7 +82,7 @@ function App() {
         <Toaster />
       </QueryClientProvider>
     </AuthProvider>
-  )
+  );
 }
 
-export default App
+export default App;

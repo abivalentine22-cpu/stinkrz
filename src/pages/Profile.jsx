@@ -1,0 +1,215 @@
+import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { base44 } from "@/api/base44Client";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { VIBE_OPTIONS, PERSONALITY_PROMPTS } from "@/lib/demoData";
+import { Camera, Save, LogOut, Droplets } from "lucide-react";
+import { useToast } from "@/components/ui/use-toast";
+import { useAuth } from "@/lib/AuthContext";
+
+const SCENT_CATEGORIES = ["Fresh", "Musky", "Ripe", "Earthy", "Neutral"];
+const SHOWER_OPTIONS = ["Daily", "Every other day", "Twice a week", "Weekly", "When inspired", "Classified"];
+
+export default function Profile() {
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+
+  const { data: profiles = [] } = useQuery({
+    queryKey: ["my-profile", user?.email],
+    queryFn: () => base44.entities.ScentProfile.filter({ user_email: user?.email }),
+    enabled: !!user?.email,
+  });
+
+  const myProfile = profiles[0];
+
+  const [form, setForm] = useState({
+    display_name: "",
+    age: "",
+    bio: "",
+    scent_category: "Neutral",
+    scent_intensity: 3,
+    vibe_badges: [],
+    shower_frequency: "Classified",
+    scent_preferences: [],
+  });
+
+  useEffect(() => {
+    if (myProfile) {
+      setForm({
+        display_name: myProfile.display_name || "",
+        age: myProfile.age?.toString() || "",
+        bio: myProfile.bio || "",
+        scent_category: myProfile.scent_category || "Neutral",
+        scent_intensity: myProfile.scent_intensity || 3,
+        vibe_badges: myProfile.vibe_badges || [],
+        shower_frequency: myProfile.shower_frequency || "Classified",
+        scent_preferences: myProfile.scent_preferences || [],
+      });
+    }
+  }, [myProfile]);
+
+  const saveMutation = useMutation({
+    mutationFn: async (data) => {
+      if (myProfile) {
+        return base44.entities.ScentProfile.update(myProfile.id, data);
+      } else {
+        return base44.entities.ScentProfile.create({ ...data, user_email: user.email, onboarding_complete: true });
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["my-profile"] });
+      toast({ title: "Profile saved!", description: "Your scent profile has been updated." });
+    },
+  });
+
+  const handleSave = () => {
+    saveMutation.mutate({
+      display_name: form.display_name,
+      age: parseInt(form.age) || undefined,
+      bio: form.bio,
+      scent_category: form.scent_category,
+      scent_intensity: form.scent_intensity,
+      vibe_badges: form.vibe_badges,
+      shower_frequency: form.shower_frequency,
+      scent_preferences: form.scent_preferences,
+    });
+  };
+
+  const handlePhotoUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const { file_url } = await base44.integrations.Core.UploadFile({ file });
+    if (myProfile) {
+      await base44.entities.ScentProfile.update(myProfile.id, { avatar_url: file_url });
+      queryClient.invalidateQueries({ queryKey: ["my-profile"] });
+      toast({ title: "Photo updated!" });
+    }
+  };
+
+  const toggleArray = (key, value) => {
+    setForm((p) => ({
+      ...p,
+      [key]: p[key].includes(value) ? p[key].filter((v) => v !== value) : [...p[key], value],
+    }));
+  };
+
+  return (
+    <div className="max-w-lg mx-auto px-4 py-8">
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="font-heading text-2xl font-bold">Your Profile</h1>
+        <Button variant="ghost" size="sm" className="gap-1 text-muted-foreground font-body" onClick={() => base44.auth.logout("/")}>
+          <LogOut className="w-4 h-4" />
+          Log out
+        </Button>
+      </div>
+
+      {/* Avatar */}
+      <div className="flex justify-center mb-6">
+        <div className="relative">
+          <div className="w-24 h-24 rounded-full bg-muted overflow-hidden flex items-center justify-center text-4xl">
+            {myProfile?.avatar_url ? (
+              <img src={myProfile.avatar_url} alt="" className="w-full h-full object-cover" />
+            ) : (
+              "🤙"
+            )}
+          </div>
+          <label className="absolute bottom-0 right-0 w-8 h-8 rounded-full bg-primary flex items-center justify-center cursor-pointer hover:bg-primary/90 transition-colors">
+            <Camera className="w-4 h-4 text-primary-foreground" />
+            <input type="file" accept="image/*" onChange={handlePhotoUpload} className="hidden" />
+          </label>
+        </div>
+      </div>
+
+      <div className="space-y-5">
+        <div className="grid grid-cols-2 gap-3">
+          <div className="space-y-2">
+            <Label className="font-body text-sm">Display Name</Label>
+            <Input value={form.display_name} onChange={(e) => setForm({ ...form, display_name: e.target.value })} className="font-body bg-muted border-0" />
+          </div>
+          <div className="space-y-2">
+            <Label className="font-body text-sm">Age</Label>
+            <Input type="number" value={form.age} onChange={(e) => setForm({ ...form, age: e.target.value })} className="font-body bg-muted border-0" />
+          </div>
+        </div>
+
+        <div className="space-y-2">
+          <Label className="font-body text-sm">Bio</Label>
+          <Textarea value={form.bio} onChange={(e) => setForm({ ...form, bio: e.target.value })} className="font-body bg-muted border-0 min-h-[80px]" />
+        </div>
+
+        <div className="grid grid-cols-2 gap-3">
+          <div className="space-y-2">
+            <Label className="font-body text-sm">Scent Category</Label>
+            <Select value={form.scent_category} onValueChange={(val) => setForm({ ...form, scent_category: val })}>
+              <SelectTrigger className="font-body bg-muted border-0"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                {SCENT_CATEGORIES.map((cat) => <SelectItem key={cat} value={cat}>{cat}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-2">
+            <Label className="font-body text-sm">Shower Frequency</Label>
+            <Select value={form.shower_frequency} onValueChange={(val) => setForm({ ...form, shower_frequency: val })}>
+              <SelectTrigger className="font-body bg-muted border-0"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                {SHOWER_OPTIONS.map((opt) => <SelectItem key={opt} value={opt}>{opt}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+
+        <div className="space-y-2">
+          <Label className="font-body text-sm">Scent Intensity: {form.scent_intensity}/5</Label>
+          <div className="flex items-center gap-2">
+            <input type="range" min={1} max={5} value={form.scent_intensity} onChange={(e) => setForm({ ...form, scent_intensity: parseInt(e.target.value) })} className="flex-1 accent-primary" />
+            <div className="flex gap-0.5">
+              {Array.from({ length: 5 }, (_, i) => (
+                <Droplets key={i} className={`w-3.5 h-3.5 ${i < form.scent_intensity ? "text-primary" : "text-muted-foreground/20"}`} />
+              ))}
+            </div>
+          </div>
+        </div>
+
+        <div className="space-y-2">
+          <Label className="font-body text-sm">Scent Preferences</Label>
+          <div className="flex flex-wrap gap-2">
+            {SCENT_CATEGORIES.map((cat) => (
+              <Badge key={cat} variant={form.scent_preferences.includes(cat) ? "default" : "outline"} className="cursor-pointer font-body text-xs" onClick={() => toggleArray("scent_preferences", cat)}>
+                {cat}
+              </Badge>
+            ))}
+          </div>
+        </div>
+
+        <div className="space-y-2">
+          <Label className="font-body text-sm">Vibe Badges</Label>
+          <div className="flex flex-wrap gap-1.5 max-h-40 overflow-y-auto">
+            {VIBE_OPTIONS.map((vibe) => (
+              <Badge
+                key={vibe}
+                variant={form.vibe_badges.includes(vibe) ? "default" : "outline"}
+                className={`cursor-pointer font-body text-[10px] transition-all ${form.vibe_badges.includes(vibe) ? "bg-secondary text-secondary-foreground" : ""}`}
+                onClick={() => toggleArray("vibe_badges", vibe)}
+              >
+                {vibe}
+              </Badge>
+            ))}
+          </div>
+        </div>
+
+        <Button onClick={handleSave} disabled={saveMutation.isPending} className="w-full gap-2 font-body font-semibold">
+          <Save className="w-4 h-4" />
+          {saveMutation.isPending ? "Saving..." : "Save Profile"}
+        </Button>
+      </div>
+    </div>
+  );
+}

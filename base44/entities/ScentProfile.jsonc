@@ -1,0 +1,101 @@
+{
+  "name": "ScentProfile",
+  "type": "object",
+  "properties": {
+    "user_email": {
+      "type": "string",
+      "description": "Email of the user this profile belongs to"
+    },
+    "display_name": {
+      "type": "string"
+    },
+    "age": {
+      "type": "number"
+    },
+    "bio": {
+      "type": "string"
+    },
+    "avatar_url": {
+      "type": "string"
+    },
+    "scent_category": {
+      "type": "string",
+      "enum": [
+        "Fresh",
+        "Musky",
+        "Ripe",
+        "Earthy",
+        "Neutral"
+      ],
+      "default": "Neutral"
+    },
+    "scent_intensity": {
+      "type": "number",
+      "description": "1-5 scale"
+    },
+    "vibe_badges": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "shower_frequency": {
+      "type": "string",
+      "enum": [
+        "Daily",
+        "Every other day",
+        "Twice a week",
+        "Weekly",
+        "When inspired",
+        "Classified"
+      ]
+    },
+    "last_showered": {
+      "type": "string",
+      "format": "date"
+    },
+    "scent_preferences": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "What scent categories this user is into"
+    },
+    "personality_prompts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "prompt": {
+            "type": "string"
+          },
+          "answer": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "location_lat": {
+      "type": "number"
+    },
+    "location_lng": {
+      "type": "number"
+    },
+    "is_online": {
+      "type": "boolean",
+      "default": false
+    },
+    "last_active": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "onboarding_complete": {
+      "type": "boolean",
+      "default": false
+    }
+  },
+  "required": [
+    "user_email",
+    "display_name"
+  ]
+}
