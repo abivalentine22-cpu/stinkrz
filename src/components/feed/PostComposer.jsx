@@ -2,6 +2,9 @@ import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Send } from "lucide-react";
+import AvatarUpload from "@/components/feed/AvatarUpload";
+import { useQueryClient } from "@tanstack/react-query";
+import { base44 } from "@/api/base44Client";
 
 const VIBE_TAGS = [
   "Looking to meet now 🔥",
@@ -25,6 +28,9 @@ export default function PostComposer({ myProfile, onPost }) {
   const [selectedTag, setSelectedTag] = useState(null);
   const [expiryHours, setExpiryHours] = useState(2);
   const [posting, setPosting] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [avatarUrl, setAvatarUrl] = useState(myProfile?.avatar_url || null);
+  const queryClient = useQueryClient();
 
   const handlePost = async () => {
     if (!content.trim()) return;
@@ -40,14 +46,20 @@ export default function PostComposer({ myProfile, onPost }) {
     setPosting(false);
   };
 
+  const handleAvatarUpload = async (fileUrl) => {
+    setUploading(true);
+    setAvatarUrl(fileUrl);
+    if (myProfile) {
+      await base44.entities.ScentProfile.update(myProfile.id, { avatar_url: fileUrl });
+      queryClient.invalidateQueries({ queryKey: ["my-profile"] });
+    }
+    setUploading(false);
+  };
+
   return (
     <div className="bg-card border border-border rounded-2xl p-4 mb-4">
       <div className="flex gap-3 items-start mb-3">
-        <div className="w-9 h-9 rounded-full bg-muted overflow-hidden shrink-0 flex items-center justify-center">
-          {myProfile?.avatar_url
-            ? <img src={myProfile.avatar_url} alt="" className="w-full h-full object-cover" />
-            : <span className="text-base">🤙</span>}
-        </div>
+        <AvatarUpload avatar_url={avatarUrl} onUpload={handleAvatarUpload} loading={uploading} />
         <Textarea
           value={content}
           onChange={(e) => setContent(e.target.value)}
