@@ -39,6 +39,9 @@ export default function Settings() {
   const [fuzzyLocation, setFuzzyLocation] = useState(false);
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [showOnlineStatus, setShowOnlineStatus] = useState(true);
+  const [sendReadReceipts, setSendReadReceipts] = useState(true);
+  const [hideReadReceipts, setHideReadReceipts] = useState(false);
+  const [travelMode, setTravelMode] = useState("neither"); // "hosting", "traveling", "neither"
 
   useEffect(() => {
     if (prefs) {
@@ -48,6 +51,9 @@ export default function Settings() {
     setSoundEnabled(localStorage.getItem("stinkrz_sound") !== "false");
     setShowOnlineStatus(localStorage.getItem("stinkrz_show_online") !== "false");
     setFuzzyLocation(localStorage.getItem("stinkrz_fuzzy_location") === "true");
+    setSendReadReceipts(localStorage.getItem("stinkrz_send_read_receipts") !== "false");
+    setHideReadReceipts(localStorage.getItem("stinkrz_hide_read_receipts") === "true");
+    setTravelMode(localStorage.getItem("stinkrz_travel_mode") || "neither");
   }, [prefs]);
 
   const saveMutation = useMutation({
@@ -145,6 +151,20 @@ export default function Settings() {
               <span className={`absolute top-0.5 w-5 h-5 rounded-full bg-white transition-all ${showOnlineStatus ? "left-[22px]" : "left-0.5"}`} />
             </button>
           </div>
+
+          {/* Hide Inactive Users */}
+          <div className="flex items-center justify-between bg-muted/50 rounded-xl p-4 border border-border">
+            <div className="flex-1">
+              <p className="font-body text-sm font-semibold">Hide Inactive Users</p>
+              <p className="font-body text-xs text-muted-foreground">Don't show offline profiles on map</p>
+            </div>
+            <button
+              onClick={() => handleToggle("stinkrz_hide_inactive", true, () => {})}
+              className={`w-11 h-6 rounded-full transition-colors shrink-0 relative bg-primary`}
+            >
+              <span className={`absolute top-0.5 w-5 h-5 rounded-full bg-white left-[22px]`} />
+            </button>
+          </div>
         </div>
       </div>
 
@@ -165,6 +185,71 @@ export default function Settings() {
           >
             <span className={`absolute top-0.5 w-5 h-5 rounded-full bg-white transition-all ${soundEnabled ? "left-[22px]" : "left-0.5"}`} />
           </button>
+        </div>
+      </div>
+
+      {/* Read Receipt Settings */}
+      <div className="bg-card border border-border rounded-2xl p-6 mb-5">
+        <h3 className="font-heading text-sm font-semibold mb-4 flex items-center gap-2">
+          <Volume2 className="w-4 h-4 text-primary" />
+          Read Receipts
+        </h3>
+        <div className="space-y-3">
+          {/* Send Read Receipts */}
+          <div className="flex items-center justify-between bg-muted/50 rounded-xl p-4 border border-border">
+            <div className="flex-1">
+              <p className="font-body text-sm font-semibold">Send Read Receipts</p>
+              <p className="font-body text-xs text-muted-foreground">Let others know you've read their messages</p>
+            </div>
+            <button
+              onClick={() => handleToggle("stinkrz_send_read_receipts", sendReadReceipts, setSendReadReceipts)}
+              className={`w-11 h-6 rounded-full transition-colors shrink-0 relative ${sendReadReceipts ? "bg-primary" : "bg-muted-foreground/30"}`}
+            >
+              <span className={`absolute top-0.5 w-5 h-5 rounded-full bg-white transition-all ${sendReadReceipts ? "left-[22px]" : "left-0.5"}`} />
+            </button>
+          </div>
+
+          {/* Hide Read Receipts */}
+          <div className="flex items-center justify-between bg-muted/50 rounded-xl p-4 border border-border">
+            <div className="flex-1">
+              <p className="font-body text-sm font-semibold">Hide Read Receipts</p>
+              <p className="font-body text-xs text-muted-foreground">Don't see when others read your messages</p>
+            </div>
+            <button
+              onClick={() => handleToggle("stinkrz_hide_read_receipts", hideReadReceipts, setHideReadReceipts)}
+              className={`w-11 h-6 rounded-full transition-colors shrink-0 relative ${hideReadReceipts ? "bg-primary" : "bg-muted-foreground/30"}`}
+            >
+              <span className={`absolute top-0.5 w-5 h-5 rounded-full bg-white transition-all ${hideReadReceipts ? "left-[22px]" : "left-0.5"}`} />
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Travel / Mobility Settings */}
+      <div className="bg-card border border-border rounded-2xl p-6 mb-5">
+        <h3 className="font-heading text-sm font-semibold mb-4">Travel / Mobility</h3>
+        <p className="font-body text-xs text-muted-foreground mb-3">What's your situation?</p>
+        <div className="space-y-2">
+          {[
+            { value: "neither", label: "Just living here" },
+            { value: "hosting", label: "Looking to host" },
+            { value: "traveling", label: "Looking to travel" },
+          ].map((opt) => (
+            <button
+              key={opt.value}
+              onClick={() => {
+                setTravelMode(opt.value);
+                localStorage.setItem("stinkrz_travel_mode", opt.value);
+              }}
+              className={`w-full text-left px-4 py-3 rounded-lg border transition-colors ${
+                travelMode === opt.value
+                  ? "bg-primary/10 border-primary text-primary"
+                  : "bg-muted/50 border-border text-muted-foreground hover:border-primary/30"
+              }`}
+            >
+              <p className="font-body text-sm font-semibold">{opt.label}</p>
+            </button>
+          ))}
         </div>
       </div>
 
