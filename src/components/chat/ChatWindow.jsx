@@ -1,52 +1,60 @@
 import React, { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { MapPin, Send, ShieldAlert, Ban, Smile } from "lucide-react";
+import { Send, ShieldAlert, Ban, Smile } from "lucide-react";
 import { format } from "date-fns";
-import { SCENT_STICKERS } from "@/lib/demoData";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useToast } from "@/components/ui/use-toast";
+import { base44 } from "@/api/base44Client";
 
-export default function ChatWindow({ chat, messages: initialMessages, onVibeCheck }) {
-  const [messages, setMessages] = useState(initialMessages || []);
+const SCENT_STICKERS = [
+  { id: "s1", emoji: "🧼", label: "Fresh & Clean" },
+  { id: "s2", emoji: "🌸", label: "Floral Vibes" },
+  { id: "s3", emoji: "🔥", label: "Hot Stuff" },
+  { id: "s4", emoji: "💨", label: "Wind Check" },
+  { id: "s5", emoji: "🧀", label: "Cheesy" },
+  { id: "s6", emoji: "🌲", label: "Pine Fresh" },
+  { id: "s7", emoji: "🍋", label: "Citrus Pop" },
+  { id: "s8", emoji: "💀", label: "RIP Noses" },
+  { id: "s9", emoji: "👃", label: "Nose Approved" },
+  { id: "s10", emoji: "🤙", label: "Hang Loose" },
+  { id: "s11", emoji: "🚿", label: "Shower Time" },
+  { id: "s12", emoji: "✨", label: "Sparkling" },
+];
+
+export default function ChatWindow({ me, conversation, messages, onVibeCheck, onMessageSent }) {
   const [input, setInput] = useState("");
   const [stickersOpen, setStickersOpen] = useState(false);
+  const [sending, setSending] = useState(false);
   const scrollRef = useRef(null);
   const { toast } = useToast();
-
-  useEffect(() => {
-    setMessages(initialMessages || []);
-  }, [initialMessages]);
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
   }, [messages]);
 
-  const sendMessage = () => {
-    if (!input.trim()) return;
-    const newMsg = {
-      id: `m-${Date.now()}`,
-      sender: "me",
-      content: input,
-      timestamp: new Date().toISOString(),
-    };
-    setMessages((prev) => [...prev, newMsg]);
+  const sendMessage = async (content, isSticker = false) => {
+    if (!content.trim() || !me || !conversation) return;
+    setSending(true);
+    await base44.entities.ChatMessage.create({
+      sender_email: me.email,
+      receiver_email: conversation.partnerEmail,
+      content,
+      is_sticker: isSticker,
+      read: false,
+    });
     setInput("");
-  };
-
-  const sendSticker = (sticker) => {
-    const newMsg = {
-      id: `m-${Date.now()}`,
-      sender: "me",
-      content: `${sticker.emoji} ${sticker.label}`,
-      timestamp: new Date().toISOString(),
-      isSticker: true,
-    };
-    setMessages((prev) => [...prev, newMsg]);
     setStickersOpen(false);
+    setSending(false);
+    onMessageSent?.();
   };
 
-  if (!chat) {
+  const sendSticker = (sticker) => sendMessage(`${sticker.emoji} ${sticker.label}`, true);
+
+  const profile = conversation?.partnerProfile;
+  const partnerName = profile?.display_name || conversation?.partnerEmail || "";
+
+  if (!conversation) {
     return (
       <div className="flex-1 flex items-center justify-center text-center p-8">
         <div>
@@ -60,31 +68,24 @@ export default function ChatWindow({ chat, messages: initialMessages, onVibeChec
 
   return (
     <div className="flex-1 flex flex-col min-h-0">
-      {/* Chat header */}
+      {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-border bg-card/50">
         <div className="flex items-center gap-3">
           <div className="w-9 h-9 rounded-full overflow-hidden bg-muted">
-            {chat.partner.avatar_url ? (
-              <img src={chat.partner.avatar_url} alt="" className="w-full h-full object-cover" />
+            {profile?.avatar_url ? (
+              <img src={profile.avatar_url} alt="" className="w-full h-full object-cover" />
             ) : (
               <div className="w-full h-full flex items-center justify-center text-lg">🤙</div>
             )}
           </div>
           <div>
-            <h3 className="font-heading font-semibold text-sm">{chat.partner.display_name}</h3>
-            <div className="flex items-center gap-1 text-xs text-muted-foreground">
-              <MapPin className="w-3 h-3 text-primary" />
-              <span className="font-body">{chat.partner.distance} mi away</span>
-            </div>
+            <h3 className="font-heading font-semibold text-sm">{partnerName}</h3>
+            {profile?.is_online && (
+              <span className="text-xs text-green-400 font-body">Online</span>
+            )}
           </div>
         </div>
-        {/* Vibe check button */}
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={onVibeCheck}
-          className="gap-1.5 text-accent hover:text-accent font-body"
-        >
+        <Button variant="ghost" size="sm" onClick={onVibeCheck} className="gap-1.5 text-accent hover:text-accent font-body">
           <span className="text-lg">🤙</span>
           Vibe Check
         </Button>
@@ -92,53 +93,46 @@ export default function ChatWindow({ chat, messages: initialMessages, onVibeChec
 
       {/* Messages */}
       <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-4 space-y-3">
-        {messages.map((msg) => (
-          <div key={msg.id} className={`flex ${msg.sender === "me" ? "justify-end" : "justify-start"}`}>
-            <div
-              className={`max-w-[75%] rounded-2xl px-4 py-2.5 ${
-                msg.isSticker
+        {messages.length === 0 && (
+          <div className="flex items-center justify-center h-full text-muted-foreground">
+            <p className="font-body text-sm">No messages yet. Say hi! 👋</p>
+          </div>
+        )}
+        {messages.map((msg) => {
+          const isMe = msg.sender_email === me?.email;
+          return (
+            <div key={msg.id} className={`flex ${isMe ? "justify-end" : "justify-start"}`}>
+              <div className={`max-w-[75%] rounded-2xl px-4 py-2.5 ${
+                msg.is_sticker
                   ? "bg-transparent text-3xl text-center"
-                  : msg.sender === "me"
+                  : isMe
                   ? "bg-primary text-primary-foreground rounded-br-md"
                   : "bg-muted text-foreground rounded-bl-md"
-              }`}
-            >
-              {!msg.isSticker && <p className="font-body text-sm">{msg.content}</p>}
-              {msg.isSticker && <p className="text-3xl">{msg.content}</p>}
-              <p className={`text-[10px] mt-1 ${msg.sender === "me" ? "text-primary-foreground/60" : "text-muted-foreground"}`}>
-                {format(new Date(msg.timestamp), "h:mm a")}
-              </p>
+              }`}>
+                <p className={msg.is_sticker ? "text-3xl" : "font-body text-sm"}>{msg.content}</p>
+                <p className={`text-[10px] mt-1 ${isMe ? "text-primary-foreground/60" : "text-muted-foreground"}`}>
+                  {format(new Date(msg.created_date), "h:mm a")}
+                </p>
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
-      {/* Input area with block/report bar */}
+      {/* Input */}
       <div className="border-t border-border bg-card/80">
-        {/* Block/Report bar */}
         <div className="flex items-center gap-2 px-3 py-1.5 border-b border-border/50 bg-muted/30">
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-7 px-2 text-xs font-body text-muted-foreground hover:text-destructive gap-1"
-            onClick={() => toast({ title: "User blocked", description: `${chat.partner.display_name} has been blocked.` })}
-          >
-            <Ban className="w-3 h-3" />
-            Block
+          <Button variant="ghost" size="sm" className="h-7 px-2 text-xs font-body text-muted-foreground hover:text-destructive gap-1"
+            onClick={() => toast({ title: "User blocked", description: `${partnerName} has been blocked.` })}>
+            <Ban className="w-3 h-3" /> Block
           </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-7 px-2 text-xs font-body text-muted-foreground hover:text-destructive gap-1"
-            onClick={() => toast({ title: "Report submitted", description: "Thank you for keeping Stinkrz safe." })}
-          >
-            <ShieldAlert className="w-3 h-3" />
-            Report
+          <Button variant="ghost" size="sm" className="h-7 px-2 text-xs font-body text-muted-foreground hover:text-destructive gap-1"
+            onClick={() => toast({ title: "Report submitted", description: "Thank you for keeping Stinkrz safe." })}>
+            <ShieldAlert className="w-3 h-3" /> Report
           </Button>
         </div>
 
         <div className="flex items-center gap-2 px-3 py-3">
-          {/* Stickers */}
           <Popover open={stickersOpen} onOpenChange={setStickersOpen}>
             <PopoverTrigger asChild>
               <Button variant="ghost" size="icon" className="shrink-0">
@@ -149,11 +143,8 @@ export default function ChatWindow({ chat, messages: initialMessages, onVibeChec
               <p className="font-heading text-xs font-semibold mb-2 text-muted-foreground">Scent Stickers</p>
               <div className="grid grid-cols-4 gap-2">
                 {SCENT_STICKERS.map((sticker) => (
-                  <button
-                    key={sticker.id}
-                    onClick={() => sendSticker(sticker)}
-                    className="flex flex-col items-center gap-1 p-2 rounded-lg hover:bg-muted transition-colors"
-                  >
+                  <button key={sticker.id} onClick={() => sendSticker(sticker)}
+                    className="flex flex-col items-center gap-1 p-2 rounded-lg hover:bg-muted transition-colors">
                     <span className="text-2xl">{sticker.emoji}</span>
                     <span className="text-[9px] font-body text-muted-foreground">{sticker.label}</span>
                   </button>
@@ -165,11 +156,11 @@ export default function ChatWindow({ chat, messages: initialMessages, onVibeChec
           <Input
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && sendMessage()}
+            onKeyDown={(e) => e.key === "Enter" && sendMessage(input)}
             placeholder="Send a whiff..."
             className="flex-1 font-body bg-muted border-0 focus-visible:ring-1"
           />
-          <Button size="icon" onClick={sendMessage} disabled={!input.trim()}>
+          <Button size="icon" onClick={() => sendMessage(input)} disabled={!input.trim() || sending}>
             <Send className="w-4 h-4" />
           </Button>
         </div>
