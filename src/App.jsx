@@ -53,11 +53,15 @@ const AuthenticatedApp = () => {
       <Route path="/forgot-password" element={<ForgotPassword />} />
       <Route path="/reset-password" element={<ResetPassword />} />
 
+      {/* Public scent block */}
+      <Route element={<Layout />}>
+        <Route path="/scent-block" element={<ScentBlock />} />
+      </Route>
+
       {/* Protected routes */}
       <Route element={<ProtectedRoute unauthenticatedElement={<Navigate to="/sign-in" replace />} />}>
         <Route element={<Layout />}>
           <Route path="/" element={<Home />} />
-          <Route path="/scent-block" element={<ScentBlock />} />
           <Route path="/messages" element={<Messages />} />
           <Route path="/help" element={<Help />} />
           <Route path="/profile" element={<Profile />} />
