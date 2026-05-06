@@ -89,6 +89,21 @@
   }
 }
 
+/* Leaflet map overrides */
+.leaflet-container {
+  background: hsl(258 35% 8%) !important;
+}
+.leaflet-control-attribution {
+  background: rgba(15,12,35,0.7) !important;
+  color: #555 !important;
+}
+.leaflet-control-attribution a { color: #666 !important; }
+
+/* Ping animation for online map pins */
+@keyframes ping {
+  75%, 100% { transform: scale(2); opacity: 0; }
+}
+
 /* Custom scrollbar */
 ::-webkit-scrollbar {
   width: 6px;
