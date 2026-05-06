@@ -63,16 +63,18 @@ export default function ChatWindow({ me, conversation, messages, onVibeCheck, on
     onMessageSent?.();
   };
 
-  const handleImageUpload = async (e) => {
+  const handleMediaUpload = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
     
     setUploading(true);
     try {
       const { file_url } = await base44.integrations.Core.UploadFile({ file });
-      await sendMessage("📸 Sent a photo", false, file_url, "image");
+      const isVideo = file.type.startsWith("video/");
+      const message = isVideo ? "🎥 Sent a video" : "📸 Sent a photo";
+      await sendMessage(message, false, file_url, isVideo ? "video" : "image");
     } catch {
-      toast({ title: "Upload failed", description: "Couldn't upload image." });
+      toast({ title: "Upload failed", description: "Couldn't upload file." });
     }
     setUploading(false);
     if (fileInputRef.current) fileInputRef.current.value = "";
@@ -194,15 +196,15 @@ export default function ChatWindow({ me, conversation, messages, onVibeCheck, on
             onClick={() => fileInputRef.current?.click()}
             disabled={uploading}
             className="p-2 rounded-lg hover:bg-muted transition-colors text-muted-foreground shrink-0"
-            title="Upload image"
+            title="Upload image or video"
           >
             {uploading ? <Loader className="w-5 h-5 animate-spin" /> : <ImageIcon className="w-5 h-5" />}
           </button>
           <input
             ref={fileInputRef}
             type="file"
-            accept="image/*"
-            onChange={handleImageUpload}
+            accept="image/*,video/*"
+            onChange={handleMediaUpload}
             className="hidden"
             disabled={uploading}
           />
