@@ -1,9 +1,10 @@
-import React from "react";
+import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, MapPin, Droplets, ShowerHead, MessageCircle, Wifi, WifiOff } from "lucide-react";
+import { X, MapPin, Droplets, ShowerHead, MessageCircle, Wifi, WifiOff, Ban } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { format } from "date-fns";
+import { useBlockedUsers } from "@/hooks/useBlockedUsers";
 
 const SCENT_COLORS = {
   Fresh: "#34d399",
@@ -16,6 +17,21 @@ const SCENT_COLORS = {
 export default function ProfileDrawer({ profile, open, onClose, onMessage }) {
   const ringColor = SCENT_COLORS[profile?.scent_category] || "#94a3b8";
   const intensityDots = Array.from({ length: 5 }, (_, i) => i < (profile?.scent_intensity || 0));
+  const { isBlocked, blockUser, unblockUser } = useBlockedUsers();
+  const [confirmBlock, setConfirmBlock] = useState(false);
+
+  const blocked = profile ? isBlocked(profile.user_email) : false;
+
+  const handleBlock = () => {
+    if (!confirmBlock) { setConfirmBlock(true); return; }
+    blockUser(profile.user_email);
+    setConfirmBlock(false);
+    onClose();
+  };
+
+  const handleUnblock = () => {
+    unblockUser(profile.user_email);
+  };
 
   return (
     <AnimatePresence>
@@ -179,17 +195,45 @@ export default function ProfileDrawer({ profile, open, onClose, onMessage }) {
                 </div>
               )}
 
-              {/* Send Message button */}
-              <div style={{ marginTop: "auto", paddingTop: "8px" }}>
-                <Button
-                  onClick={() => onMessage?.(profile)}
-                  className="w-full gap-2 font-body font-semibold"
+              {/* Actions */}
+              <div style={{ marginTop: "auto", paddingTop: "8px", display: "flex", flexDirection: "column", gap: "8px" }}>
+                {!blocked && (
+                  <Button
+                    onClick={() => onMessage?.(profile)}
+                    className="w-full gap-2 font-body font-semibold"
+                    style={{ height: "44px", fontSize: "15px" }}
+                  >
+                    <MessageCircle size={17} />
+                    Send a Whiff
+                  </Button>
+                )}
 
-                  style={{ height: "44px", fontSize: "15px" }}
-                >
-                  <MessageCircle size={17} />
-                  Send a Whiff
-                </Button>
+                {blocked ? (
+                  <Button
+                    variant="outline"
+                    onClick={handleUnblock}
+                    className="w-full gap-2 font-body"
+                    style={{ height: "40px", fontSize: "13px", borderColor: "rgba(255,255,255,0.12)", color: "#94a3b8" }}
+                  >
+                    <Ban size={14} />
+                    Unblock {profile.display_name}
+                  </Button>
+                ) : (
+                  <Button
+                    variant="ghost"
+                    onClick={handleBlock}
+                    className="w-full gap-2 font-body"
+                    style={{
+                      height: "40px", fontSize: "13px",
+                      color: confirmBlock ? "#f87171" : "#64748b",
+                      background: confirmBlock ? "rgba(248,113,113,0.08)" : "transparent",
+                      border: confirmBlock ? "1px solid rgba(248,113,113,0.25)" : "1px solid transparent",
+                    }}
+                  >
+                    <Ban size={14} />
+                    {confirmBlock ? "Tap again to confirm block" : `Block ${profile.display_name}`}
+                  </Button>
+                )}
               </div>
             </div>
           </motion.div>

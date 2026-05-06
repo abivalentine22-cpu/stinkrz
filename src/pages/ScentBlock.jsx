@@ -7,6 +7,7 @@ import { base44 } from "@/api/base44Client";
 import { useNavigate } from "react-router-dom";
 import { Crosshair, Eye, Navigation, NavigationOff } from "lucide-react";
 import { useScentMatchNotifications } from "@/hooks/useScentMatchNotifications";
+import { useBlockedUsers } from "@/hooks/useBlockedUsers";
 
 // Fix Leaflet default icon issue with bundlers
 delete L.Icon.Default.prototype._getIconUrl;
@@ -129,6 +130,7 @@ export default function ScentBlock() {
 
   // Real-time scent match push notifications
   useScentMatchNotifications(userPos, myProfile);
+  const { isBlocked } = useBlockedUsers();
 
   // Load current user + all profiles
   useEffect(() => {
@@ -234,7 +236,7 @@ export default function ScentBlock() {
   };
 
   const filtered = profiles
-    .filter((p) => filter === "All" || p.scent_category === filter)
+    .filter((p) => (filter === "All" || p.scent_category === filter) && !isBlocked(p.user_email))
     .map((p) => ({ ...p, distance: calcDistance(p.location_lat, p.location_lng) }));
 
   return (

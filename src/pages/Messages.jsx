@@ -7,6 +7,7 @@ import { useLocation } from "react-router-dom";
 import ChatList from "@/components/chat/ChatList";
 import ChatWindow from "@/components/chat/ChatWindow";
 import { useToast } from "@/components/ui/use-toast";
+import { useBlockedUsers } from "@/hooks/useBlockedUsers";
 
 export default function Messages() {
   const [activeConversation, setActiveConversation] = useState(null); // { partnerEmail, partnerProfile }
@@ -14,6 +15,7 @@ export default function Messages() {
   const [showNewMsg, setShowNewMsg] = useState(false);
   const { toast } = useToast();
   const location = useLocation();
+  const { isBlocked } = useBlockedUsers();
 
   // Auto-open conversation if navigated from profile drawer
   useEffect(() => {
@@ -62,10 +64,12 @@ export default function Messages() {
     }
   });
 
-  const conversations = Object.values(conversationMap).map(c => ({
-    ...c,
-    partnerProfile: getProfile(c.partnerEmail),
-  }));
+  const conversations = Object.values(conversationMap)
+    .filter(c => !isBlocked(c.partnerEmail))
+    .map(c => ({
+      ...c,
+      partnerProfile: getProfile(c.partnerEmail),
+    }));
 
   const activeMessages = activeConversation
     ? myMessages.filter(
