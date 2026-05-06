@@ -1,52 +1,60 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useEffect } from "react";
 import { MapContainer, TileLayer, Marker, useMap } from "react-leaflet";
 import L from "leaflet";
-import ReactDOMServer from "react-dom/server";
-import "leaflet/dist/leaflet.css";
 import ProfileModal from "@/components/scent/ProfileModal";
 import FilterChips from "@/components/scent/FilterChips";
-import MapPin from "@/components/scent/MapPin";
 import { DEMO_PROFILES } from "@/lib/demoData";
 import { useNavigate } from "react-router-dom";
 import { Crosshair, Eye } from "lucide-react";
-import { Button } from "@/components/ui/button";
 
-// "You" marker location — center of the demo map
-const YOU_LOCATION = { location_lat: 40.7128, location_lng: -74.006 };
-const YOU_PROFILE = { display_name: "You", is_online: true, scent_category: "Neutral", avatar_url: null };
+// Fix Leaflet default icon issue with bundlers
+delete L.Icon.Default.prototype._getIconUrl;
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png",
+  iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
+  shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
+});
 
-function createLeafletIcon(profile, isYou = false) {
-  const SCENT_RING = {
-    Fresh: "#34d399", Musky: "#fbbf24", Ripe: "#f87171", Earthy: "#fb923c", Neutral: "#94a3b8",
-  };
+const YOU_LAT = 40.7128;
+const YOU_LNG = -74.006;
+
+const SCENT_RING = {
+  Fresh: "#34d399",
+  Musky: "#fbbf24",
+  Ripe: "#f87171",
+  Earthy: "#fb923c",
+  Neutral: "#94a3b8",
+};
+
+function createPinIcon(profile, isYou = false) {
   const ringColor = isYou ? "#a78bfa" : (SCENT_RING[profile.scent_category] || "#94a3b8");
   const label = isYou ? "🫵 You" : profile.display_name;
   const initial = profile.display_name?.[0]?.toUpperCase() || "?";
+  const avatarHtml = profile.avatar_url
+    ? `<img src="${profile.avatar_url}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;" />`
+    : `<span style="font-size:18px;">${isYou ? "🤙" : initial}</span>`;
 
   const html = `
-    <div style="position:relative;display:flex;flex-direction:column;align-items:center;cursor:pointer;">
-      ${profile.is_online && !isYou ? `<span style="position:absolute;top:0;left:0;right:0;bottom:0;border-radius:50%;background:${ringColor};opacity:0.3;animation:ping 1.5s cubic-bezier(0,0,0.2,1) infinite;width:48px;height:48px;"></span>` : ""}
+    <div style="display:flex;flex-direction:column;align-items:center;position:relative;">
       <div style="
         width:48px;height:48px;border-radius:50%;overflow:hidden;
         border:3px solid ${ringColor};
         background:#1e1b3a;
-        box-shadow:0 0 14px ${ringColor}55;
+        box-shadow:0 0 16px ${ringColor}66;
         display:flex;align-items:center;justify-content:center;
-        font-size:20px;font-weight:bold;color:#e2e8f0;
-        transition:transform 0.15s;
+        font-weight:bold;color:#e2e8f0;position:relative;
       ">
-        ${profile.avatar_url
-          ? `<img src="${profile.avatar_url}" style="width:100%;height:100%;object-fit:cover;" />`
-          : `<span>${isYou ? "🤙" : initial}</span>`
-        }
+        ${avatarHtml}
+        ${profile.is_online ? `<span style="position:absolute;bottom:0;right:0;width:12px;height:12px;border-radius:50%;background:#4ade80;border:2px solid #0f0c23;"></span>` : ""}
       </div>
-      ${profile.is_online ? `<span style="position:absolute;bottom:0;right:0;width:13px;height:13px;border-radius:50%;background:#4ade80;border:2px solid #0f0c23;"></span>` : ""}
       <div style="
-        margin-top:5px;white-space:nowrap;font-size:11px;font-weight:600;
+        margin-top:4px;white-space:nowrap;font-size:11px;font-weight:600;
         padding:2px 8px;border-radius:9999px;
-        background:${isYou ? "rgba(167,139,250,0.2)" : "rgba(15,12,35,0.85)"};
+        background:${isYou ? "rgba(167,139,250,0.25)" : "rgba(15,12,35,0.88)"};
         color:${isYou ? "#a78bfa" : "#e2e8f0"};
-        border:1px solid ${isYou ? "#a78bfa55" : "rgba(255,255,255,0.1)"};
+        border:1px solid ${isYou ? "#a78bfa55" : "rgba(255,255,255,0.12)"};
+        box-shadow:0 2px 8px rgba(0,0,0,0.4);
+        font-family:sans-serif;
       ">${label}</div>
     </div>
   `;
@@ -54,21 +62,36 @@ function createLeafletIcon(profile, isYou = false) {
   return L.divIcon({
     html,
     className: "",
-    iconSize: [80, 72],
+    iconSize: [80, 80],
     iconAnchor: [40, 24],
-    popupAnchor: [0, -30],
   });
 }
 
-function RecenterButton() {
+function RecenterControl() {
   const map = useMap();
   return (
     <button
-      onClick={() => map.flyTo([YOU_LOCATION.location_lat, YOU_LOCATION.location_lng], 14, { animate: true, duration: 1 })}
-      className="absolute bottom-24 right-4 z-[1000] w-10 h-10 rounded-full bg-card border border-border shadow-lg flex items-center justify-center hover:bg-muted transition-colors"
-      title="Re-center on you"
+      onClick={() => map.flyTo([YOU_LAT, YOU_LNG], 14, { animate: true, duration: 1 })}
+      style={{
+        position: "absolute",
+        bottom: "80px",
+        right: "16px",
+        zIndex: 1000,
+        width: "40px",
+        height: "40px",
+        borderRadius: "50%",
+        background: "rgba(30,27,58,0.95)",
+        border: "1px solid rgba(255,255,255,0.15)",
+        boxShadow: "0 2px 12px rgba(0,0,0,0.5)",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        cursor: "pointer",
+        color: "#a78bfa",
+      }}
+      title="Re-center"
     >
-      <Crosshair className="w-4 h-4 text-primary" />
+      <Crosshair size={16} />
     </button>
   );
 }
@@ -83,31 +106,34 @@ export default function ScentBlock() {
   );
 
   return (
-    <div className="relative w-full" style={{ height: "calc(100vh - 64px)" }}>
-      {/* Filter chips — floating over the map */}
-      <div className="absolute top-4 left-0 right-0 z-[1000] px-4 pointer-events-none">
-        <div className="pointer-events-auto max-w-xl mx-auto">
+    <div style={{ position: "relative", width: "100%", height: "calc(100vh - 64px)" }}>
+      {/* Floating filter chips */}
+      <div style={{
+        position: "absolute", top: "16px", left: 0, right: 0,
+        zIndex: 1000, padding: "0 16px", pointerEvents: "none",
+        display: "flex", justifyContent: "center",
+      }}>
+        <div style={{ pointerEvents: "auto" }}>
           <FilterChips active={filter} onChange={setFilter} />
         </div>
       </div>
 
       {/* Map */}
       <MapContainer
-        center={[YOU_LOCATION.location_lat, YOU_LOCATION.location_lng]}
+        center={[YOU_LAT, YOU_LNG]}
         zoom={14}
         zoomControl={false}
-        className="w-full h-full"
-        style={{ background: "#0f0c23" }}
+        style={{ width: "100%", height: "100%" }}
       >
         <TileLayer
           url="https://{s}.basemaps.cartocdn.com/dark_matter/{z}/{x}/{y}{r}.png"
-          attribution='&copy; <a href="https://carto.com/">CARTO</a>'
+          attribution='&copy; <a href="https://carto.com">CARTO</a>'
         />
 
-        {/* "You" marker */}
+        {/* You marker */}
         <Marker
-          position={[YOU_LOCATION.location_lat, YOU_LOCATION.location_lng]}
-          icon={createLeafletIcon({ ...YOU_PROFILE, display_name: "You" }, true)}
+          position={[YOU_LAT, YOU_LNG]}
+          icon={createPinIcon({ display_name: "You", is_online: true, scent_category: "Neutral" }, true)}
         />
 
         {/* Profile markers */}
@@ -115,17 +141,24 @@ export default function ScentBlock() {
           <Marker
             key={profile.id}
             position={[profile.location_lat, profile.location_lng]}
-            icon={createLeafletIcon(profile)}
+            icon={createPinIcon(profile)}
             eventHandlers={{ click: () => setSelectedProfile(profile) }}
           />
         ))}
 
-        <RecenterButton />
+        <RecenterControl />
       </MapContainer>
 
-      {/* Profile count badge */}
-      <div className="absolute bottom-4 left-4 z-[1000] bg-card/90 backdrop-blur border border-border rounded-full px-3 py-1.5 text-xs font-body text-muted-foreground flex items-center gap-1.5">
-        <Eye className="w-3.5 h-3.5 text-primary" />
+      {/* Nearby count */}
+      <div style={{
+        position: "absolute", bottom: "16px", left: "16px", zIndex: 1000,
+        background: "rgba(30,27,58,0.92)", border: "1px solid rgba(255,255,255,0.1)",
+        borderRadius: "9999px", padding: "6px 14px",
+        fontSize: "12px", color: "#94a3b8",
+        display: "flex", alignItems: "center", gap: "6px",
+        backdropFilter: "blur(8px)",
+      }}>
+        <Eye size={14} color="#a78bfa" />
         {filtered.length} nearby
       </div>
 
