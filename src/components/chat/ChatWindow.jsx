@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Send, ShieldAlert, Ban, Smile } from "lucide-react";
+import { Send, ShieldAlert, Ban, Smile, Image as ImageIcon, Loader } from "lucide-react";
 import { format } from "date-fns";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useToast } from "@/components/ui/use-toast";
@@ -26,14 +26,16 @@ export default function ChatWindow({ me, conversation, messages, onVibeCheck, on
   const [input, setInput] = useState("");
   const [stickersOpen, setStickersOpen] = useState(false);
   const [sending, setSending] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const scrollRef = useRef(null);
+  const fileInputRef = useRef(null);
   const { toast } = useToast();
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
   }, [messages]);
 
-  const sendMessage = async (content, isSticker = false) => {
+  const sendMessage = async (content, isSticker = false, mediaUrl = null, mediaType = null) => {
     if (!content.trim() || !me || !conversation) return;
     setSending(true);
     const msg = await base44.entities.ChatMessage.create({
@@ -41,6 +43,8 @@ export default function ChatWindow({ me, conversation, messages, onVibeCheck, on
       receiver_email: conversation.partnerEmail,
       content,
       is_sticker: isSticker,
+      media_url: mediaUrl,
+      media_type: mediaType,
       read: false,
     });
     
@@ -57,6 +61,21 @@ export default function ChatWindow({ me, conversation, messages, onVibeCheck, on
     setStickersOpen(false);
     setSending(false);
     onMessageSent?.();
+  };
+
+  const handleImageUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    
+    setUploading(true);
+    try {
+      const { file_url } = await base44.integrations.Core.UploadFile({ file });
+      await sendMessage("📸 Sent a photo", false, file_url, "image");
+    } catch {
+      toast({ title: "Upload failed", description: "Couldn't upload image." });
+    }
+    setUploading(false);
+    if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
   const sendSticker = (sticker) => sendMessage(`${sticker.emoji} ${sticker.label}`, true);
@@ -119,6 +138,14 @@ export default function ChatWindow({ me, conversation, messages, onVibeCheck, on
                   ? "bg-primary text-primary-foreground rounded-br-md"
                   : "bg-muted text-foreground rounded-bl-md"
               }`}>
+                {msg.media_url && msg.media_type === "image" && (
+                  <img src={msg.media_url} alt="shared" className="max-w-full rounded-lg mb-2" />
+                )}
+                {msg.media_url && msg.media_type === "video" && (
+                  <video controls className="max-w-full rounded-lg mb-2" style={{ maxHeight: "300px" }}>
+                    <source src={msg.media_url} type="video/mp4" />
+                  </video>
+                )}
                 <p className={msg.is_sticker ? "text-3xl" : "font-body text-sm"}>{msg.content}</p>
                 <p className={`text-[10px] mt-1 ${isMe ? "text-primary-foreground/60" : "text-muted-foreground"}`}>
                   {format(new Date(msg.created_date), "h:mm a")}
@@ -162,6 +189,23 @@ export default function ChatWindow({ me, conversation, messages, onVibeCheck, on
               </div>
             </PopoverContent>
           </Popover>
+
+          <button
+            onClick={() => fileInputRef.current?.click()}
+            disabled={uploading}
+            className="p-2 rounded-lg hover:bg-muted transition-colors text-muted-foreground shrink-0"
+            title="Upload image"
+          >
+            {uploading ? <Loader className="w-5 h-5 animate-spin" /> : <ImageIcon className="w-5 h-5" />}
+          </button>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            onChange={handleImageUpload}
+            className="hidden"
+            disabled={uploading}
+          />
 
           <Input
             value={input}

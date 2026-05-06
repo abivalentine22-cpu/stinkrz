@@ -18,6 +18,18 @@
     "sticker_id": {
       "type": "string"
     },
+    "media_url": {
+      "type": "string",
+      "description": "URL to uploaded image or video"
+    },
+    "media_type": {
+      "type": "string",
+      "enum": [
+        "image",
+        "video"
+      ],
+      "description": "Type of media if media_url is present"
+    },
     "read": {
       "type": "boolean",
       "default": false
