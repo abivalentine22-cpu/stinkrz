@@ -16,7 +16,10 @@
       "description": "The status message"
     },
     "vibe_tag": {
-      "type": "string",
+      "type": [
+        "string",
+        "null"
+      ],
       "enum": [
         "Looking to meet now \ud83d\udd25",
         "Down to chat \ud83d\udcac",
@@ -25,8 +28,10 @@
         "Night energy \ud83c\udf19",
         "Need a whiff buddy \ud83d\udc43",
         "Feeling fresh \u2728",
-        "Send help \ud83d\ude05"
-      ]
+        "Send help \ud83d\ude05",
+        null
+      ],
+      "description": "Optional vibe tag"
     },
     "scent_category": {
       "type": "string"
