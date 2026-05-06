@@ -1,11 +1,11 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { MapContainer, TileLayer, Marker, useMap } from "react-leaflet";
 import L from "leaflet";
 import ProfileModal from "@/components/scent/ProfileModal";
 import FilterChips from "@/components/scent/FilterChips";
 import { DEMO_PROFILES } from "@/lib/demoData";
 import { useNavigate } from "react-router-dom";
-import { Crosshair, Eye } from "lucide-react";
+import { Crosshair, Eye, Navigation, NavigationOff } from "lucide-react";
 
 // Fix Leaflet default icon issue with bundlers
 delete L.Icon.Default.prototype._getIconUrl;
@@ -15,8 +15,8 @@ L.Icon.Default.mergeOptions({
   shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
 });
 
-const YOU_LAT = 40.7128;
-const YOU_LNG = -74.006;
+const DEFAULT_LAT = 40.7128;
+const DEFAULT_LNG = -74.006;
 
 const SCENT_RING = {
   Fresh: "#34d399",
@@ -67,11 +67,29 @@ function createPinIcon(profile, isYou = false) {
   });
 }
 
-function RecenterControl() {
+function MapController({ userPos, tracking }) {
+  const map = useMap();
+  const prevTracking = useRef(false);
+
+  useEffect(() => {
+    if (tracking && userPos) {
+      map.flyTo([userPos.lat, userPos.lng], 14, { animate: true, duration: 1 });
+    }
+    prevTracking.current = tracking;
+  }, [userPos, tracking]);
+
+  return null;
+}
+
+function RecenterControl({ userPos, onRecenter }) {
   const map = useMap();
   return (
     <button
-      onClick={() => map.flyTo([YOU_LAT, YOU_LNG], 14, { animate: true, duration: 1 })}
+      onClick={() => {
+        const pos = userPos || { lat: DEFAULT_LAT, lng: DEFAULT_LNG };
+        map.flyTo([pos.lat, pos.lng], 14, { animate: true, duration: 1 });
+        onRecenter?.();
+      }}
       style={{
         position: "absolute",
         bottom: "80px",
@@ -99,7 +117,49 @@ function RecenterControl() {
 export default function ScentBlock() {
   const [filter, setFilter] = useState("All");
   const [selectedProfile, setSelectedProfile] = useState(null);
+  const [userPos, setUserPos] = useState(null);
+  const [tracking, setTracking] = useState(false);
+  const [geoError, setGeoError] = useState(null);
+  const watchIdRef = useRef(null);
   const navigate = useNavigate();
+
+  const startTracking = () => {
+    if (!navigator.geolocation) {
+      setGeoError("Geolocation not supported");
+      return;
+    }
+    setGeoError(null);
+    watchIdRef.current = navigator.geolocation.watchPosition(
+      (pos) => setUserPos({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+      () => setGeoError("Location access denied"),
+      { enableHighAccuracy: true }
+    );
+    setTracking(true);
+  };
+
+  const stopTracking = () => {
+    if (watchIdRef.current != null) {
+      navigator.geolocation.clearWatch(watchIdRef.current);
+      watchIdRef.current = null;
+    }
+    setTracking(false);
+  };
+
+  // Get position once on mount
+  useEffect(() => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => setUserPos({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+        () => {} // silently fall back to default center
+      );
+    }
+    return () => stopTracking();
+  }, []);
+
+  const toggleTracking = () => tracking ? stopTracking() : startTracking();
+
+  const mapCenter = userPos ? [userPos.lat, userPos.lng] : [DEFAULT_LAT, DEFAULT_LNG];
+  const youPos = userPos || { lat: DEFAULT_LAT, lng: DEFAULT_LNG };
 
   const filtered = DEMO_PROFILES.filter(
     (p) => filter === "All" || p.scent_category === filter
@@ -120,7 +180,7 @@ export default function ScentBlock() {
 
       {/* Map */}
       <MapContainer
-        center={[YOU_LAT, YOU_LNG]}
+        center={mapCenter}
         zoom={14}
         zoomControl={false}
         style={{ width: "100%", height: "100%" }}
@@ -130,9 +190,11 @@ export default function ScentBlock() {
           attribution='&copy; <a href="https://carto.com">CARTO</a>'
         />
 
+        <MapController userPos={userPos} tracking={tracking} />
+
         {/* You marker */}
         <Marker
-          position={[YOU_LAT, YOU_LNG]}
+          position={[youPos.lat, youPos.lng]}
           icon={createPinIcon({ display_name: "You", is_online: true, scent_category: "Neutral" }, true)}
         />
 
@@ -146,20 +208,55 @@ export default function ScentBlock() {
           />
         ))}
 
-        <RecenterControl />
+        <RecenterControl userPos={userPos} onRecenter={() => {}} />
       </MapContainer>
 
-      {/* Nearby count */}
+      {/* Bottom bar */}
       <div style={{
-        position: "absolute", bottom: "16px", left: "16px", zIndex: 1000,
-        background: "rgba(30,27,58,0.92)", border: "1px solid rgba(255,255,255,0.1)",
-        borderRadius: "9999px", padding: "6px 14px",
-        fontSize: "12px", color: "#94a3b8",
-        display: "flex", alignItems: "center", gap: "6px",
-        backdropFilter: "blur(8px)",
+        position: "absolute", bottom: "16px", left: "16px", right: "16px",
+        zIndex: 1000, display: "flex", alignItems: "center", gap: "8px",
+        pointerEvents: "none",
       }}>
-        <Eye size={14} color="#a78bfa" />
-        {filtered.length} nearby
+        {/* Nearby count */}
+        <div style={{
+          background: "rgba(30,27,58,0.92)", border: "1px solid rgba(255,255,255,0.1)",
+          borderRadius: "9999px", padding: "6px 14px",
+          fontSize: "12px", color: "#94a3b8",
+          display: "flex", alignItems: "center", gap: "6px",
+          backdropFilter: "blur(8px)", pointerEvents: "auto",
+        }}>
+          <Eye size={14} color="#a78bfa" />
+          {filtered.length} nearby
+        </div>
+
+        {/* Live tracking toggle */}
+        <button
+          onClick={toggleTracking}
+          style={{
+            background: tracking ? "rgba(167,139,250,0.2)" : "rgba(30,27,58,0.92)",
+            border: `1px solid ${tracking ? "#a78bfa" : "rgba(255,255,255,0.1)"}`,
+            borderRadius: "9999px", padding: "6px 14px",
+            fontSize: "12px", color: tracking ? "#a78bfa" : "#94a3b8",
+            display: "flex", alignItems: "center", gap: "6px",
+            backdropFilter: "blur(8px)", cursor: "pointer", pointerEvents: "auto",
+          }}
+          title={tracking ? "Stop live tracking" : "Start live tracking"}
+        >
+          {tracking ? <Navigation size={14} /> : <NavigationOff size={14} />}
+          {tracking ? "Tracking live" : "Track me"}
+        </button>
+
+        {/* Geo error */}
+        {geoError && (
+          <div style={{
+            background: "rgba(239,68,68,0.15)", border: "1px solid rgba(239,68,68,0.3)",
+            borderRadius: "9999px", padding: "6px 14px",
+            fontSize: "12px", color: "#f87171",
+            backdropFilter: "blur(8px)", pointerEvents: "auto",
+          }}>
+            {geoError}
+          </div>
+        )}
       </div>
 
       {/* Profile modal */}
