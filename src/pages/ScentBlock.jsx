@@ -3,7 +3,7 @@ import { MapContainer, TileLayer, Marker, useMap } from "react-leaflet";
 import L from "leaflet";
 import ProfileDrawer from "@/components/scent/ProfileDrawer";
 import FilterChips from "@/components/scent/FilterChips";
-import { DEMO_PROFILES } from "@/lib/demoData";
+import { base44 } from "@/api/base44Client";
 import { useNavigate } from "react-router-dom";
 import { Crosshair, Eye, Navigation, NavigationOff } from "lucide-react";
 
@@ -120,8 +120,35 @@ export default function ScentBlock() {
   const [userPos, setUserPos] = useState(null);
   const [tracking, setTracking] = useState(false);
   const [geoError, setGeoError] = useState(null);
+  const [profiles, setProfiles] = useState([]);
+  const [myProfile, setMyProfile] = useState(null);
   const watchIdRef = useRef(null);
+  const locationSaveRef = useRef(null);
   const navigate = useNavigate();
+
+  // Load current user + all profiles
+  useEffect(() => {
+    async function loadData() {
+      const user = await base44.auth.me();
+      const all = await base44.entities.ScentProfile.list();
+      const mine = all.find(p => p.user_email === user.email);
+      setMyProfile(mine || null);
+      // Show everyone except yourself
+      setProfiles(all.filter(p => p.user_email !== user.email && p.location_lat && p.location_lng));
+    }
+    loadData();
+  }, []);
+
+  // Save current user's location to their profile so others can see them
+  const saveLocation = async (lat, lng) => {
+    if (!myProfile) return;
+    await base44.entities.ScentProfile.update(myProfile.id, {
+      location_lat: lat,
+      location_lng: lng,
+      is_online: true,
+      last_active: new Date().toISOString(),
+    });
+  };
 
   const startTracking = () => {
     if (!navigator.geolocation) {
@@ -130,7 +157,11 @@ export default function ScentBlock() {
     }
     setGeoError(null);
     watchIdRef.current = navigator.geolocation.watchPosition(
-      (pos) => setUserPos({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+      (pos) => {
+        const { latitude: lat, longitude: lng } = pos.coords;
+        setUserPos({ lat, lng });
+        saveLocation(lat, lng);
+      },
       () => setGeoError("Location access denied"),
       { enableHighAccuracy: true }
     );
@@ -145,25 +176,38 @@ export default function ScentBlock() {
     setTracking(false);
   };
 
-  // Get position once on mount
+  // Get position once on mount & save it
   useEffect(() => {
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
-        (pos) => setUserPos({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
-        () => {} // silently fall back to default center
+        (pos) => {
+          const { latitude: lat, longitude: lng } = pos.coords;
+          setUserPos({ lat, lng });
+          saveLocation(lat, lng);
+        },
+        () => {}
       );
     }
     return () => stopTracking();
-  }, []);
+  }, [myProfile]); // re-run once myProfile is loaded so saveLocation works
 
   const toggleTracking = () => tracking ? stopTracking() : startTracking();
 
   const mapCenter = userPos ? [userPos.lat, userPos.lng] : [DEFAULT_LAT, DEFAULT_LNG];
   const youPos = userPos || { lat: DEFAULT_LAT, lng: DEFAULT_LNG };
 
-  const filtered = DEMO_PROFILES.filter(
-    (p) => filter === "All" || p.scent_category === filter
-  );
+  // Calculate distance in miles from user position
+  const calcDistance = (lat, lng) => {
+    const R = 3958.8;
+    const dLat = ((lat - youPos.lat) * Math.PI) / 180;
+    const dLng = ((lng - youPos.lng) * Math.PI) / 180;
+    const a = Math.sin(dLat / 2) ** 2 + Math.cos((youPos.lat * Math.PI) / 180) * Math.cos((lat * Math.PI) / 180) * Math.sin(dLng / 2) ** 2;
+    return (R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))).toFixed(1);
+  };
+
+  const filtered = profiles
+    .filter((p) => filter === "All" || p.scent_category === filter)
+    .map((p) => ({ ...p, distance: calcDistance(p.location_lat, p.location_lng) }));
 
   return (
     <div style={{ position: "relative", width: "100%", height: "calc(100vh - 64px)" }}>
