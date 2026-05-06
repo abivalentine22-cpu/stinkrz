@@ -3,6 +3,7 @@ import { ArrowLeft, PenSquare, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
+import { useLocation } from "react-router-dom";
 import ChatList from "@/components/chat/ChatList";
 import ChatWindow from "@/components/chat/ChatWindow";
 import { useToast } from "@/components/ui/use-toast";
@@ -12,6 +13,17 @@ export default function Messages() {
   const [me, setMe] = useState(null);
   const [showNewMsg, setShowNewMsg] = useState(false);
   const { toast } = useToast();
+  const location = useLocation();
+
+  // Auto-open conversation if navigated from profile drawer
+  useEffect(() => {
+    const profile = location.state?.openConversationWith;
+    if (profile) {
+      setActiveConversation({ partnerEmail: profile.user_email, partnerProfile: profile });
+      // Clear state so back navigation doesn't re-open
+      window.history.replaceState({}, "");
+    }
+  }, [location.state]);
 
   useEffect(() => {
     base44.auth.me().then(setMe);

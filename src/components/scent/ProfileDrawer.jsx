@@ -184,6 +184,7 @@ export default function ProfileDrawer({ profile, open, onClose, onMessage }) {
                 <Button
                   onClick={() => onMessage?.(profile)}
                   className="w-full gap-2 font-body font-semibold"
+
                   style={{ height: "44px", fontSize: "15px" }}
                 >
                   <MessageCircle size={17} />

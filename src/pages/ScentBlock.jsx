@@ -338,9 +338,9 @@ export default function ScentBlock() {
         profile={selectedProfile}
         open={!!selectedProfile}
         onClose={() => setSelectedProfile(null)}
-        onMessage={() => {
+        onMessage={(profile) => {
           setSelectedProfile(null);
-          navigate("/messages");
+          navigate("/messages", { state: { openConversationWith: profile } });
         }}
       />
     </div>
