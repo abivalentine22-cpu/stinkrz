@@ -36,13 +36,23 @@ export default function ChatWindow({ me, conversation, messages, onVibeCheck, on
   const sendMessage = async (content, isSticker = false) => {
     if (!content.trim() || !me || !conversation) return;
     setSending(true);
-    await base44.entities.ChatMessage.create({
+    const msg = await base44.entities.ChatMessage.create({
       sender_email: me.email,
       receiver_email: conversation.partnerEmail,
       content,
       is_sticker: isSticker,
       read: false,
     });
+    
+    // Trigger notification for receiver
+    await base44.functions.invoke('createMessageNotification', {
+      message_id: msg.id,
+      sender_email: me.email,
+      sender_name: conversation.partnerProfile?.display_name || me.full_name,
+      sender_avatar: conversation.partnerProfile?.avatar_url,
+      receiver_email: conversation.partnerEmail,
+    }).catch(() => {});
+    
     setInput("");
     setStickersOpen(false);
     setSending(false);

@@ -57,7 +57,16 @@ export default function Feed() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["status-posts"] }),
   });
 
-  const handleMessage = (post) => {
+  const handleMessage = async (post) => {
+    // Trigger notification for post owner
+    await base44.functions.invoke('createStatusInteractionNotification', {
+      post_id: post.id,
+      interactor_email: me.email,
+      interactor_name: myProfile?.display_name || me.full_name,
+      interactor_avatar: myProfile?.avatar_url,
+      post_owner_email: post.user_email,
+    }).catch(() => {});
+    
     navigate("/messages", {
       state: {
         openConversationWith: {

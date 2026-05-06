@@ -4,6 +4,7 @@ import { Home, Grid3X3, MessageCircle, HelpCircle, User, Menu, X, Zap } from "lu
 import { Button } from "@/components/ui/button";
 import HangLooseLogo from "./HangLooseLogo";
 import { useAuth } from "@/lib/AuthContext";
+import NotificationCenter from "@/components/notifications/NotificationCenter";
 
 const NAV_ITEMS = [
   { label: "Home", path: "/", icon: Home },
@@ -41,7 +42,10 @@ export default function Navbar() {
           })}
         </div>
 
-        <div className="hidden md:flex items-center gap-2">
+        <div className="hidden md:flex items-center gap-3">
+          {user && (
+            <NotificationCenter userEmail={user.email} />
+          )}
           {user ? (
             <Link to="/profile">
               <Button size="sm" className="font-body font-semibold px-5">

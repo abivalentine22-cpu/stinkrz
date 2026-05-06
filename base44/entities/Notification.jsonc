@@ -1,0 +1,49 @@
+{
+  "name": "Notification",
+  "type": "object",
+  "properties": {
+    "user_email": {
+      "type": "string",
+      "description": "User who receives the notification"
+    },
+    "type": {
+      "type": "string",
+      "enum": [
+        "new_message",
+        "status_interaction"
+      ],
+      "description": "Type of notification"
+    },
+    "actor_email": {
+      "type": "string",
+      "description": "User who triggered the notification"
+    },
+    "actor_name": {
+      "type": "string",
+      "description": "Display name of the user who triggered it"
+    },
+    "actor_avatar": {
+      "type": "string"
+    },
+    "message_id": {
+      "type": "string",
+      "description": "Reference to ChatMessage or StatusPost ID"
+    },
+    "title": {
+      "type": "string"
+    },
+    "description": {
+      "type": "string"
+    },
+    "read": {
+      "type": "boolean",
+      "default": false
+    }
+  },
+  "required": [
+    "user_email",
+    "type",
+    "actor_email",
+    "title"
+  ]
+}
