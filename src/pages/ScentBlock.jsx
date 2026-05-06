@@ -17,8 +17,7 @@ L.Icon.Default.mergeOptions({
   shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
 });
 
-const DEFAULT_LAT = 40.7128;
-const DEFAULT_LNG = -74.006;
+const ACTIVITY_TIMEOUT_MINS = 15; // Mark offline after 15 minutes of inactivity
 
 const SCENT_RING = {
   Fresh: "#34d399",
@@ -88,8 +87,8 @@ function RecenterControl({ userPos, onRecenter }) {
   return (
     <button
       onClick={() => {
-        const pos = userPos || { lat: DEFAULT_LAT, lng: DEFAULT_LNG };
-        map.flyTo([pos.lat, pos.lng], 14, { animate: true, duration: 1 });
+         const pos = userPos || { lat: 40.7128, lng: -74.006 };
+         map.flyTo([pos.lat, pos.lng], 14, { animate: true, duration: 1 });
         onRecenter?.();
       }}
       style={{
@@ -139,13 +138,29 @@ export default function ScentBlock() {
       const all = await base44.entities.ScentProfile.list();
       const mine = all.find(p => p.user_email === user.email);
       setMyProfile(mine || null);
-      // Show everyone except yourself, apply fuzzy location if enabled
+      
+      // Set default location to user's last known location
+      if (mine?.location_lat && mine?.location_lng) {
+        setUserPos({ lat: mine.location_lat, lng: mine.location_lng });
+      }
+      
+      // Show everyone except yourself, filter out inactive users, apply fuzzy location if enabled
       setProfiles(
         all
-          .filter(p => p.user_email !== user.email && p.location_lat && p.location_lng)
+          .filter(p => {
+            if (p.user_email === user.email) return false;
+            if (!p.location_lat || !p.location_lng) return false;
+            // Check if user is still active (within timeout window)
+            if (p.last_active) {
+              const lastActive = new Date(p.last_active);
+              const now = new Date();
+              const minsSince = (now - lastActive) / (1000 * 60);
+              if (minsSince > ACTIVITY_TIMEOUT_MINS) return false;
+            }
+            return true;
+          })
           .map(p => {
             if (p.fuzzy_location) {
-              // Offset by up to ~0.5 mile (roughly 0.007 degrees)
               const fuzz = 0.005;
               return {
                 ...p,
@@ -223,8 +238,8 @@ export default function ScentBlock() {
 
   const toggleTracking = () => tracking ? stopTracking() : startTracking();
 
-  const mapCenter = userPos ? [userPos.lat, userPos.lng] : [DEFAULT_LAT, DEFAULT_LNG];
-  const youPos = userPos || { lat: DEFAULT_LAT, lng: DEFAULT_LNG };
+  const mapCenter = userPos ? [userPos.lat, userPos.lng] : [40.7128, -74.006];
+  const youPos = userPos || { lat: 40.7128, lng: -74.006 };
 
   // Calculate distance in miles from user position
   const calcDistance = (lat, lng) => {

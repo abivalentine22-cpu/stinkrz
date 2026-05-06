@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Save, ArrowLeft } from "lucide-react";
+import { Save, ArrowLeft, Eye, Volume2, Lock } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import { useAuth } from "@/lib/AuthContext";
 
@@ -36,11 +36,18 @@ export default function Settings() {
   });
 
   const [selected, setSelected] = useState([]);
+  const [fuzzyLocation, setFuzzyLocation] = useState(false);
+  const [soundEnabled, setSoundEnabled] = useState(true);
+  const [showOnlineStatus, setShowOnlineStatus] = useState(true);
 
   useEffect(() => {
     if (prefs) {
       setSelected(prefs.preferred_scent_categories || []);
     }
+    // Load settings from localStorage
+    setSoundEnabled(localStorage.getItem("stinkrz_sound") !== "false");
+    setShowOnlineStatus(localStorage.getItem("stinkrz_show_online") !== "false");
+    setFuzzyLocation(localStorage.getItem("stinkrz_fuzzy_location") === "true");
   }, [prefs]);
 
   const saveMutation = useMutation({
@@ -58,7 +65,7 @@ export default function Settings() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["user-preferences"] });
-      toast({ title: "Preferences saved!", description: "Your scent preferences have been updated." });
+      toast({ title: "Settings saved!", description: "Your preferences have been updated." });
     },
   });
 
@@ -66,6 +73,11 @@ export default function Settings() {
     setSelected((prev) =>
       prev.includes(cat) ? prev.filter((c) => c !== cat) : [...prev, cat]
     );
+  };
+
+  const handleToggle = (key, value, setter) => {
+    setter(!value);
+    localStorage.setItem(key, String(!value));
   };
 
   return (
@@ -77,7 +89,8 @@ export default function Settings() {
         <h1 className="font-heading text-2xl font-bold">Settings</h1>
       </div>
 
-      <div className="bg-card border border-border rounded-2xl p-6">
+      {/* Scent Preferences */}
+      <div className="bg-card border border-border rounded-2xl p-6 mb-5">
         <h2 className="font-heading font-semibold text-lg mb-3">Preferred Scents</h2>
         <p className="font-body text-sm text-muted-foreground mb-4">
           Select the scent categories you're interested in. We'll recommend matches based on your preferences.
@@ -96,16 +109,85 @@ export default function Settings() {
             </Badge>
           ))}
         </div>
-
-        <Button
-          onClick={() => saveMutation.mutate()}
-          disabled={saveMutation.isPending}
-          className="w-full mt-6 gap-2 font-body font-semibold"
-        >
-          <Save className="w-4 h-4" />
-          {saveMutation.isPending ? "Saving..." : "Save Preferences"}
-        </Button>
       </div>
+
+      {/* Privacy Settings */}
+      <div className="bg-card border border-border rounded-2xl p-6 mb-5">
+        <h3 className="font-heading text-sm font-semibold mb-4 flex items-center gap-2">
+          <Eye className="w-4 h-4 text-primary" />
+          Privacy Settings
+        </h3>
+        <div className="space-y-3">
+          {/* Approximate Location */}
+          <div className="flex items-center justify-between bg-muted/50 rounded-xl p-4 border border-border">
+            <div className="flex-1">
+              <p className="font-body text-sm font-semibold">Approximate Location</p>
+              <p className="font-body text-xs text-muted-foreground">Show location within ~½ mile</p>
+            </div>
+            <button
+              onClick={() => handleToggle("stinkrz_fuzzy_location", fuzzyLocation, setFuzzyLocation)}
+              className={`w-11 h-6 rounded-full transition-colors shrink-0 relative ${fuzzyLocation ? "bg-primary" : "bg-muted-foreground/30"}`}
+            >
+              <span className={`absolute top-0.5 w-5 h-5 rounded-full bg-white transition-all ${fuzzyLocation ? "left-[22px]" : "left-0.5"}`} />
+            </button>
+          </div>
+
+          {/* Show Online Status */}
+          <div className="flex items-center justify-between bg-muted/50 rounded-xl p-4 border border-border">
+            <div className="flex-1">
+              <p className="font-body text-sm font-semibold">Show Online Status</p>
+              <p className="font-body text-xs text-muted-foreground">Let others see when you're active</p>
+            </div>
+            <button
+              onClick={() => handleToggle("stinkrz_show_online", showOnlineStatus, setShowOnlineStatus)}
+              className={`w-11 h-6 rounded-full transition-colors shrink-0 relative ${showOnlineStatus ? "bg-primary" : "bg-muted-foreground/30"}`}
+            >
+              <span className={`absolute top-0.5 w-5 h-5 rounded-full bg-white transition-all ${showOnlineStatus ? "left-[22px]" : "left-0.5"}`} />
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Sound Settings */}
+      <div className="bg-card border border-border rounded-2xl p-6 mb-5">
+        <h3 className="font-heading text-sm font-semibold mb-4 flex items-center gap-2">
+          <Volume2 className="w-4 h-4 text-primary" />
+          Sound Settings
+        </h3>
+        <div className="flex items-center justify-between bg-muted/50 rounded-xl p-4 border border-border">
+          <div className="flex-1">
+            <p className="font-body text-sm font-semibold">Notification Sounds</p>
+            <p className="font-body text-xs text-muted-foreground">Play sound on new messages</p>
+          </div>
+          <button
+            onClick={() => handleToggle("stinkrz_sound", soundEnabled, setSoundEnabled)}
+            className={`w-11 h-6 rounded-full transition-colors shrink-0 relative ${soundEnabled ? "bg-primary" : "bg-muted-foreground/30"}`}
+          >
+            <span className={`absolute top-0.5 w-5 h-5 rounded-full bg-white transition-all ${soundEnabled ? "left-[22px]" : "left-0.5"}`} />
+          </button>
+        </div>
+      </div>
+
+      {/* Block Settings */}
+      <div className="bg-card border border-border rounded-2xl p-6 mb-5">
+        <h3 className="font-heading text-sm font-semibold mb-4 flex items-center gap-2">
+          <Lock className="w-4 h-4 text-primary" />
+          Block Settings
+        </h3>
+        <div className="bg-muted/50 rounded-xl p-4 border border-border">
+          <p className="font-body text-xs text-muted-foreground">Manage your blocked users</p>
+          <p className="font-body text-sm text-muted-foreground italic mt-2">No blocked users yet</p>
+        </div>
+      </div>
+
+      <Button
+        onClick={() => saveMutation.mutate()}
+        disabled={saveMutation.isPending}
+        className="w-full gap-2 font-body font-semibold"
+      >
+        <Save className="w-4 h-4" />
+        {saveMutation.isPending ? "Saving..." : "Save All Settings"}
+      </Button>
     </div>
   );
 }
