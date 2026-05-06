@@ -1,0 +1,45 @@
+{
+  "name": "StatusPost",
+  "type": "object",
+  "properties": {
+    "user_email": {
+      "type": "string"
+    },
+    "display_name": {
+      "type": "string"
+    },
+    "avatar_url": {
+      "type": "string"
+    },
+    "content": {
+      "type": "string",
+      "description": "The status message"
+    },
+    "vibe_tag": {
+      "type": "string",
+      "enum": [
+        "Looking to meet now \ud83d\udd25",
+        "Down to chat \ud83d\udcac",
+        "Just vibing \ud83c\udf0a",
+        "Out and about \ud83d\udccd",
+        "Night energy \ud83c\udf19",
+        "Need a whiff buddy \ud83d\udc43",
+        "Feeling fresh \u2728",
+        "Send help \ud83d\ude05"
+      ]
+    },
+    "scent_category": {
+      "type": "string"
+    },
+    "expires_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When this status expires (auto set to 1-4 hours)"
+    }
+  },
+  "required": [
+    "user_email",
+    "display_name",
+    "content"
+  ]
+}
