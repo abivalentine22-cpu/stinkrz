@@ -3,6 +3,7 @@ import { ArrowLeft, PenSquare, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
+
 import { useLocation } from "react-router-dom";
 import ChatList from "@/components/chat/ChatList";
 import ChatWindow from "@/components/chat/ChatWindow";
@@ -31,13 +32,31 @@ export default function Messages() {
     base44.auth.me().then(setMe);
   }, []);
 
-  // Fetch all messages involving the current user
-  const { data: allMessages = [], refetch } = useQuery({
-    queryKey: ["chat-messages", me?.email],
-    queryFn: () => base44.entities.ChatMessage.list("-created_date", 200),
-    enabled: !!me?.email,
-    refetchInterval: 5000,
-  });
+  // Real-time messages via subscribe + fallback polling
+  const [allMessages, setAllMessages] = useState([]);
+  const [refetchTrigger, setRefetchTrigger] = useState(0);
+
+  useEffect(() => {
+    if (!me?.email) return;
+    // Initial load
+    base44.entities.ChatMessage.list("-created_date", 50).then(setAllMessages);
+    // Real-time subscription
+    const unsub = base44.entities.ChatMessage.subscribe((event) => {
+      if (event.type === "create") {
+        const msg = event.data;
+        if (msg.sender_email === me.email || msg.receiver_email === me.email) {
+          setAllMessages(prev => [msg, ...prev].slice(0, 50));
+        }
+      } else if (event.type === "update") {
+        setAllMessages(prev => prev.map(m => m.id === event.id ? event.data : m));
+      } else if (event.type === "delete") {
+        setAllMessages(prev => prev.filter(m => m.id !== event.id));
+      }
+    });
+    return unsub;
+  }, [me?.email]);
+
+  const refetch = () => base44.entities.ChatMessage.list("-created_date", 50).then(setAllMessages);
 
   // Fetch all scent profiles for partner info
   const { data: allProfiles = [] } = useQuery({

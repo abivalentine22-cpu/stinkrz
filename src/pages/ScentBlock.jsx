@@ -131,7 +131,7 @@ export default function ScentBlock() {
   useScentMatchNotifications(userPos, myProfile);
   const { isBlocked } = useBlockedUsers();
 
-  // Load current user + all profiles
+  // Load current user + all profiles, refresh every 30s
   useEffect(() => {
     async function loadData() {
       const user = await base44.auth.me();
@@ -144,7 +144,6 @@ export default function ScentBlock() {
         setUserPos({ lat: mine.location_lat, lng: mine.location_lng });
       }
       
-      // Show everyone except yourself, filter out inactive users, apply fuzzy location if enabled
       setProfiles(
         all
           .filter(p => {
@@ -173,6 +172,8 @@ export default function ScentBlock() {
       );
     }
     loadData();
+    const interval = setInterval(loadData, 30000);
+    return () => clearInterval(interval);
   }, []);
 
   // Save current user's location to their profile so others can see them

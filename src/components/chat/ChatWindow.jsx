@@ -63,14 +63,38 @@ export default function ChatWindow({ me, conversation, messages, onVibeCheck, on
     onMessageSent?.();
   };
 
+  const compressImage = (file) =>
+    new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const img = new Image();
+        img.onload = () => {
+          const maxSize = 1280;
+          let { width, height } = img;
+          if (width > height) {
+            if (width > maxSize) { height = Math.round((height * maxSize) / width); width = maxSize; }
+          } else {
+            if (height > maxSize) { width = Math.round((width * maxSize) / height); height = maxSize; }
+          }
+          const canvas = document.createElement("canvas");
+          canvas.width = width; canvas.height = height;
+          canvas.getContext("2d").drawImage(img, 0, 0, width, height);
+          canvas.toBlob((blob) => resolve(new File([blob], "photo.jpg", { type: "image/jpeg" })), "image/jpeg", 0.85);
+        };
+        img.src = e.target.result;
+      };
+      reader.readAsDataURL(file);
+    });
+
   const handleMediaUpload = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
     
     setUploading(true);
     try {
-      const { file_url } = await base44.integrations.Core.UploadFile({ file });
       const isVideo = file.type.startsWith("video/");
+      const uploadFile = isVideo ? file : await compressImage(file);
+      const { file_url } = await base44.integrations.Core.UploadFile({ file: uploadFile });
       const message = isVideo ? "🎥 Sent a video" : "📸 Sent a photo";
       await sendMessage(message, false, file_url, isVideo ? "video" : "image");
     } catch {
