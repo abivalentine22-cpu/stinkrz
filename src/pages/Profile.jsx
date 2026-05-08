@@ -86,10 +86,35 @@ export default function Profile() {
     });
   };
 
+  const compressImage = (file) =>
+    new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const img = new Image();
+        img.onload = () => {
+          const maxSize = 512;
+          let { width, height } = img;
+          if (width > height) {
+            if (width > maxSize) { height = Math.round((height * maxSize) / width); width = maxSize; }
+          } else {
+            if (height > maxSize) { width = Math.round((width * maxSize) / height); height = maxSize; }
+          }
+          const canvas = document.createElement("canvas");
+          canvas.width = width;
+          canvas.height = height;
+          canvas.getContext("2d").drawImage(img, 0, 0, width, height);
+          canvas.toBlob((blob) => resolve(new File([blob], "avatar.jpg", { type: "image/jpeg" })), "image/jpeg", 0.85);
+        };
+        img.src = e.target.result;
+      };
+      reader.readAsDataURL(file);
+    });
+
   const handlePhotoUpload = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    const { file_url } = await base44.integrations.Core.UploadFile({ file });
+    const compressed = await compressImage(file);
+    const { file_url } = await base44.integrations.Core.UploadFile({ file: compressed });
     if (myProfile) {
       await base44.entities.ScentProfile.update(myProfile.id, { avatar_url: file_url });
       queryClient.invalidateQueries({ queryKey: ["my-profile"] });
