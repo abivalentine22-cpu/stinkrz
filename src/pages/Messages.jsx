@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { ArrowLeft, PenSquare, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { base44 } from "@/api/base44Client";
@@ -51,47 +51,51 @@ export default function Messages() {
     return unsub;
   }, [me?.email]);
 
-  const refetch = () => base44.entities.ChatMessage.list("-created_date", 50).then(setAllMessages);
-
-  // Fetch all scent profiles for partner info
+  // Fetch all scent profiles for partner info (stale-while-revalidate, 5min cache)
   const { data: allProfiles = [] } = useQuery({
     queryKey: ["all-profiles"],
     queryFn: () => base44.entities.ScentProfile.list(),
     enabled: !!me?.email,
+    staleTime: 5 * 60 * 1000,
   });
 
-  const getProfile = (email) => allProfiles.find(p => p.user_email === email);
+  const profileByEmail = useMemo(() => {
+    const map = {};
+    allProfiles.forEach(p => { map[p.user_email] = p; });
+    return map;
+  }, [allProfiles]);
 
-  // Build conversation list: unique partners from messages to/from me
-  const myMessages = allMessages.filter(
-    m => m.sender_email === me?.email || m.receiver_email === me?.email
+  // Build conversation list — memoized so it only recomputes when messages change
+  const myMessages = useMemo(
+    () => allMessages.filter(m => m.sender_email === me?.email || m.receiver_email === me?.email),
+    [allMessages, me?.email]
   );
 
-  const conversationMap = {};
-  myMessages.forEach(msg => {
-    const partnerEmail = msg.sender_email === me?.email ? msg.receiver_email : msg.sender_email;
-    if (!conversationMap[partnerEmail]) {
-      conversationMap[partnerEmail] = { partnerEmail, lastMessage: msg, unread: 0 };
-    }
-    if (msg.sender_email !== me?.email && !msg.read) {
-      conversationMap[partnerEmail].unread += 1;
-    }
-  });
+  const conversations = useMemo(() => {
+    const map = {};
+    myMessages.forEach(msg => {
+      const partnerEmail = msg.sender_email === me?.email ? msg.receiver_email : msg.sender_email;
+      if (!map[partnerEmail]) {
+        map[partnerEmail] = { partnerEmail, lastMessage: msg, unread: 0 };
+      }
+      if (msg.sender_email !== me?.email && !msg.read) {
+        map[partnerEmail].unread += 1;
+      }
+    });
+    return Object.values(map)
+      .filter(c => !isBlocked(c.partnerEmail))
+      .map(c => ({ ...c, partnerProfile: profileByEmail[c.partnerEmail] }));
+  }, [myMessages, me?.email, isBlocked, profileByEmail]);
 
-  const conversations = Object.values(conversationMap)
-    .filter(c => !isBlocked(c.partnerEmail))
-    .map(c => ({
-      ...c,
-      partnerProfile: getProfile(c.partnerEmail),
-    }));
-
-  const activeMessages = activeConversation
-    ? myMessages.filter(
-        m =>
-          (m.sender_email === me?.email && m.receiver_email === activeConversation.partnerEmail) ||
-          (m.receiver_email === me?.email && m.sender_email === activeConversation.partnerEmail)
-      ).reverse()
-    : [];
+  const activeMessages = useMemo(() => {
+    if (!activeConversation) return [];
+    return myMessages
+      .filter(m =>
+        (m.sender_email === me?.email && m.receiver_email === activeConversation.partnerEmail) ||
+        (m.receiver_email === me?.email && m.sender_email === activeConversation.partnerEmail)
+      )
+      .reverse();
+  }, [myMessages, activeConversation?.partnerEmail, me?.email]);
 
   // Mark messages as read when conversation is opened
   useEffect(() => {
@@ -139,7 +143,7 @@ export default function Messages() {
                 <button onClick={() => setShowNewMsg(false)}><X className="w-3.5 h-3.5 text-muted-foreground" /></button>
               </div>
               <div className="space-y-1 max-h-48 overflow-y-auto">
-                {allProfiles
+                {Object.values(profileByEmail)
                   .filter(p => p.user_email !== me?.email)
                   .map(profile => (
                     <button
@@ -192,7 +196,6 @@ export default function Messages() {
             conversation={activeConversation}
             messages={activeMessages}
             onVibeCheck={handleVibeCheck}
-            onMessageSent={refetch}
           />
         </div>
       </div>

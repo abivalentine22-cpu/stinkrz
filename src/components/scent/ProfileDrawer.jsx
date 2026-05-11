@@ -106,6 +106,7 @@ export default function ProfileDrawer({ profile, open, onClose, onMessage }) {
                   <img
                     src={allPhotos[galleryIndex]}
                     alt={profile.display_name}
+                    loading={galleryIndex === 0 ? "eager" : "lazy"}
                     style={{ width: "100%", height: "100%", objectFit: "cover", opacity: 0.85 }}
                   />
                   {allPhotos.length > 1 && (

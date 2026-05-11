@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { MapContainer, TileLayer, Marker, useMap } from "react-leaflet";
 import L from "leaflet";
 import ProfileDrawer from "@/components/scent/ProfileDrawer";
@@ -28,7 +28,11 @@ const SCENT_RING = {
   Neutral: "#94a3b8",
 };
 
+// Icon cache — avoids recreating identical Leaflet icons on every render
+const iconCache = new Map();
 function createPinIcon(profile, isYou = false) {
+  const cacheKey = `${profile.id || "you"}-${profile.avatar_url}-${profile.scent_category}-${profile.is_online}-${isYou}`;
+  if (iconCache.has(cacheKey)) return iconCache.get(cacheKey);
   const ringColor = isYou ? "#a78bfa" : (SCENT_RING[profile.scent_category] || "#94a3b8");
   const label = isYou ? "🫵 You" : profile.display_name;
   const initial = profile.display_name?.[0]?.toUpperCase() || "?";
@@ -68,12 +72,9 @@ function createPinIcon(profile, isYou = false) {
     </div>
   `;
 
-  return L.divIcon({
-    html,
-    className: "",
-    iconSize: [80, 80],
-    iconAnchor: [40, 24],
-  });
+  const icon = L.divIcon({ html, className: "", iconSize: [80, 80], iconAnchor: [40, 24] });
+  iconCache.set(cacheKey, icon);
+  return icon;
 }
 
 function MapController({ userPos, tracking }) {
@@ -88,6 +89,25 @@ function MapController({ userPos, tracking }) {
   }, [userPos, tracking]);
 
   return null;
+}
+
+// Stable helper — defined outside component so it never causes re-renders
+function processProfile(p) {
+  if (!p.location_lat || !p.location_lng) return null;
+  if (p.invisible_mode) return null;
+  if (p.last_active) {
+    const minsSince = (new Date() - new Date(p.last_active)) / (1000 * 60);
+    if (minsSince > ACTIVITY_TIMEOUT_MINS) return null;
+  }
+  if (p.fuzzy_location) {
+    const fuzz = 0.005;
+    return {
+      ...p,
+      location_lat: p.location_lat + (Math.random() - 0.5) * fuzz * 2,
+      location_lng: p.location_lng + (Math.random() - 0.5) * fuzz * 2,
+    };
+  }
+  return p;
 }
 
 function RecenterControl({ userPos, onRecenter }) {
@@ -139,25 +159,6 @@ export default function ScentBlock() {
   // Real-time scent match push notifications
   useScentMatchNotifications(userPos, myProfile);
   const { isBlocked } = useBlockedUsers();
-
-  // Helper to filter/transform a raw profile for display on the map
-  const processProfile = (p) => {
-    if (!p.location_lat || !p.location_lng) return null;
-    if (p.invisible_mode) return null;
-    if (p.last_active) {
-      const minsSince = (new Date() - new Date(p.last_active)) / (1000 * 60);
-      if (minsSince > ACTIVITY_TIMEOUT_MINS) return null;
-    }
-    if (p.fuzzy_location) {
-      const fuzz = 0.005;
-      return {
-        ...p,
-        location_lat: p.location_lat + (Math.random() - 0.5) * fuzz * 2,
-        location_lng: p.location_lng + (Math.random() - 0.5) * fuzz * 2,
-      };
-    }
-    return p;
-  };
 
   // Load current user + all profiles, then subscribe for real-time updates
   useEffect(() => {
@@ -301,25 +302,25 @@ export default function ScentBlock() {
   const mapCenter = userPos ? [userPos.lat, userPos.lng] : [45.5051, -122.6750];
   const youPos = userPos || { lat: 45.5051, lng: -122.6750 };
 
-  // Calculate distance in miles from user position
-  const calcDistance = (lat, lng) => {
+  const filtered = useMemo(() => {
     const R = 3958.8;
-    const dLat = ((lat - youPos.lat) * Math.PI) / 180;
-    const dLng = ((lng - youPos.lng) * Math.PI) / 180;
-    const a = Math.sin(dLat / 2) ** 2 + Math.cos((youPos.lat * Math.PI) / 180) * Math.cos((lat * Math.PI) / 180) * Math.sin(dLng / 2) ** 2;
-    return (R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))).toFixed(1);
-  };
+    const calcDistance = (lat, lng) => {
+      const dLat = ((lat - youPos.lat) * Math.PI) / 180;
+      const dLng = ((lng - youPos.lng) * Math.PI) / 180;
+      const a = Math.sin(dLat / 2) ** 2 + Math.cos((youPos.lat * Math.PI) / 180) * Math.cos((lat * Math.PI) / 180) * Math.sin(dLng / 2) ** 2;
+      return (R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))).toFixed(1);
+    };
+    return profiles
+      .filter((p) => {
+        if (filter !== "All" && p.scent_category !== filter) return false;
+        if (isBlocked(p.user_email)) return false;
+        if (p.invisible_mode) return false;
+        return true;
+      })
+      .map((p) => ({ ...p, distance: calcDistance(p.location_lat, p.location_lng) }));
+  }, [profiles, filter, isBlocked, youPos.lat, youPos.lng]);
 
-  const filtered = profiles
-    .filter((p) => {
-      if (filter !== "All" && p.scent_category !== filter) return false;
-      if (isBlocked(p.user_email)) return false;
-      if (p.invisible_mode) return false;
-      return true;
-    })
-    .map((p) => ({ ...p, distance: calcDistance(p.location_lat, p.location_lng) }));
-
-  const onlineCount = filtered.filter(p => p.is_online).length;
+  const onlineCount = useMemo(() => filtered.filter(p => p.is_online).length, [filtered]);
 
   return (
     <div style={{ position: "relative", width: "100%", height: "calc(100vh - 64px)" }}>
