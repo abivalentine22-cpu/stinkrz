@@ -6,6 +6,7 @@ import { format } from "date-fns";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useToast } from "@/components/ui/use-toast";
 import { base44 } from "@/api/base44Client";
+import { useBlockedUsers } from "@/hooks/useBlockedUsers";
 
 const SCENT_STICKERS = [
   { id: "s1", emoji: "🧼", label: "Fresh & Clean" },
@@ -27,9 +28,22 @@ export default function ChatWindow({ me, conversation, messages, onVibeCheck, on
   const [stickersOpen, setStickersOpen] = useState(false);
   const [sending, setSending] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [blockConfirm, setBlockConfirm] = useState(false);
   const scrollRef = useRef(null);
   const fileInputRef = useRef(null);
   const { toast } = useToast();
+  const { blockUser } = useBlockedUsers();
+
+  const handleBlock = () => {
+    if (!blockConfirm) {
+      setBlockConfirm(true);
+      setTimeout(() => setBlockConfirm(false), 3000);
+      return;
+    }
+    blockUser(conversation.partnerEmail);
+    toast({ title: `${partnerName} blocked`, description: "You won't see their content anymore." });
+    setBlockConfirm(false);
+  };
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
@@ -185,9 +199,10 @@ export default function ChatWindow({ me, conversation, messages, onVibeCheck, on
       {/* Input */}
       <div className="border-t border-border bg-card/80">
         <div className="flex items-center gap-2 px-3 py-1.5 border-b border-border/50 bg-muted/30">
-          <Button variant="ghost" size="sm" className="h-7 px-2 text-xs font-body text-muted-foreground hover:text-destructive gap-1"
-            onClick={() => toast({ title: "User blocked", description: `${partnerName} has been blocked.` })}>
-            <Ban className="w-3 h-3" /> Block
+          <Button variant="ghost" size="sm"
+            className={`h-7 px-2 text-xs font-body gap-1 transition-colors ${blockConfirm ? "text-destructive border border-destructive/40" : "text-muted-foreground hover:text-destructive"}`}
+            onClick={handleBlock}>
+            <Ban className="w-3 h-3" /> {blockConfirm ? "Tap again to confirm" : "Block"}
           </Button>
           <Button variant="ghost" size="sm" className="h-7 px-2 text-xs font-body text-muted-foreground hover:text-destructive gap-1"
             onClick={() => toast({ title: "Report submitted", description: "Thank you for keeping Stinkrz safe." })}>

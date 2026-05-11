@@ -1,0 +1,18 @@
+{
+  "name": "ProfileView",
+  "type": "object",
+  "properties": {
+    "viewer_email": {
+      "type": "string",
+      "description": "Who viewed the profile"
+    },
+    "viewed_email": {
+      "type": "string",
+      "description": "Whose profile was viewed"
+    }
+  },
+  "required": [
+    "viewer_email",
+    "viewed_email"
+  ]
+}

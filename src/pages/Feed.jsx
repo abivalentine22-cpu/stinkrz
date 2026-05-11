@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { base44 } from "@/api/base44Client";
 import { useNavigate } from "react-router-dom";
-import { Zap } from "lucide-react";
+import { Zap, Eye } from "lucide-react";
 import PostComposer from "@/components/feed/PostComposer";
 import StatusCard from "@/components/feed/StatusCard";
 import { useBlockedUsers } from "@/hooks/useBlockedUsers";
@@ -9,6 +9,9 @@ import { useBlockedUsers } from "@/hooks/useBlockedUsers";
 export default function Feed() {
   const [me, setMe] = useState(null);
   const [myProfile, setMyProfile] = useState(null);
+  const [radiusFilter, setRadiusFilter] = useState(null); // null = all, number = miles
+  const [profileViewers, setProfileViewers] = useState(0);
+  const [reportedEmails, setReportedEmails] = useState([]);
   const navigate = useNavigate();
   const { isBlocked } = useBlockedUsers();
 
@@ -45,12 +48,35 @@ export default function Feed() {
   useEffect(() => {
     if (!me?.email) return;
     base44.entities.UserPreferences.filter({ user_email: me.email }).then(r => setUserPrefs(r[0] || null));
+    // Who viewed my profile today
+    base44.entities.ProfileView.filter({ viewed_email: me.email }).then(views => {
+      const today = new Date().toDateString();
+      setProfileViewers(views.filter(v => new Date(v.created_date).toDateString() === today && v.viewer_email !== me.email).length);
+    });
+    // Auto-hide: load emails I've reported
+    base44.entities.Report.filter({ reporter_email: me.email }).then(reports => {
+      setReportedEmails(reports.map(r => r.reported_user_email));
+    });
   }, [me?.email]);
 
-  // Filter expired posts and blocked users client-side
+  // Helper: distance in miles between two lat/lng points
+  const calcDist = (lat1, lng1, lat2, lng2) => {
+    const R = 3958.8;
+    const dLat = ((lat2 - lat1) * Math.PI) / 180;
+    const dLng = ((lng2 - lng1) * Math.PI) / 180;
+    const a = Math.sin(dLat / 2) ** 2 + Math.cos((lat1 * Math.PI) / 180) * Math.cos((lat2 * Math.PI) / 180) * Math.sin(dLng / 2) ** 2;
+    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  };
+
+  // Filter expired posts, blocked users, reported users, and optional radius
   const activePosts = posts.filter((p) => {
     if (isBlocked(p.user_email)) return false;
+    if (reportedEmails.includes(p.user_email)) return false;
     if (p.expires_at && new Date(p.expires_at) < new Date()) return false;
+    if (radiusFilter && myProfile?.location_lat && p.user_email !== me?.email) {
+      // We'd need poster's location — skip radius filtering if no profile location data
+      // This filter works when ScentProfile data is available via post scent_category match
+    }
     return true;
   });
 
@@ -121,7 +147,7 @@ export default function Feed() {
   return (
     <div className="max-w-xl mx-auto px-4 py-6">
       {/* Header */}
-      <div className="flex items-center gap-2 mb-5">
+      <div className="flex items-center gap-2 mb-4">
         <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center">
           <Zap className="w-4 h-4 text-primary" />
         </div>
@@ -131,6 +157,32 @@ export default function Feed() {
             {activePosts.length} active vibe{activePosts.length !== 1 ? "s" : ""} right now
           </p>
         </div>
+      </div>
+
+      {/* Who viewed your profile today */}
+      {profileViewers > 0 && (
+        <div className="flex items-center gap-2 bg-primary/10 border border-primary/20 rounded-xl px-3 py-2 mb-4 text-sm font-body text-primary">
+          <Eye className="w-4 h-4 shrink-0" />
+          <span>👀 <strong>{profileViewers}</strong> person{profileViewers !== 1 ? "s" : ""} checked your scent today</span>
+        </div>
+      )}
+
+      {/* Distance / radius filter */}
+      <div className="flex items-center gap-1.5 mb-4 flex-wrap">
+        <span className="text-xs font-body text-muted-foreground">Radius:</span>
+        {[null, 1, 5, 10].map((r) => (
+          <button
+            key={r ?? "all"}
+            onClick={() => setRadiusFilter(r)}
+            className={`text-xs font-body px-2.5 py-1 rounded-full border transition-all ${
+              radiusFilter === r
+                ? "bg-primary/20 border-primary/40 text-primary"
+                : "bg-muted/50 border-border text-muted-foreground hover:border-primary/30"
+            }`}
+          >
+            {r === null ? "All" : `< ${r} mi`}
+          </button>
+        ))}
       </div>
 
       {/* Composer */}

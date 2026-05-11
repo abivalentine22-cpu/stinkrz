@@ -1,10 +1,11 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Home, Grid3X3, MessageCircle, HelpCircle, User, Menu, X, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import HangLooseLogo from "./HangLooseLogo";
 import { useAuth } from "@/lib/AuthContext";
 import NotificationCenter from "@/components/notifications/NotificationCenter";
+import { base44 } from "@/api/base44Client";
 
 const NAV_ITEMS = [
   { label: "Home", path: "/", icon: Home },
@@ -17,8 +18,27 @@ const NAV_ITEMS = [
 
 export default function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [unreadMessages, setUnreadMessages] = useState(0);
   const location = useLocation();
   const { user } = useAuth();
+
+  // Track unread message count in real-time
+  useEffect(() => {
+    if (!user?.email) return;
+    base44.entities.ChatMessage.filter({ receiver_email: user.email, read: false })
+      .then(msgs => setUnreadMessages(msgs.length));
+
+    const unsub = base44.entities.ChatMessage.subscribe((event) => {
+      if (event.type === "create" && event.data.receiver_email === user.email && !event.data.read) {
+        setUnreadMessages(prev => prev + 1);
+      } else if (event.type === "update" && event.data.receiver_email === user.email) {
+        // Re-fetch count on any update
+        base44.entities.ChatMessage.filter({ receiver_email: user.email, read: false })
+          .then(msgs => setUnreadMessages(msgs.length));
+      }
+    });
+    return unsub;
+  }, [user?.email]);
 
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-xl border-b border-border">
@@ -31,14 +51,20 @@ export default function Navbar() {
         <div className="hidden md:flex items-center gap-6">
           {NAV_ITEMS.map((item) => {
             const active = location.pathname === item.path;
+            const isMessages = item.path === "/messages";
             return (
               <Link
                 key={item.path}
                 to={item.path}
-                className={`font-body text-sm transition-colors flex items-center gap-1.5 ${active ? "text-foreground font-semibold" : "text-muted-foreground hover:text-foreground"}`}
+                className={`font-body text-sm transition-colors flex items-center gap-1.5 relative ${active ? "text-foreground font-semibold" : "text-muted-foreground hover:text-foreground"}`}
               >
                 {item.path === "/settings" && <span className="text-base">⚙️</span>}
                 {item.label}
+                {isMessages && unreadMessages > 0 && (
+                  <span className="ml-0.5 w-4 h-4 bg-primary text-primary-foreground text-[9px] rounded-full flex items-center justify-center font-semibold">
+                    {unreadMessages > 9 ? "9+" : unreadMessages}
+                  </span>
+                )}
               </Link>
             );
           })}

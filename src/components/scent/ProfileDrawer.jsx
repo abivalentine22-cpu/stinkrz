@@ -1,10 +1,11 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, MapPin, Droplets, ShowerHead, MessageCircle, Wifi, WifiOff, Ban } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { format } from "date-fns";
 import { useBlockedUsers } from "@/hooks/useBlockedUsers";
+import { base44 } from "@/api/base44Client";
 
 const SCENT_COLORS = {
   Fresh: "#34d399",
@@ -19,6 +20,16 @@ export default function ProfileDrawer({ profile, open, onClose, onMessage }) {
   const intensityDots = Array.from({ length: 5 }, (_, i) => i < (profile?.scent_intensity || 0));
   const { isBlocked, blockUser, unblockUser } = useBlockedUsers();
   const [confirmBlock, setConfirmBlock] = useState(false);
+
+  // Log profile view when drawer opens
+  useEffect(() => {
+    if (!open || !profile?.user_email) return;
+    base44.auth.me().then(me => {
+      if (me && me.email !== profile.user_email) {
+        base44.entities.ProfileView.create({ viewer_email: me.email, viewed_email: profile.user_email });
+      }
+    });
+  }, [open, profile?.user_email]);
 
   const blocked = profile ? isBlocked(profile.user_email) : false;
 
