@@ -187,15 +187,23 @@ export default function ScentBlock() {
   }, [user?.email]);
 
   // Save current user's location to their profile so others can see them
-  const saveLocation = async (lat, lng) => {
-    if (!myProfile) return;
-    await base44.entities.ScentProfile.update(myProfile.id, {
+  const saveLocation = async (lat, lng, profileOverride) => {
+    const profile = profileOverride || myProfile;
+    if (!profile) return;
+    await base44.entities.ScentProfile.update(profile.id, {
       location_lat: lat,
       location_lng: lng,
       is_online: true,
       last_active: new Date().toISOString(),
     });
   };
+
+  // Once myProfile loads, if we already have a position, save it immediately
+  useEffect(() => {
+    if (myProfile && userPos) {
+      saveLocation(userPos.lat, userPos.lng, myProfile);
+    }
+  }, [myProfile?.id]);
 
   const startTracking = () => {
     if (!navigator.geolocation) {
