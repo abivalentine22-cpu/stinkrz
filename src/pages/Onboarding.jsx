@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,14 +9,24 @@ import { base44 } from "@/api/base44Client";
 import { VIBE_OPTIONS, PERSONALITY_PROMPTS } from "@/lib/demoData";
 import { ArrowRight, ArrowLeft, Check, Sparkles } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useAuth } from "@/lib/AuthContext";
 
 const SCENT_CATEGORIES = ["Fresh", "Musky", "Ripe", "Earthy", "Neutral"];
 const SCENT_EMOJIS = { Fresh: "🧼", Musky: "🌲", Ripe: "🧀", Earthy: "🍂", Neutral: "⚖️" };
 
 export default function Onboarding() {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [step, setStep] = useState(0);
   const [loading, setLoading] = useState(false);
+
+  // Redirect if already onboarded
+  useEffect(() => {
+    if (!user) return;
+    base44.entities.ScentProfile.filter({ user_email: user.email }).then(profiles => {
+      if (profiles[0]?.onboarding_complete) navigate("/scent-block", { replace: true });
+    });
+  }, [user]);
   const [profile, setProfile] = useState({
     display_name: "",
     age: "",
@@ -44,10 +54,9 @@ export default function Onboarding() {
 
   const handleFinish = async () => {
     setLoading(true);
-    const user = await base44.auth.me();
     await base44.entities.ScentProfile.create({
       user_email: user.email,
-      display_name: profile.display_name || user.full_name || "Anonymous",
+      display_name: profile.display_name || user?.full_name || "Anonymous",
       age: parseInt(profile.age) || 25,
       bio: profile.bio,
       scent_category: profile.scent_category || "Neutral",

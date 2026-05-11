@@ -3,16 +3,16 @@ import { ArrowLeft, PenSquare, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
-
 import { useLocation } from "react-router-dom";
 import ChatList from "@/components/chat/ChatList";
 import ChatWindow from "@/components/chat/ChatWindow";
 import { useToast } from "@/components/ui/use-toast";
 import { useBlockedUsers } from "@/hooks/useBlockedUsers";
+import { useAuth } from "@/lib/AuthContext";
 
 export default function Messages() {
-  const [activeConversation, setActiveConversation] = useState(null); // { partnerEmail, partnerProfile }
-  const [me, setMe] = useState(null);
+  const { user: me } = useAuth();
+  const [activeConversation, setActiveConversation] = useState(null);
   const [showNewMsg, setShowNewMsg] = useState(false);
   const { toast } = useToast();
   const location = useLocation();
@@ -27,10 +27,6 @@ export default function Messages() {
       window.history.replaceState({}, "");
     }
   }, [location.state]);
-
-  useEffect(() => {
-    base44.auth.me().then(setMe);
-  }, []);
 
   // Real-time messages via subscribe + fallback polling
   const [allMessages, setAllMessages] = useState([]);

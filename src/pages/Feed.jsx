@@ -5,31 +5,29 @@ import { Zap, Eye } from "lucide-react";
 import PostComposer from "@/components/feed/PostComposer";
 import StatusCard from "@/components/feed/StatusCard";
 import { useBlockedUsers } from "@/hooks/useBlockedUsers";
+import { useAuth } from "@/lib/AuthContext";
 
 export default function Feed() {
-  const [me, setMe] = useState(null);
+  const { user: me } = useAuth();
   const [myProfile, setMyProfile] = useState(null);
   const [profileViewers, setProfileViewers] = useState(0);
   const [reportedEmails, setReportedEmails] = useState([]);
+  const [loadingFeed, setLoadingFeed] = useState(true);
   const navigate = useNavigate();
   const { isBlocked } = useBlockedUsers();
 
+  // Load profile data when user is available
   useEffect(() => {
-    base44.auth.me().then(async (user) => {
-      setMe(user);
-      if (user) {
-        const profiles = await base44.entities.ScentProfile.filter({ user_email: user.email });
-        setMyProfile(profiles[0] || null);
-      }
-    });
-  }, []);
+    if (!me?.email) return;
+    base44.entities.ScentProfile.filter({ user_email: me.email }).then(p => setMyProfile(p[0] || null));
+  }, [me?.email]);
 
   // Real-time posts via subscribe
   const [posts, setPosts] = useState([]);
 
   useEffect(() => {
     if (!me) return;
-    base44.entities.StatusPost.list("-created_date", 100).then(setPosts);
+    base44.entities.StatusPost.list("-created_date", 100).then(p => { setPosts(p); setLoadingFeed(false); });
 
     const unsub = base44.entities.StatusPost.subscribe((event) => {
       if (event.type === "create") {
@@ -129,6 +127,22 @@ export default function Feed() {
       },
     });
   };
+
+  if (loadingFeed) {
+    return (
+      <div className="max-w-xl mx-auto px-4 py-6 space-y-4 animate-pulse">
+        <div className="flex items-center gap-2 mb-6">
+          <div className="w-8 h-8 rounded-full bg-muted" />
+          <div className="space-y-1.5">
+            <div className="h-4 w-24 bg-muted rounded-full" />
+            <div className="h-3 w-36 bg-muted rounded-full" />
+          </div>
+        </div>
+        <div className="h-24 bg-muted rounded-2xl" />
+        {[1, 2, 3].map(i => <div key={i} className="h-20 bg-muted rounded-2xl" />)}
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-xl mx-auto px-4 py-6">
