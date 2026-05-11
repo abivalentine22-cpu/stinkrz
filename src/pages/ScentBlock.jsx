@@ -95,7 +95,7 @@ function RecenterControl({ userPos, onRecenter }) {
   return (
     <button
       onClick={() => {
-         const pos = userPos || { lat: 40.7128, lng: -74.006 };
+         const pos = userPos || { lat: 45.5051, lng: -122.6750 };
          map.flyTo([pos.lat, pos.lng], 14, { animate: true, duration: 1 });
         onRecenter?.();
       }}
@@ -257,8 +257,8 @@ export default function ScentBlock() {
 
   const toggleTracking = () => tracking ? stopTracking() : startTracking();
 
-  const mapCenter = userPos ? [userPos.lat, userPos.lng] : [40.7128, -74.006];
-  const youPos = userPos || { lat: 40.7128, lng: -74.006 };
+  const mapCenter = userPos ? [userPos.lat, userPos.lng] : [45.5051, -122.6750];
+  const youPos = userPos || { lat: 45.5051, lng: -122.6750 };
 
   // Calculate distance in miles from user position
   const calcDistance = (lat, lng) => {
