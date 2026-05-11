@@ -140,50 +140,78 @@ export default function ScentBlock() {
   useScentMatchNotifications(userPos, myProfile);
   const { isBlocked } = useBlockedUsers();
 
-  // Load current user + all profiles, refresh every 30s
+  // Helper to filter/transform a raw profile for display on the map
+  const processProfile = (p) => {
+    if (!p.location_lat || !p.location_lng) return null;
+    if (p.last_active) {
+      const minsSince = (new Date() - new Date(p.last_active)) / (1000 * 60);
+      if (minsSince > ACTIVITY_TIMEOUT_MINS) return null;
+    }
+    if (p.fuzzy_location) {
+      const fuzz = 0.005;
+      return {
+        ...p,
+        location_lat: p.location_lat + (Math.random() - 0.5) * fuzz * 2,
+        location_lng: p.location_lng + (Math.random() - 0.5) * fuzz * 2,
+      };
+    }
+    return p;
+  };
+
+  // Load current user + all profiles, then subscribe for real-time updates
   useEffect(() => {
     if (!user?.email) return;
-    async function loadData() {
+
+    async function initialLoad() {
       const all = await base44.entities.ScentProfile.list();
       const mine = all.find(p => p.user_email === user.email);
       setMyProfile(mine || null);
-      
-      // Set default location to user's last known location
+
       if (mine?.location_lat && mine?.location_lng) {
         setUserPos({ lat: mine.location_lat, lng: mine.location_lng });
       }
-      
+
       setLoading(false);
       setProfiles(
         all
-          .filter(p => {
-            if (p.user_email === user?.email) return false;
-            if (!p.location_lat || !p.location_lng) return false;
-            // Check if user is still active (within timeout window)
-            if (p.last_active) {
-              const lastActive = new Date(p.last_active);
-              const now = new Date();
-              const minsSince = (now - lastActive) / (1000 * 60);
-              if (minsSince > ACTIVITY_TIMEOUT_MINS) return false;
-            }
-            return true;
-          })
-          .map(p => {
-            if (p.fuzzy_location) {
-              const fuzz = 0.005;
-              return {
-                ...p,
-                location_lat: p.location_lat + (Math.random() - 0.5) * fuzz * 2,
-                location_lng: p.location_lng + (Math.random() - 0.5) * fuzz * 2,
-              };
-            }
-            return p;
-          })
+          .filter(p => p.user_email !== user.email)
+          .map(processProfile)
+          .filter(Boolean)
       );
     }
-    loadData();
-    const interval = setInterval(loadData, 30000);
-    return () => clearInterval(interval);
+
+    initialLoad();
+
+    // Real-time subscription — instant updates when any profile changes
+    const unsub = base44.entities.ScentProfile.subscribe((event) => {
+      if (event.data?.user_email === user.email) {
+        // Update our own profile reference
+        if (event.type === "update") setMyProfile(event.data);
+        return;
+      }
+      if (event.type === "create" || event.type === "update") {
+        const processed = processProfile(event.data);
+        setProfiles(prev => {
+          const without = prev.filter(p => p.id !== event.id);
+          return processed ? [...without, processed] : without;
+        });
+      } else if (event.type === "delete") {
+        setProfiles(prev => prev.filter(p => p.id !== event.id));
+      }
+    });
+
+    // Fallback poll every 60s to catch any missed events / expire stale users
+    const interval = setInterval(async () => {
+      const all = await base44.entities.ScentProfile.list();
+      setProfiles(
+        all
+          .filter(p => p.user_email !== user.email)
+          .map(processProfile)
+          .filter(Boolean)
+      );
+    }, 60000);
+
+    return () => { unsub(); clearInterval(interval); };
   }, [user?.email]);
 
   // Save current user's location to their profile so others can see them
@@ -203,6 +231,18 @@ export default function ScentBlock() {
     if (myProfile && userPos) {
       saveLocation(userPos.lat, userPos.lng, myProfile);
     }
+  }, [myProfile?.id]);
+
+  // Heartbeat: keep last_active fresh even when stationary (every 5 mins)
+  useEffect(() => {
+    if (!myProfile) return;
+    const heartbeat = setInterval(() => {
+      base44.entities.ScentProfile.update(myProfile.id, {
+        is_online: true,
+        last_active: new Date().toISOString(),
+      });
+    }, 5 * 60 * 1000);
+    return () => clearInterval(heartbeat);
   }, [myProfile?.id]);
 
   const startTracking = () => {
