@@ -1,49 +1,45 @@
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Bell, X, MessageCircle, Zap } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { base44 } from "@/api/base44Client";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
 
 export default function NotificationCenter({ userEmail }) {
   const [open, setOpen] = useState(false);
-  const queryClient = useQueryClient();
+  const [notifications, setNotifications] = useState([]);
 
-  const { data: notifications = [] } = useQuery({
-    queryKey: ["notifications", userEmail],
-    queryFn: () =>
-      base44.entities.Notification.filter(
-        { user_email: userEmail },
-        "-created_date",
-        50
-      ),
-    enabled: !!userEmail,
-    refetchInterval: 5000,
-  });
+  // Initial load + real-time subscribe
+  useEffect(() => {
+    if (!userEmail) return;
+    base44.entities.Notification.filter({ user_email: userEmail }, "-created_date", 50)
+      .then(setNotifications);
+
+    const unsub = base44.entities.Notification.subscribe((event) => {
+      if (event.type === "create" && event.data.user_email === userEmail) {
+        setNotifications(prev => [event.data, ...prev].slice(0, 50));
+      } else if (event.type === "update") {
+        setNotifications(prev => prev.map(n => n.id === event.id ? event.data : n));
+      } else if (event.type === "delete") {
+        setNotifications(prev => prev.filter(n => n.id !== event.id));
+      }
+    });
+    return unsub;
+  }, [userEmail]);
 
   const unreadCount = notifications.filter((n) => !n.read).length;
 
-  const markAsReadMutation = useMutation({
-    mutationFn: (notificationId) =>
-      base44.entities.Notification.update(notificationId, { read: true }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["notifications"] });
-    },
-  });
+  const markAsRead = (notificationId) => {
+    setNotifications(prev => prev.map(n => n.id === notificationId ? { ...n, read: true } : n));
+    base44.entities.Notification.update(notificationId, { read: true });
+  };
 
-  const deleteMutation = useMutation({
-    mutationFn: (notificationId) =>
-      base44.entities.Notification.delete(notificationId),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["notifications"] });
-    },
-  });
+  const dismiss = (notificationId) => {
+    setNotifications(prev => prev.filter(n => n.id !== notificationId));
+    base44.entities.Notification.delete(notificationId);
+  };
 
   const handleNotificationClick = (notification) => {
-    if (!notification.read) {
-      markAsReadMutation.mutate(notification.id);
-    }
+    if (!notification.read) markAsRead(notification.id);
   };
 
   return (
@@ -155,7 +151,7 @@ export default function NotificationCenter({ userEmail }) {
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
-                          deleteMutation.mutate(notif.id);
+                          dismiss(notif.id);
                         }}
                         className="mt-2 text-[10px] text-muted-foreground hover:text-destructive transition-colors"
                       >

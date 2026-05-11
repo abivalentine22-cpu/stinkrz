@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from "react";
 import { base44 } from "@/api/base44Client";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { Zap } from "lucide-react";
 import PostComposer from "@/components/feed/PostComposer";
@@ -11,7 +10,6 @@ export default function Feed() {
   const [me, setMe] = useState(null);
   const [myProfile, setMyProfile] = useState(null);
   const navigate = useNavigate();
-  const queryClient = useQueryClient();
   const { isBlocked } = useBlockedUsers();
 
   useEffect(() => {
@@ -24,24 +22,30 @@ export default function Feed() {
     });
   }, []);
 
-  // Auto-refresh every 30s
-  const { data: posts = [] } = useQuery({
-    queryKey: ["status-posts"],
-    queryFn: () => base44.entities.StatusPost.list("-created_date", 100),
-    refetchInterval: 30000,
-    enabled: !!me,
-  });
+  // Real-time posts via subscribe
+  const [posts, setPosts] = useState([]);
 
-  const { data: userPrefs = null } = useQuery({
-    queryKey: ["user-preferences", me?.email],
-    queryFn: async () => {
-      const results = await base44.entities.UserPreferences.filter({
-        user_email: me?.email,
-      });
-      return results[0] || null;
-    },
-    enabled: !!me?.email,
-  });
+  useEffect(() => {
+    if (!me) return;
+    base44.entities.StatusPost.list("-created_date", 100).then(setPosts);
+
+    const unsub = base44.entities.StatusPost.subscribe((event) => {
+      if (event.type === "create") {
+        setPosts(prev => [event.data, ...prev]);
+      } else if (event.type === "update") {
+        setPosts(prev => prev.map(p => p.id === event.id ? event.data : p));
+      } else if (event.type === "delete") {
+        setPosts(prev => prev.filter(p => p.id !== event.id));
+      }
+    });
+    return unsub;
+  }, [me]);
+
+  const [userPrefs, setUserPrefs] = useState(null);
+  useEffect(() => {
+    if (!me?.email) return;
+    base44.entities.UserPreferences.filter({ user_email: me.email }).then(r => setUserPrefs(r[0] || null));
+  }, [me?.email]);
 
   // Filter expired posts and blocked users client-side
   const activePosts = posts.filter((p) => {
@@ -63,23 +67,34 @@ export default function Feed() {
   );
   const ownPosts = activePosts.filter((p) => p.user_email === me?.email);
 
-  const postMutation = useMutation({
-    mutationFn: async (data) => {
-      return base44.entities.StatusPost.create({
-        ...data,
-        user_email: me.email,
-        display_name: myProfile?.display_name || me.full_name || "Anonymous",
-        avatar_url: myProfile?.avatar_url || null,
-        scent_category: myProfile?.scent_category || null,
-      });
-    },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["status-posts"] }),
-  });
+  const handlePost = async (data) => {
+    // Optimistic: add immediately
+    const tempId = `temp-${Date.now()}`;
+    const optimistic = {
+      id: tempId,
+      ...data,
+      user_email: me.email,
+      display_name: myProfile?.display_name || me.full_name || "Anonymous",
+      avatar_url: myProfile?.avatar_url || null,
+      scent_category: myProfile?.scent_category || null,
+      created_date: new Date().toISOString(),
+    };
+    setPosts(prev => [optimistic, ...prev]);
+    const created = await base44.entities.StatusPost.create({
+      ...data,
+      user_email: me.email,
+      display_name: myProfile?.display_name || me.full_name || "Anonymous",
+      avatar_url: myProfile?.avatar_url || null,
+      scent_category: myProfile?.scent_category || null,
+    });
+    // Replace temp with real record
+    setPosts(prev => prev.map(p => p.id === tempId ? created : p));
+  };
 
-  const deleteMutation = useMutation({
-    mutationFn: (id) => base44.entities.StatusPost.delete(id),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["status-posts"] }),
-  });
+  const handleDelete = (id) => {
+    setPosts(prev => prev.filter(p => p.id !== id));
+    base44.entities.StatusPost.delete(id);
+  };
 
   const handleMessage = async (post) => {
     // Trigger notification for post owner
@@ -122,7 +137,7 @@ export default function Feed() {
       {me && (
         <PostComposer
           myProfile={myProfile}
-          onPost={(data) => postMutation.mutate(data)}
+          onPost={handlePost}
         />
       )}
 
@@ -138,7 +153,7 @@ export default function Feed() {
                   key={post.id}
                   post={post}
                   currentUserEmail={me?.email}
-                  onDelete={(id) => deleteMutation.mutate(id)}
+                  onDelete={handleDelete}
                   onMessage={handleMessage}
                 />
               ))}
@@ -156,7 +171,7 @@ export default function Feed() {
                   key={post.id}
                   post={post}
                   currentUserEmail={me?.email}
-                  onDelete={(id) => deleteMutation.mutate(id)}
+                  onDelete={handleDelete}
                   onMessage={handleMessage}
                   isRecommended={true}
                 />
@@ -175,7 +190,7 @@ export default function Feed() {
                   key={post.id}
                   post={post}
                   currentUserEmail={me?.email}
-                  onDelete={(id) => deleteMutation.mutate(id)}
+                  onDelete={handleDelete}
                   onMessage={handleMessage}
                 />
               ))}

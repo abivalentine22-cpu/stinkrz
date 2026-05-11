@@ -98,6 +98,14 @@ export default function Messages() {
       ).reverse()
     : [];
 
+  // Mark messages as read when conversation is opened
+  useEffect(() => {
+    if (!activeConversation || !me?.email) return;
+    allMessages
+      .filter(m => m.receiver_email === me.email && m.sender_email === activeConversation.partnerEmail && !m.read)
+      .forEach(m => base44.entities.ChatMessage.update(m.id, { read: true }));
+  }, [activeConversation?.partnerEmail, allMessages]);
+
   const handleVibeCheck = () => {
     const vibes = [
       "🧼 Fresh energy detected!",
