@@ -89,22 +89,7 @@
   }
 }
 
-/* Leaflet map overrides */
-.leaflet-container {
-  background: hsl(258 35% 8%) !important;
-  filter: invert(100%) hue-rotate(180deg) brightness(0.85) contrast(0.9);
-}
-
-/* Don't invert the marker icons */
-.leaflet-marker-icon,
-.leaflet-marker-shadow {
-  filter: invert(100%) hue-rotate(180deg);
-}
-.leaflet-control-attribution {
-  background: rgba(15,12,35,0.7) !important;
-  color: #555 !important;
-}
-.leaflet-control-attribution a { color: #666 !important; }
+/* MapLibre map overrides handled inline in ScentBlock */
 
 /* Ping animation for online map pins */
 @keyframes ping {

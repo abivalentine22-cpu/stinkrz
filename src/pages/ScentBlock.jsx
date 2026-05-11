@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from "react";
-import { MapContainer, TileLayer, Marker, useMap } from "react-leaflet";
-import L from "leaflet";
+import maplibregl from "maplibre-gl";
+import "maplibre-gl/dist/maplibre-gl.css";
 import ProfileDrawer from "@/components/scent/ProfileDrawer";
 import FilterChips from "@/components/scent/FilterChips";
 import { base44 } from "@/api/base44Client";
@@ -10,15 +10,7 @@ import { useScentMatchNotifications } from "@/hooks/useScentMatchNotifications";
 import { useBlockedUsers } from "@/hooks/useBlockedUsers";
 import { useAuth } from "@/lib/AuthContext";
 
-// Fix Leaflet default icon issue with bundlers
-delete L.Icon.Default.prototype._getIconUrl;
-L.Icon.Default.mergeOptions({
-  iconRetinaUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png",
-  iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
-  shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
-});
-
-const ACTIVITY_TIMEOUT_MINS = 15; // Mark offline after 15 minutes of inactivity
+const ACTIVITY_TIMEOUT_MINS = 15;
 
 const SCENT_RING = {
   Fresh: "#34d399",
@@ -28,70 +20,7 @@ const SCENT_RING = {
   Neutral: "#94a3b8",
 };
 
-// Icon cache — avoids recreating identical Leaflet icons on every render
-const iconCache = new Map();
-function createPinIcon(profile, isYou = false) {
-  const cacheKey = `${profile.id || "you"}-${profile.avatar_url}-${profile.scent_category}-${profile.is_online}-${isYou}`;
-  if (iconCache.has(cacheKey)) return iconCache.get(cacheKey);
-  const ringColor = isYou ? "#a78bfa" : (SCENT_RING[profile.scent_category] || "#94a3b8");
-  const label = isYou ? "🫵 You" : profile.display_name;
-  const initial = profile.display_name?.[0]?.toUpperCase() || "?";
-  const avatarHtml = profile.avatar_url
-    ? `<img src="${profile.avatar_url}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;" />`
-    : `<span style="font-size:18px;">${isYou ? "🤙" : initial}</span>`;
-
-  const pulseHtml = isYou ? `
-    <div style="position:absolute;inset:-6px;border-radius:50%;border:2px solid ${ringColor};opacity:0.5;animation:ping 1.8s cubic-bezier(0,0,0.2,1) infinite;"></div>
-  ` : "";
-
-  const html = `
-    <div style="display:flex;flex-direction:column;align-items:center;position:relative;">
-      <div style="position:relative;">
-        ${pulseHtml}
-        <div style="
-          width:48px;height:48px;border-radius:50%;overflow:hidden;
-          border:3px solid ${ringColor};
-          background:#1e1b3a;
-          box-shadow:0 0 16px ${ringColor}66;
-          display:flex;align-items:center;justify-content:center;
-          font-weight:bold;color:#e2e8f0;position:relative;
-        ">
-          ${avatarHtml}
-          ${profile.is_online ? `<span style="position:absolute;bottom:0;right:0;width:12px;height:12px;border-radius:50%;background:#4ade80;border:2px solid #0f0c23;"></span>` : ""}
-        </div>
-      </div>
-      <div style="
-        margin-top:4px;white-space:nowrap;font-size:11px;font-weight:600;
-        padding:2px 8px;border-radius:9999px;
-        background:${isYou ? "rgba(167,139,250,0.25)" : "rgba(15,12,35,0.88)"};
-        color:${isYou ? "#a78bfa" : "#e2e8f0"};
-        border:1px solid ${isYou ? "#a78bfa55" : "rgba(255,255,255,0.12)"};
-        box-shadow:0 2px 8px rgba(0,0,0,0.4);
-        font-family:sans-serif;
-      ">${label}</div>
-    </div>
-  `;
-
-  const icon = L.divIcon({ html, className: "", iconSize: [80, 80], iconAnchor: [40, 24] });
-  iconCache.set(cacheKey, icon);
-  return icon;
-}
-
-function MapController({ userPos, tracking }) {
-  const map = useMap();
-  const prevTracking = useRef(false);
-
-  useEffect(() => {
-    if (tracking && userPos) {
-      map.flyTo([userPos.lat, userPos.lng], 14, { animate: true, duration: 1 });
-    }
-    prevTracking.current = tracking;
-  }, [userPos, tracking]);
-
-  return null;
-}
-
-// Stable helper — defined outside component so it never causes re-renders
+// Stable helper — defined outside component
 function processProfile(p) {
   if (!p.location_lat || !p.location_lng) return null;
   if (p.invisible_mode) return null;
@@ -110,37 +39,85 @@ function processProfile(p) {
   return p;
 }
 
-function RecenterControl({ userPos, onRecenter }) {
-  const map = useMap();
-  return (
-    <button
-      onClick={() => {
-         const pos = userPos || { lat: 45.5051, lng: -122.6750 };
-         map.flyTo([pos.lat, pos.lng], 14, { animate: true, duration: 1 });
-        onRecenter?.();
-      }}
-      style={{
-        position: "absolute",
-        bottom: "80px",
-        right: "16px",
-        zIndex: 1000,
-        width: "40px",
-        height: "40px",
-        borderRadius: "50%",
-        background: "rgba(30,27,58,0.95)",
-        border: "1px solid rgba(255,255,255,0.15)",
-        boxShadow: "0 2px 12px rgba(0,0,0,0.5)",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        cursor: "pointer",
-        color: "#a78bfa",
-      }}
-      title="Re-center"
-    >
-      <Crosshair size={16} />
-    </button>
-  );
+function calcDistance(lat, lng, youLat, youLng) {
+  const R = 3958.8;
+  const dLat = ((lat - youLat) * Math.PI) / 180;
+  const dLng = ((lng - youLng) * Math.PI) / 180;
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos((youLat * Math.PI) / 180) *
+      Math.cos((lat * Math.PI) / 180) *
+      Math.sin(dLng / 2) ** 2;
+  return (R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))).toFixed(1);
+}
+
+function createPinEl(profile, isYou = false) {
+  const ringColor = isYou ? "#a78bfa" : (SCENT_RING[profile.scent_category] || "#94a3b8");
+  const label = isYou ? "🫵 You" : profile.display_name;
+  const initial = profile.display_name?.[0]?.toUpperCase() || "?";
+
+  const wrapper = document.createElement("div");
+  wrapper.style.cssText = "display:flex;flex-direction:column;align-items:center;cursor:pointer;";
+
+  const avatarWrap = document.createElement("div");
+  avatarWrap.style.cssText = `position:relative;`;
+
+  if (isYou) {
+    const pulse = document.createElement("div");
+    pulse.style.cssText = `position:absolute;inset:-6px;border-radius:50%;border:2px solid ${ringColor};opacity:0.5;animation:mapPing 1.8s cubic-bezier(0,0,0.2,1) infinite;`;
+    avatarWrap.appendChild(pulse);
+  }
+
+  const circle = document.createElement("div");
+  circle.style.cssText = `
+    width:48px;height:48px;border-radius:50%;overflow:hidden;
+    border:3px solid ${ringColor};
+    background:#1e1b3a;
+    box-shadow:0 0 16px ${ringColor}66;
+    display:flex;align-items:center;justify-content:center;
+    font-weight:bold;color:#e2e8f0;position:relative;
+    transition: transform 0.15s ease;
+  `;
+
+  if (profile.avatar_url) {
+    const img = document.createElement("img");
+    img.src = profile.avatar_url;
+    img.style.cssText = "width:100%;height:100%;object-fit:cover;border-radius:50%;";
+    img.loading = "lazy";
+    circle.appendChild(img);
+  } else {
+    circle.innerHTML = `<span style="font-size:18px;">${isYou ? "🤙" : initial}</span>`;
+  }
+
+  if (profile.is_online && !isYou) {
+    const dot = document.createElement("span");
+    dot.style.cssText = "position:absolute;bottom:0;right:0;width:12px;height:12px;border-radius:50%;background:#4ade80;border:2px solid #0f0c23;";
+    circle.appendChild(dot);
+  }
+
+  avatarWrap.appendChild(circle);
+
+  const nameTag = document.createElement("div");
+  nameTag.style.cssText = `
+    margin-top:4px;white-space:nowrap;font-size:11px;font-weight:600;
+    padding:2px 8px;border-radius:9999px;
+    background:${isYou ? "rgba(167,139,250,0.25)" : "rgba(15,12,35,0.88)"};
+    color:${isYou ? "#a78bfa" : "#e2e8f0"};
+    border:1px solid ${isYou ? "#a78bfa55" : "rgba(255,255,255,0.12)"};
+    box-shadow:0 2px 8px rgba(0,0,0,0.4);
+    font-family:sans-serif;
+    pointer-events:none;
+  `;
+  nameTag.textContent = label;
+
+  wrapper.appendChild(avatarWrap);
+  wrapper.appendChild(nameTag);
+
+  // Hover scale effect
+  wrapper.addEventListener("mouseenter", () => { circle.style.transform = "scale(1.12)"; });
+  wrapper.addEventListener("mouseleave", () => { circle.style.transform = "scale(1)"; });
+
+  return wrapper;
 }
 
 export default function ScentBlock() {
@@ -153,14 +130,65 @@ export default function ScentBlock() {
   const [profiles, setProfiles] = useState([]);
   const [myProfile, setMyProfile] = useState(null);
   const [loading, setLoading] = useState(true);
+
+  const mapContainerRef = useRef(null);
+  const mapRef = useRef(null);
+  const markersRef = useRef({}); // id -> maplibregl.Marker
+  const youMarkerRef = useRef(null);
   const watchIdRef = useRef(null);
   const navigate = useNavigate();
 
-  // Real-time scent match push notifications
   useScentMatchNotifications(userPos, myProfile);
   const { isBlocked } = useBlockedUsers();
 
-  // Load current user + all profiles, then subscribe for real-time updates
+  // Inject ping keyframes once
+  useEffect(() => {
+    const id = "mapPingStyle";
+    if (!document.getElementById(id)) {
+      const style = document.createElement("style");
+      style.id = id;
+      style.textContent = `@keyframes mapPing { 75%,100%{transform:scale(2);opacity:0;} }`;
+      document.head.appendChild(style);
+    }
+  }, []);
+
+  // Init MapLibre map
+  useEffect(() => {
+    if (!mapContainerRef.current || mapRef.current) return;
+
+    const map = new maplibregl.Map({
+      container: mapContainerRef.current,
+      style: {
+        version: 8,
+        sources: {
+          "carto-dark": {
+            type: "raster",
+            tiles: [
+              "https://a.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",
+              "https://b.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",
+              "https://c.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",
+            ],
+            tileSize: 256,
+            attribution: "© OpenStreetMap © CARTO",
+          },
+        },
+        layers: [{ id: "carto-dark-layer", type: "raster", source: "carto-dark" }],
+      },
+      center: [-122.675, 45.505],
+      zoom: 13,
+      attributionControl: false,
+    });
+
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), "bottom-right");
+    mapRef.current = map;
+
+    return () => {
+      map.remove();
+      mapRef.current = null;
+    };
+  }, []);
+
+  // Load profiles + subscribe
   useEffect(() => {
     if (!user?.email) return;
 
@@ -168,26 +196,18 @@ export default function ScentBlock() {
       const all = await base44.entities.ScentProfile.list();
       const mine = all.find(p => p.user_email === user.email);
       setMyProfile(mine || null);
-
       if (mine?.location_lat && mine?.location_lng) {
         setUserPos({ lat: mine.location_lat, lng: mine.location_lng });
       }
-
-      setLoading(false);
       setProfiles(
-        all
-          .filter(p => p.user_email !== user.email)
-          .map(processProfile)
-          .filter(Boolean)
+        all.filter(p => p.user_email !== user.email).map(processProfile).filter(Boolean)
       );
+      setLoading(false);
     }
-
     initialLoad();
 
-    // Real-time subscription — instant updates when any profile changes
     const unsub = base44.entities.ScentProfile.subscribe((event) => {
       if (event.data?.user_email === user.email) {
-        // Update our own profile reference
         if (event.type === "update") setMyProfile(event.data);
         return;
       }
@@ -202,22 +222,17 @@ export default function ScentBlock() {
       }
     });
 
-    // Fallback poll every 60s to catch any missed events / expire stale users
     const interval = setInterval(async () => {
       const all = await base44.entities.ScentProfile.list();
       setProfiles(
-        all
-          .filter(p => p.user_email !== user.email)
-          .map(processProfile)
-          .filter(Boolean)
+        all.filter(p => p.user_email !== user.email).map(processProfile).filter(Boolean)
       );
-    }, 60000);
+    }, 30000);
 
     return () => { unsub(); clearInterval(interval); };
   }, [user?.email]);
 
-  // Save current user's location to their profile so others can see them
-  const saveLocation = async (lat, lng, profileOverride) => {
+  const saveLocation = useCallback(async (lat, lng, profileOverride) => {
     const profile = profileOverride || myProfile;
     if (!profile) return;
     await base44.entities.ScentProfile.update(profile.id, {
@@ -226,16 +241,12 @@ export default function ScentBlock() {
       is_online: true,
       last_active: new Date().toISOString(),
     });
-  };
+  }, [myProfile]);
 
-  // Once myProfile loads, if we already have a position, save it immediately
   useEffect(() => {
-    if (myProfile && userPos) {
-      saveLocation(userPos.lat, userPos.lng, myProfile);
-    }
+    if (myProfile && userPos) saveLocation(userPos.lat, userPos.lng, myProfile);
   }, [myProfile?.id]);
 
-  // Heartbeat: keep last_active fresh even when stationary (every 5 mins)
   useEffect(() => {
     if (!myProfile) return;
     const heartbeat = setInterval(() => {
@@ -243,21 +254,49 @@ export default function ScentBlock() {
         is_online: true,
         last_active: new Date().toISOString(),
       });
-    }, 5 * 60 * 1000);
+    }, 30 * 1000);
     return () => clearInterval(heartbeat);
   }, [myProfile?.id]);
 
-  const startTracking = () => {
-    if (!navigator.geolocation) {
-      setGeoError("Geolocation not supported");
-      return;
+  // Geolocation
+  useEffect(() => {
+    const saved = localStorage.getItem("stinkrz_last_pos");
+    if (saved) {
+      try { setUserPos(JSON.parse(saved)); } catch (_) {}
     }
+  }, []);
+
+  useEffect(() => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          const { latitude: lat, longitude: lng } = pos.coords;
+          setUserPos({ lat, lng });
+          localStorage.setItem("stinkrz_last_pos", JSON.stringify({ lat, lng }));
+          saveLocation(lat, lng);
+          if (mapRef.current) {
+            mapRef.current.flyTo({ center: [lng, lat], zoom: 14, duration: 1200 });
+          }
+        },
+        () => {}
+      );
+    }
+    return () => {
+      if (watchIdRef.current != null) navigator.geolocation.clearWatch(watchIdRef.current);
+    };
+  }, [myProfile]);
+
+  const startTracking = () => {
+    if (!navigator.geolocation) { setGeoError("Geolocation not supported"); return; }
     setGeoError(null);
     watchIdRef.current = navigator.geolocation.watchPosition(
       (pos) => {
         const { latitude: lat, longitude: lng } = pos.coords;
         setUserPos({ lat, lng });
         saveLocation(lat, lng);
+        if (mapRef.current && tracking) {
+          mapRef.current.easeTo({ center: [lng, lat], duration: 800 });
+        }
       },
       () => setGeoError("Location access denied"),
       { enableHighAccuracy: true }
@@ -273,43 +312,12 @@ export default function ScentBlock() {
     setTracking(false);
   };
 
-  // Restore last known position from localStorage immediately
-  useEffect(() => {
-    const saved = localStorage.getItem("stinkrz_last_pos");
-    if (saved) {
-      try { setUserPos(JSON.parse(saved)); } catch (_) {}
-    }
-  }, []);
-
-  // Get position once on mount & save it
-  useEffect(() => {
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (pos) => {
-          const { latitude: lat, longitude: lng } = pos.coords;
-          setUserPos({ lat, lng });
-          localStorage.setItem("stinkrz_last_pos", JSON.stringify({ lat, lng }));
-          saveLocation(lat, lng);
-        },
-        () => {}
-      );
-    }
-    return () => stopTracking();
-  }, [myProfile]); // re-run once myProfile is loaded so saveLocation works
-
   const toggleTracking = () => tracking ? stopTracking() : startTracking();
 
-  const mapCenter = userPos ? [userPos.lat, userPos.lng] : [45.5051, -122.6750];
+  // Filtered profiles
   const youPos = userPos || { lat: 45.5051, lng: -122.6750 };
 
   const filtered = useMemo(() => {
-    const R = 3958.8;
-    const calcDistance = (lat, lng) => {
-      const dLat = ((lat - youPos.lat) * Math.PI) / 180;
-      const dLng = ((lng - youPos.lng) * Math.PI) / 180;
-      const a = Math.sin(dLat / 2) ** 2 + Math.cos((youPos.lat * Math.PI) / 180) * Math.cos((lat * Math.PI) / 180) * Math.sin(dLng / 2) ** 2;
-      return (R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))).toFixed(1);
-    };
     return profiles
       .filter((p) => {
         if (filter !== "All" && p.scent_category !== filter) return false;
@@ -317,13 +325,94 @@ export default function ScentBlock() {
         if (p.invisible_mode) return false;
         return true;
       })
-      .map((p) => ({ ...p, distance: calcDistance(p.location_lat, p.location_lng) }));
+      .map((p) => ({
+        ...p,
+        distance: calcDistance(p.location_lat, p.location_lng, youPos.lat, youPos.lng),
+      }));
   }, [profiles, filter, isBlocked, youPos.lat, youPos.lng]);
 
   const onlineCount = useMemo(() => filtered.filter(p => p.is_online).length, [filtered]);
 
+  // Sync "You" marker
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !map.loaded()) return;
+
+    const el = createPinEl(
+      { display_name: "You", is_online: true, scent_category: "Neutral", avatar_url: myProfile?.avatar_url },
+      true
+    );
+
+    if (youMarkerRef.current) {
+      youMarkerRef.current.setLngLat([youPos.lng, youPos.lat]);
+      youMarkerRef.current.getElement().replaceWith(el);
+      // Swap element reference
+      youMarkerRef.current.remove();
+    }
+
+    const marker = new maplibregl.Marker({ element: el, anchor: "bottom" })
+      .setLngLat([youPos.lng, youPos.lat])
+      .addTo(map);
+    youMarkerRef.current = marker;
+  }, [youPos.lat, youPos.lng, myProfile?.avatar_url]);
+
+  // Sync profile markers — add new, remove stale
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+
+    const currentIds = new Set(filtered.map(p => p.id));
+
+    // Remove markers no longer in filtered
+    for (const [id, marker] of Object.entries(markersRef.current)) {
+      if (!currentIds.has(id)) {
+        marker.remove();
+        delete markersRef.current[id];
+      }
+    }
+
+    // Add or update markers
+    filtered.forEach((profile) => {
+      if (markersRef.current[profile.id]) {
+        // Update position silently
+        markersRef.current[profile.id].setLngLat([profile.location_lng, profile.location_lat]);
+        return;
+      }
+
+      const el = createPinEl(profile);
+      el.addEventListener("click", () => setSelectedProfile(profile));
+
+      // Entrance animation
+      el.style.opacity = "0";
+      el.style.transform = "scale(0.5)";
+      el.style.transition = "opacity 0.3s ease, transform 0.3s ease";
+
+      const marker = new maplibregl.Marker({ element: el, anchor: "bottom" })
+        .setLngLat([profile.location_lng, profile.location_lat])
+        .addTo(map);
+
+      markersRef.current[profile.id] = marker;
+
+      // Trigger entrance animation
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          el.style.opacity = "1";
+          el.style.transform = "scale(1)";
+        });
+      });
+    });
+  }, [filtered]);
+
   return (
     <div style={{ position: "relative", width: "100%", height: "calc(100vh - 64px)" }}>
+      {/* MapLibre CSS overrides */}
+      <style>{`
+        .maplibregl-ctrl-bottom-right { bottom: 80px !important; }
+        .maplibregl-ctrl-group { background: rgba(30,27,58,0.95) !important; border: 1px solid rgba(255,255,255,0.12) !important; }
+        .maplibregl-ctrl-group button { background: transparent !important; }
+        .maplibregl-ctrl-group button svg path { fill: #a78bfa !important; }
+      `}</style>
+
       {/* Loading overlay */}
       {loading && (
         <div style={{
@@ -336,6 +425,7 @@ export default function ScentBlock() {
           <p style={{ color: "#94a3b8", fontSize: "13px", fontFamily: "var(--font-body)" }}>Finding nearby scents…</p>
         </div>
       )}
+
       {/* Floating filter chips */}
       <div style={{
         position: "absolute", top: "16px", left: 0, right: 0,
@@ -347,48 +437,35 @@ export default function ScentBlock() {
         </div>
       </div>
 
-      {/* Map */}
-      <MapContainer
-        center={mapCenter}
-        zoom={14}
-        zoomControl={false}
-        style={{ width: "100%", height: "100%" }}
+      {/* Map container */}
+      <div ref={mapContainerRef} style={{ width: "100%", height: "100%" }} />
+
+      {/* Recenter button */}
+      <button
+        onClick={() => {
+          if (mapRef.current) {
+            mapRef.current.flyTo({ center: [youPos.lng, youPos.lat], zoom: 14, duration: 1000 });
+          }
+        }}
+        style={{
+          position: "absolute", bottom: "80px", right: "16px", zIndex: 1000,
+          width: "40px", height: "40px", borderRadius: "50%",
+          background: "rgba(30,27,58,0.95)", border: "1px solid rgba(255,255,255,0.15)",
+          boxShadow: "0 2px 12px rgba(0,0,0,0.5)",
+          display: "flex", alignItems: "center", justifyContent: "center",
+          cursor: "pointer", color: "#a78bfa",
+        }}
+        title="Re-center"
       >
-        <TileLayer
-          url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/">CARTO</a>'
-          subdomains={['a','b','c','d']}
-          crossOrigin="anonymous"
-        />
-
-        <MapController userPos={userPos} tracking={tracking} />
-
-        {/* You marker */}
-        <Marker
-          position={[youPos.lat, youPos.lng]}
-          icon={createPinIcon({ display_name: "You", is_online: true, scent_category: "Neutral", avatar_url: myProfile?.avatar_url }, true)}
-        />
-
-        {/* Profile markers */}
-        {filtered.map((profile) => (
-          <Marker
-            key={profile.id}
-            position={[profile.location_lat, profile.location_lng]}
-            icon={createPinIcon(profile)}
-            eventHandlers={{ click: () => setSelectedProfile(profile) }}
-          />
-        ))}
-
-        <RecenterControl userPos={userPos} onRecenter={() => {}} />
-      </MapContainer>
+        <Crosshair size={16} />
+      </button>
 
       {/* Bottom bar */}
       <div style={{
-        position: "absolute", bottom: "16px", left: "16px", right: "16px",
+        position: "absolute", bottom: "16px", left: "16px", right: "64px",
         zIndex: 1000, display: "flex", alignItems: "center", gap: "8px",
         pointerEvents: "none",
       }}>
-        {/* Nearby count */}
         <div style={{
           background: "rgba(30,27,58,0.92)", border: "1px solid rgba(255,255,255,0.1)",
           borderRadius: "9999px", padding: "6px 14px",
@@ -405,7 +482,6 @@ export default function ScentBlock() {
           )}
         </div>
 
-        {/* Live tracking toggle */}
         <button
           onClick={toggleTracking}
           style={{
@@ -416,13 +492,11 @@ export default function ScentBlock() {
             display: "flex", alignItems: "center", gap: "6px",
             backdropFilter: "blur(8px)", cursor: "pointer", pointerEvents: "auto",
           }}
-          title={tracking ? "Stop live tracking" : "Start live tracking"}
         >
           {tracking ? <Navigation size={14} /> : <NavigationOff size={14} />}
           {tracking ? "Tracking live" : "Track me"}
         </button>
 
-        {/* Geo error */}
         {geoError && (
           <div style={{
             background: "rgba(239,68,68,0.15)", border: "1px solid rgba(239,68,68,0.3)",
