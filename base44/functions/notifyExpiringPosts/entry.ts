@@ -6,7 +6,6 @@ Deno.serve(async (req) => {
     const posts = await base44.asServiceRole.entities.StatusPost.list();
     const now = new Date();
     const soon = new Date(now.getTime() + 20 * 60 * 1000); // 20 min window
-    const target = new Date(now.getTime() + 15 * 60 * 1000); // ~15 min from now
 
     const expiring = posts.filter(p => {
       if (!p.expires_at) return false;

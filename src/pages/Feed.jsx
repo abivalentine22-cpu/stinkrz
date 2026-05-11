@@ -9,7 +9,6 @@ import { useBlockedUsers } from "@/hooks/useBlockedUsers";
 export default function Feed() {
   const [me, setMe] = useState(null);
   const [myProfile, setMyProfile] = useState(null);
-  const [radiusFilter, setRadiusFilter] = useState(null); // null = all, number = miles
   const [profileViewers, setProfileViewers] = useState(0);
   const [reportedEmails, setReportedEmails] = useState([]);
   const navigate = useNavigate();
@@ -59,24 +58,11 @@ export default function Feed() {
     });
   }, [me?.email]);
 
-  // Helper: distance in miles between two lat/lng points
-  const calcDist = (lat1, lng1, lat2, lng2) => {
-    const R = 3958.8;
-    const dLat = ((lat2 - lat1) * Math.PI) / 180;
-    const dLng = ((lng2 - lng1) * Math.PI) / 180;
-    const a = Math.sin(dLat / 2) ** 2 + Math.cos((lat1 * Math.PI) / 180) * Math.cos((lat2 * Math.PI) / 180) * Math.sin(dLng / 2) ** 2;
-    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-  };
-
-  // Filter expired posts, blocked users, reported users, and optional radius
+  // Filter expired posts, blocked users, and reported users
   const activePosts = posts.filter((p) => {
     if (isBlocked(p.user_email)) return false;
     if (reportedEmails.includes(p.user_email)) return false;
     if (p.expires_at && new Date(p.expires_at) < new Date()) return false;
-    if (radiusFilter && myProfile?.location_lat && p.user_email !== me?.email) {
-      // We'd need poster's location — skip radius filtering if no profile location data
-      // This filter works when ScentProfile data is available via post scent_category match
-    }
     return true;
   });
 
@@ -166,24 +152,6 @@ export default function Feed() {
           <span>👀 <strong>{profileViewers}</strong> person{profileViewers !== 1 ? "s" : ""} checked your scent today</span>
         </div>
       )}
-
-      {/* Distance / radius filter */}
-      <div className="flex items-center gap-1.5 mb-4 flex-wrap">
-        <span className="text-xs font-body text-muted-foreground">Radius:</span>
-        {[null, 1, 5, 10].map((r) => (
-          <button
-            key={r ?? "all"}
-            onClick={() => setRadiusFilter(r)}
-            className={`text-xs font-body px-2.5 py-1 rounded-full border transition-all ${
-              radiusFilter === r
-                ? "bg-primary/20 border-primary/40 text-primary"
-                : "bg-muted/50 border-border text-muted-foreground hover:border-primary/30"
-            }`}
-          >
-            {r === null ? "All" : `< ${r} mi`}
-          </button>
-        ))}
-      </div>
 
       {/* Composer */}
       {me && (

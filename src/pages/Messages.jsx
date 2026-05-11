@@ -34,7 +34,6 @@ export default function Messages() {
 
   // Real-time messages via subscribe + fallback polling
   const [allMessages, setAllMessages] = useState([]);
-  const [refetchTrigger, setRefetchTrigger] = useState(0);
 
   useEffect(() => {
     if (!me?.email) return;
