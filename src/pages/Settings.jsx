@@ -41,20 +41,34 @@ export default function Settings() {
   const [showOnlineStatus, setShowOnlineStatus] = useState(true);
   const [sendReadReceipts, setSendReadReceipts] = useState(true);
   const [hideReadReceipts, setHideReadReceipts] = useState(false);
-  const [travelMode, setTravelMode] = useState("neither"); // "hosting", "traveling", "neither"
+  const [travelMode, setTravelMode] = useState("neither");
+  const [invisibleMode, setInvisibleMode] = useState(false);
+  const [myProfile, setMyProfile] = useState(null);
 
   useEffect(() => {
+    if (!user?.email) return;
     if (prefs) {
       setSelected(prefs.preferred_scent_categories || []);
     }
-    // Load settings from localStorage
     setSoundEnabled(localStorage.getItem("stinkrz_sound") !== "false");
     setShowOnlineStatus(localStorage.getItem("stinkrz_show_online") !== "false");
     setFuzzyLocation(localStorage.getItem("stinkrz_fuzzy_location") === "true");
     setSendReadReceipts(localStorage.getItem("stinkrz_send_read_receipts") !== "false");
     setHideReadReceipts(localStorage.getItem("stinkrz_hide_read_receipts") === "true");
     setTravelMode(localStorage.getItem("stinkrz_travel_mode") || "neither");
-  }, [prefs]);
+    // Load invisible mode from profile
+    base44.entities.ScentProfile.filter({ user_email: user.email }).then(p => {
+      if (p[0]) { setMyProfile(p[0]); setInvisibleMode(p[0].invisible_mode || false); }
+    });
+  }, [prefs, user?.email]);
+
+  const toggleInvisibleMode = async () => {
+    const next = !invisibleMode;
+    setInvisibleMode(next);
+    if (myProfile) {
+      await base44.entities.ScentProfile.update(myProfile.id, { invisible_mode: next });
+    }
+  };
 
   const saveMutation = useMutation({
     mutationFn: async () => {
@@ -149,6 +163,20 @@ export default function Settings() {
               className={`w-11 h-6 rounded-full transition-colors shrink-0 relative ${showOnlineStatus ? "bg-primary" : "bg-muted-foreground/30"}`}
             >
               <span className={`absolute top-0.5 w-5 h-5 rounded-full bg-white transition-all ${showOnlineStatus ? "left-[22px]" : "left-0.5"}`} />
+            </button>
+          </div>
+
+          {/* Invisible Mode */}
+          <div className="flex items-center justify-between bg-muted/50 rounded-xl p-4 border border-border">
+            <div className="flex-1">
+              <p className="font-body text-sm font-semibold">👻 Invisible Mode</p>
+              <p className="font-body text-xs text-muted-foreground">Browse the map without appearing to others</p>
+            </div>
+            <button
+              onClick={toggleInvisibleMode}
+              className={`w-11 h-6 rounded-full transition-colors shrink-0 relative ${invisibleMode ? "bg-primary" : "bg-muted-foreground/30"}`}
+            >
+              <span className={`absolute top-0.5 w-5 h-5 rounded-full bg-white transition-all ${invisibleMode ? "left-[22px]" : "left-0.5"}`} />
             </button>
           </div>
 

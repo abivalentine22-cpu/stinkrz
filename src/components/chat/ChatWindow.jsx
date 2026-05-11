@@ -187,8 +187,13 @@ export default function ChatWindow({ me, conversation, messages, onVibeCheck, on
                   </video>
                 )}
                 <p className={msg.is_sticker ? "text-3xl" : "font-body text-sm"}>{msg.content}</p>
-                <p className={`text-[10px] mt-1 ${isMe ? "text-primary-foreground/60" : "text-muted-foreground"}`}>
+                <p className={`text-[10px] mt-1 flex items-center gap-1 ${isMe ? "text-primary-foreground/60" : "text-muted-foreground"}`}>
                   {format(new Date(msg.created_date), "h:mm a")}
+                  {isMe && (
+                    <span style={{ fontSize: "10px" }} title={msg.read ? "Read" : "Sent"}>
+                      {msg.read ? "✓✓" : "✓"}
+                    </span>
+                  )}
                 </p>
               </div>
             </div>

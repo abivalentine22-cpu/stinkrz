@@ -18,6 +18,13 @@
     "avatar_url": {
       "type": "string"
     },
+    "photo_gallery": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Additional photo URLs"
+    },
     "scent_category": {
       "type": "string",
       "enum": [
@@ -85,6 +92,11 @@
       "type": "boolean",
       "default": false,
       "description": "If true, show approximate location (within ~0.5 mile) instead of exact"
+    },
+    "invisible_mode": {
+      "type": "boolean",
+      "default": false,
+      "description": "If true, user does not appear on the map to others"
     },
     "is_online": {
       "type": "boolean",

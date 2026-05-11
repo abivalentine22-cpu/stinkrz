@@ -143,6 +143,7 @@ export default function ScentBlock() {
   // Helper to filter/transform a raw profile for display on the map
   const processProfile = (p) => {
     if (!p.location_lat || !p.location_lng) return null;
+    if (p.invisible_mode) return null;
     if (p.last_active) {
       const minsSince = (new Date() - new Date(p.last_active)) / (1000 * 60);
       if (minsSince > ACTIVITY_TIMEOUT_MINS) return null;
@@ -310,7 +311,12 @@ export default function ScentBlock() {
   };
 
   const filtered = profiles
-    .filter((p) => (filter === "All" || p.scent_category === filter) && !isBlocked(p.user_email))
+    .filter((p) => {
+      if (filter !== "All" && p.scent_category !== filter) return false;
+      if (isBlocked(p.user_email)) return false;
+      if (p.invisible_mode) return false;
+      return true;
+    })
     .map((p) => ({ ...p, distance: calcDistance(p.location_lat, p.location_lng) }));
 
   const onlineCount = filtered.filter(p => p.is_online).length;

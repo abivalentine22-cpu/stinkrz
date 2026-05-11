@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, MapPin, Droplets, ShowerHead, MessageCircle, Wifi, WifiOff, Ban } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
+import { X, MapPin, Droplets, ShowerHead, MessageCircle, Wifi, WifiOff, Ban, Heart, ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { format } from "date-fns";
 import { useBlockedUsers } from "@/hooks/useBlockedUsers";
+import { useFavorites } from "@/hooks/useFavorites";
 import { base44 } from "@/api/base44Client";
+import { useAuth } from "@/lib/AuthContext";
 
 const SCENT_COLORS = {
   Fresh: "#34d399",
@@ -19,19 +20,28 @@ export default function ProfileDrawer({ profile, open, onClose, onMessage }) {
   const ringColor = SCENT_COLORS[profile?.scent_category] || "#94a3b8";
   const intensityDots = Array.from({ length: 5 }, (_, i) => i < (profile?.scent_intensity || 0));
   const { isBlocked, blockUser, unblockUser } = useBlockedUsers();
+  const { user } = useAuth();
+  const { isFavorited, hasFavoritedMe, toggleFavorite } = useFavorites(user?.email);
   const [confirmBlock, setConfirmBlock] = useState(false);
+  const [galleryIndex, setGalleryIndex] = useState(0);
+
+  const allPhotos = [
+    ...(profile?.avatar_url ? [profile.avatar_url] : []),
+    ...(profile?.photo_gallery || []),
+  ];
 
   // Log profile view when drawer opens
   useEffect(() => {
-    if (!open || !profile?.user_email) return;
-    base44.auth.me().then(me => {
-      if (me && me.email !== profile.user_email) {
-        base44.entities.ProfileView.create({ viewer_email: me.email, viewed_email: profile.user_email });
-      }
-    });
+    if (!open || !profile?.user_email || !user?.email) return;
+    if (user.email !== profile.user_email) {
+      base44.entities.ProfileView.create({ viewer_email: user.email, viewed_email: profile.user_email });
+    }
+    setGalleryIndex(0);
   }, [open, profile?.user_email]);
 
   const blocked = profile ? isBlocked(profile.user_email) : false;
+  const favorited = profile ? isFavorited(profile.user_email) : false;
+  const theyFavoritedMe = profile ? hasFavoritedMe(profile.user_email) : false;
 
   const handleBlock = () => {
     if (!confirmBlock) { setConfirmBlock(true); return; }
@@ -40,9 +50,7 @@ export default function ProfileDrawer({ profile, open, onClose, onMessage }) {
     onClose();
   };
 
-  const handleUnblock = () => {
-    unblockUser(profile.user_email);
-  };
+  const handleUnblock = () => unblockUser(profile.user_email);
 
   return (
     <AnimatePresence>
@@ -91,15 +99,38 @@ export default function ProfileDrawer({ profile, open, onClose, onMessage }) {
               <X size={16} />
             </button>
 
-            {/* Hero */}
-            <div style={{ position: "relative", height: "220px", flexShrink: 0, background: "hsl(258 30% 14%)" }}>
-              {profile.avatar_url ? (
-                <img src={profile.avatar_url} alt={profile.display_name}
-                  style={{ width: "100%", height: "100%", objectFit: "cover", opacity: 0.85 }} />
+            {/* Photo gallery hero */}
+            <div style={{ position: "relative", height: "240px", flexShrink: 0, background: "hsl(258 30% 14%)" }}>
+              {allPhotos.length > 0 ? (
+                <>
+                  <img
+                    src={allPhotos[galleryIndex]}
+                    alt={profile.display_name}
+                    style={{ width: "100%", height: "100%", objectFit: "cover", opacity: 0.85 }}
+                  />
+                  {allPhotos.length > 1 && (
+                    <>
+                      <button
+                        onClick={() => setGalleryIndex(i => (i - 1 + allPhotos.length) % allPhotos.length)}
+                        style={{ position: "absolute", left: "8px", top: "50%", transform: "translateY(-50%)", background: "rgba(0,0,0,0.5)", border: "none", borderRadius: "50%", width: "28px", height: "28px", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: "#fff" }}
+                      ><ChevronLeft size={16} /></button>
+                      <button
+                        onClick={() => setGalleryIndex(i => (i + 1) % allPhotos.length)}
+                        style={{ position: "absolute", right: "8px", top: "50%", transform: "translateY(-50%)", background: "rgba(0,0,0,0.5)", border: "none", borderRadius: "50%", width: "28px", height: "28px", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: "#fff" }}
+                      ><ChevronRight size={16} /></button>
+                      {/* Dots */}
+                      <div style={{ position: "absolute", bottom: "40px", left: 0, right: 0, display: "flex", justifyContent: "center", gap: "4px" }}>
+                        {allPhotos.map((_, i) => (
+                          <div key={i} onClick={() => setGalleryIndex(i)} style={{ width: "6px", height: "6px", borderRadius: "50%", background: i === galleryIndex ? "#fff" : "rgba(255,255,255,0.35)", cursor: "pointer" }} />
+                        ))}
+                      </div>
+                    </>
+                  )}
+                </>
               ) : (
                 <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "72px", opacity: 0.2 }}>🤙</div>
               )}
-              <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to top, hsl(258 30% 10%) 0%, transparent 60%)" }} />
+              <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to top, hsl(258 30% 10%) 0%, transparent 55%)" }} />
             </div>
 
             {/* Content */}
@@ -109,8 +140,13 @@ export default function ProfileDrawer({ profile, open, onClose, onMessage }) {
               <div>
                 <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "4px" }}>
                   <h2 style={{ fontFamily: "var(--font-heading)", fontSize: "22px", fontWeight: 700, color: "#f1f5f9", margin: 0 }}>
-                    {profile.display_name}, {profile.age}
+                    {profile.display_name}{profile.age ? `, ${profile.age}` : ""}
                   </h2>
+                  {theyFavoritedMe && (
+                    <span style={{ fontSize: "11px", color: "#f87171", background: "rgba(248,113,113,0.1)", border: "1px solid rgba(248,113,113,0.25)", borderRadius: "9999px", padding: "2px 8px" }}>
+                      ❤️ Interested
+                    </span>
+                  )}
                   {profile.is_online ? (
                     <span style={{ display: "flex", alignItems: "center", gap: "4px", fontSize: "11px", color: "#4ade80", background: "rgba(74,222,128,0.12)", border: "1px solid rgba(74,222,128,0.25)", borderRadius: "9999px", padding: "2px 8px" }}>
                       <Wifi size={10} /> Online
@@ -209,14 +245,29 @@ export default function ProfileDrawer({ profile, open, onClose, onMessage }) {
               {/* Actions */}
               <div style={{ marginTop: "auto", paddingTop: "8px", display: "flex", flexDirection: "column", gap: "8px" }}>
                 {!blocked && (
-                  <Button
-                    onClick={() => onMessage?.(profile)}
-                    className="w-full gap-2 font-body font-semibold"
-                    style={{ height: "44px", fontSize: "15px" }}
-                  >
-                    <MessageCircle size={17} />
-                    Send a Whiff
-                  </Button>
+                  <div style={{ display: "flex", gap: "8px" }}>
+                    <Button
+                      onClick={() => onMessage?.(profile)}
+                      className="flex-1 gap-2 font-body font-semibold"
+                      style={{ height: "44px", fontSize: "15px" }}
+                    >
+                      <MessageCircle size={17} />
+                      Send a Whiff
+                    </Button>
+                    <button
+                      onClick={() => toggleFavorite(profile.user_email)}
+                      style={{
+                        width: "44px", height: "44px", borderRadius: "9999px", border: "none",
+                        background: favorited ? "rgba(248,113,113,0.2)" : "rgba(255,255,255,0.08)",
+                        display: "flex", alignItems: "center", justifyContent: "center",
+                        cursor: "pointer", transition: "all 0.2s",
+                        flexShrink: 0,
+                      }}
+                      title={favorited ? "Remove favorite" : "Tap / Favorite"}
+                    >
+                      <Heart size={18} color={favorited ? "#f87171" : "#94a3b8"} fill={favorited ? "#f87171" : "none"} />
+                    </button>
+                  </div>
                 )}
 
                 {blocked ? (

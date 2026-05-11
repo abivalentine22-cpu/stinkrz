@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { VIBE_OPTIONS, PERSONALITY_PROMPTS } from "@/lib/demoData";
-import { Camera, Save, LogOut, Droplets, Shield } from "lucide-react";
+import { Camera, Save, LogOut, Droplets, Shield, Plus, Trash2 } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import { useAuth } from "@/lib/AuthContext";
 
@@ -120,6 +120,26 @@ export default function Profile() {
       queryClient.invalidateQueries({ queryKey: ["my-profile"] });
       toast({ title: "Photo updated!" });
     }
+  };
+
+  const handleGalleryUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const compressed = await compressImage(file);
+    const { file_url } = await base44.integrations.Core.UploadFile({ file: compressed });
+    if (myProfile) {
+      const gallery = [...(myProfile.photo_gallery || []), file_url];
+      await base44.entities.ScentProfile.update(myProfile.id, { photo_gallery: gallery });
+      queryClient.invalidateQueries({ queryKey: ["my-profile"] });
+      toast({ title: "Photo added to gallery!" });
+    }
+  };
+
+  const handleDeleteGalleryPhoto = async (url) => {
+    if (!myProfile) return;
+    const gallery = (myProfile.photo_gallery || []).filter(u => u !== url);
+    await base44.entities.ScentProfile.update(myProfile.id, { photo_gallery: gallery });
+    queryClient.invalidateQueries({ queryKey: ["my-profile"] });
   };
 
   const toggleArray = (key, value) => {
@@ -248,6 +268,31 @@ export default function Profile() {
           >
             <span className={`absolute top-0.5 w-5 h-5 rounded-full bg-white transition-all ${form.fuzzy_location ? "left-5.5 left-[22px]" : "left-0.5"}`} />
           </button>
+        </div>
+
+        {/* Photo Gallery */}
+        <div className="space-y-2">
+          <Label className="font-body text-sm">Photo Gallery</Label>
+          <div className="flex flex-wrap gap-2">
+            {(myProfile?.photo_gallery || []).map((url) => (
+              <div key={url} className="relative w-20 h-20 rounded-xl overflow-hidden group">
+                <img src={url} alt="" className="w-full h-full object-cover" />
+                <button
+                  onClick={() => handleDeleteGalleryPhoto(url)}
+                  className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center"
+                >
+                  <Trash2 className="w-4 h-4 text-white" />
+                </button>
+              </div>
+            ))}
+            {(myProfile?.photo_gallery || []).length < 6 && (
+              <label className="w-20 h-20 rounded-xl border-2 border-dashed border-border flex items-center justify-center cursor-pointer hover:border-primary/50 transition-colors">
+                <Plus className="w-5 h-5 text-muted-foreground" />
+                <input type="file" accept="image/*" onChange={handleGalleryUpload} className="hidden" />
+              </label>
+            )}
+          </div>
+          <p className="font-body text-xs text-muted-foreground">Add up to 6 photos to your gallery</p>
         </div>
 
         <Button onClick={handleSave} disabled={saveMutation.isPending} className="w-full gap-2 font-body font-semibold">
