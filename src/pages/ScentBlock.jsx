@@ -404,43 +404,50 @@ export default function ScentBlock() {
   }, [filtered]);
 
   return (
-    <div style={{ position: "relative", width: "100%", height: "calc(100vh - 64px)" }}>
+    <div style={{ position: "relative", width: "100vw", height: "100vh", overflow: "hidden" }}>
       {/* MapLibre CSS overrides */}
       <style>{`
-        .maplibregl-ctrl-bottom-right { bottom: 80px !important; }
-        .maplibregl-ctrl-group { background: rgba(30,27,58,0.95) !important; border: 1px solid rgba(255,255,255,0.12) !important; }
-        .maplibregl-ctrl-group button { background: transparent !important; }
-        .maplibregl-ctrl-group button svg path { fill: #a78bfa !important; }
+        .maplibregl-ctrl-bottom-right { bottom: 16px !important; right: 16px !important; }
+        .maplibregl-ctrl-group {
+          background: rgba(20,17,40,0.85) !important;
+          border: 1px solid rgba(255,255,255,0.1) !important;
+          border-radius: 50% !important;
+          overflow: hidden;
+          box-shadow: 0 2px 8px rgba(0,0,0,0.5) !important;
+        }
+        .maplibregl-ctrl-group button {
+          background: transparent !important;
+          width: 36px !important; height: 36px !important;
+        }
+        .maplibregl-ctrl-group button + button { border-top: 1px solid rgba(255,255,255,0.08) !important; }
+        .maplibregl-ctrl-zoom-in span, .maplibregl-ctrl-zoom-out span { color: #c4b5fd !important; }
+        .maplibregl-ctrl-compass { display: none !important; }
+        .maplibregl-ctrl-attrib { display: none !important; }
       `}</style>
 
       {/* Loading overlay */}
       {loading && (
         <div style={{
           position: "absolute", inset: 0, zIndex: 2000,
-          background: "rgba(15,12,35,0.85)", backdropFilter: "blur(6px)",
+          background: "rgba(10,8,25,0.9)",
           display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: "12px",
         }}>
-          <span style={{ fontSize: "40px" }}>🗺️</span>
-          <div style={{ width: "32px", height: "32px", borderRadius: "50%", border: "3px solid rgba(167,139,250,0.2)", borderTopColor: "#a78bfa", animation: "spin 0.8s linear infinite" }} />
-          <p style={{ color: "#94a3b8", fontSize: "13px", fontFamily: "var(--font-body)" }}>Finding nearby scents…</p>
+          <div style={{ width: "28px", height: "28px", borderRadius: "50%", border: "2px solid rgba(167,139,250,0.2)", borderTopColor: "#a78bfa", animation: "spin 0.8s linear infinite" }} />
         </div>
       )}
-
-      {/* Floating filter chips */}
-      <div style={{
-        position: "absolute", top: "16px", left: 0, right: 0,
-        zIndex: 1000, padding: "0 16px", pointerEvents: "none",
-        display: "flex", justifyContent: "center",
-      }}>
-        <div style={{ pointerEvents: "auto" }}>
-          <FilterChips active={filter} onChange={setFilter} />
-        </div>
-      </div>
 
       {/* Map container */}
       <div ref={mapContainerRef} style={{ width: "100%", height: "100%" }} />
 
-      {/* Recenter button */}
+      {/* Filter chips — top left, minimal */}
+      <div style={{
+        position: "absolute", top: "14px", left: "14px",
+        zIndex: 1000, pointerEvents: "auto",
+      }}>
+        <FilterChips active={filter} onChange={setFilter} />
+      </div>
+
+      {/* Recenter button — above zoom controls, bottom right */}
       <button
         onClick={() => {
           if (mapRef.current) {
@@ -448,66 +455,52 @@ export default function ScentBlock() {
           }
         }}
         style={{
-          position: "absolute", bottom: "80px", right: "16px", zIndex: 1000,
-          width: "40px", height: "40px", borderRadius: "50%",
-          background: "rgba(30,27,58,0.95)", border: "1px solid rgba(255,255,255,0.15)",
-          boxShadow: "0 2px 12px rgba(0,0,0,0.5)",
+          position: "absolute", bottom: "62px", right: "16px", zIndex: 1000,
+          width: "36px", height: "36px", borderRadius: "50%",
+          background: "rgba(20,17,40,0.85)", border: "1px solid rgba(255,255,255,0.1)",
+          boxShadow: "0 2px 8px rgba(0,0,0,0.5)",
           display: "flex", alignItems: "center", justifyContent: "center",
-          cursor: "pointer", color: "#a78bfa",
+          cursor: "pointer", color: "#c4b5fd",
         }}
         title="Re-center"
       >
-        <Crosshair size={16} />
+        <Crosshair size={14} />
       </button>
 
-      {/* Bottom bar */}
-      <div style={{
-        position: "absolute", bottom: "16px", left: "16px", right: "64px",
-        zIndex: 1000, display: "flex", alignItems: "center", gap: "8px",
-        pointerEvents: "none",
-      }}>
-        <div style={{
-          background: "rgba(30,27,58,0.92)", border: "1px solid rgba(255,255,255,0.1)",
-          borderRadius: "9999px", padding: "6px 14px",
-          fontSize: "12px", color: "#94a3b8",
+      {/* Nearby badge — bottom left */}
+      <button
+        onClick={toggleTracking}
+        style={{
+          position: "absolute", bottom: "20px", left: "14px", zIndex: 1000,
+          background: "rgba(20,17,40,0.85)", border: "1px solid rgba(255,255,255,0.1)",
+          borderRadius: "9999px", padding: "7px 14px",
+          fontSize: "12px", color: tracking ? "#c4b5fd" : "#94a3b8",
           display: "flex", alignItems: "center", gap: "6px",
-          backdropFilter: "blur(8px)", pointerEvents: "auto",
-        }}>
-          <Eye size={14} color="#a78bfa" />
-          {filtered.length} nearby
-          {onlineCount > 0 && (
-            <span style={{ display: "flex", alignItems: "center", gap: "3px", color: "#4ade80", marginLeft: "4px" }}>
-              <Wifi size={11} /> {onlineCount} live
-            </span>
-          )}
-        </div>
-
-        <button
-          onClick={toggleTracking}
-          style={{
-            background: tracking ? "rgba(167,139,250,0.2)" : "rgba(30,27,58,0.92)",
-            border: `1px solid ${tracking ? "#a78bfa" : "rgba(255,255,255,0.1)"}`,
-            borderRadius: "9999px", padding: "6px 14px",
-            fontSize: "12px", color: tracking ? "#a78bfa" : "#94a3b8",
-            display: "flex", alignItems: "center", gap: "6px",
-            backdropFilter: "blur(8px)", cursor: "pointer", pointerEvents: "auto",
-          }}
-        >
-          {tracking ? <Navigation size={14} /> : <NavigationOff size={14} />}
-          {tracking ? "Tracking live" : "Track me"}
-        </button>
-
-        {geoError && (
-          <div style={{
-            background: "rgba(239,68,68,0.15)", border: "1px solid rgba(239,68,68,0.3)",
-            borderRadius: "9999px", padding: "6px 14px",
-            fontSize: "12px", color: "#f87171",
-            backdropFilter: "blur(8px)", pointerEvents: "auto",
-          }}>
-            {geoError}
-          </div>
+          boxShadow: "0 2px 8px rgba(0,0,0,0.4)",
+          cursor: "pointer",
+          fontFamily: "var(--font-body)",
+        }}
+      >
+        <Eye size={13} color={tracking ? "#c4b5fd" : "#94a3b8"} />
+        {filtered.length} nearby
+        {onlineCount > 0 && (
+          <span style={{ color: "#4ade80", display: "flex", alignItems: "center", gap: "3px" }}>
+            · <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: "#4ade80", display: "inline-block" }} /> {onlineCount}
+          </span>
         )}
-      </div>
+      </button>
+
+      {geoError && (
+        <div style={{
+          position: "absolute", bottom: "60px", left: "14px", zIndex: 1000,
+          background: "rgba(239,68,68,0.15)", border: "1px solid rgba(239,68,68,0.3)",
+          borderRadius: "9999px", padding: "5px 12px",
+          fontSize: "11px", color: "#f87171",
+          fontFamily: "var(--font-body)",
+        }}>
+          {geoError}
+        </div>
+      )}
 
       {/* Profile drawer */}
       <ProfileDrawer

@@ -1,5 +1,4 @@
 import React from "react";
-import { Button } from "@/components/ui/button";
 
 const FILTERS = ["All", "Fresh", "Musky", "Ripe", "Earthy", "Neutral"];
 
@@ -14,23 +13,31 @@ const FILTER_EMOJIS = {
 
 export default function FilterChips({ active, onChange }) {
   return (
-    <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-none">
-      {FILTERS.map((filter) => (
-        <Button
-          key={filter}
-          variant={active === filter ? "default" : "outline"}
-          size="sm"
-          onClick={() => onChange(filter)}
-          className={`shrink-0 gap-1.5 font-body rounded-full transition-all ${
-            active === filter
-              ? "shadow-md shadow-primary/20"
-              : "border-border hover:border-primary/40"
-          }`}
-        >
-          <span>{FILTER_EMOJIS[filter]}</span>
-          {filter}
-        </Button>
-      ))}
+    <div style={{ display: "flex", gap: "6px", flexWrap: "nowrap", overflowX: "auto" }}>
+      {FILTERS.map((filter) => {
+        const isActive = active === filter;
+        return (
+          <button
+            key={filter}
+            onClick={() => onChange(filter)}
+            style={{
+              display: "flex", alignItems: "center", gap: "5px",
+              padding: "5px 12px", borderRadius: "9999px",
+              fontSize: "12px", fontFamily: "var(--font-body)",
+              whiteSpace: "nowrap", cursor: "pointer",
+              background: isActive ? "rgba(124,58,237,0.85)" : "rgba(15,12,35,0.7)",
+              color: isActive ? "#fff" : "#94a3b8",
+              border: isActive ? "1px solid rgba(167,139,250,0.5)" : "1px solid rgba(255,255,255,0.1)",
+              boxShadow: isActive ? "0 0 12px rgba(124,58,237,0.35)" : "none",
+              transition: "all 0.15s ease",
+              backdropFilter: "blur(8px)",
+            }}
+          >
+            <span style={{ fontSize: "13px" }}>{FILTER_EMOJIS[filter]}</span>
+            {filter}
+          </button>
+        );
+      })}
     </div>
   );
 }
