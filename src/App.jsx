@@ -27,6 +27,7 @@ const Settings = lazy(() => import("@/pages/Settings"));
 const Help = lazy(() => import("@/pages/Help"));
 const ReportPage = lazy(() => import("@/pages/ReportPage"));
 const AdminReports = lazy(() => import("@/pages/AdminReports"));
+const Viewers = lazy(() => import("@/pages/Viewers"));
 const Onboarding = lazy(() => import("@/pages/Onboarding"));
 
 const PageLoader = () => (
@@ -88,6 +89,7 @@ const AuthenticatedApp = () => {
             <Route path="/report" element={<ReportPage />} />
             <Route path="/admin/reports" element={<AdminReports />} />
             <Route path="/settings" element={<Settings />} />
+            <Route path="/viewers" element={<Viewers />} />
             <Route path="/onboarding" element={<Onboarding />} />
           </Route>
         </Route>

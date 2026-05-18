@@ -16,13 +16,37 @@ export function useFavorites(myEmail) {
 
   const toggleFavorite = async (toEmail) => {
     if (isFavorited(toEmail)) {
-      // Remove favorite
       const all = await base44.entities.Favorite.filter({ from_email: myEmail, to_email: toEmail });
       if (all[0]) await base44.entities.Favorite.delete(all[0].id);
       setFavorites(prev => prev.filter(e => e !== toEmail));
     } else {
       await base44.entities.Favorite.create({ from_email: myEmail, to_email: toEmail });
       setFavorites(prev => [...prev, toEmail]);
+
+      // Check if it's mutual — if so, notify both parties
+      const theyFavoriteMe = favoritedBy.includes(toEmail);
+      if (theyFavoriteMe) {
+        // Notify the other person
+        base44.entities.Notification.create({
+          user_email: toEmail,
+          type: "status_interaction",
+          actor_email: myEmail,
+          actor_name: "Someone",
+          title: "💞 It's a match!",
+          description: "You both favorited each other",
+          read: false,
+        });
+        // Notify self
+        base44.entities.Notification.create({
+          user_email: myEmail,
+          type: "status_interaction",
+          actor_email: toEmail,
+          actor_name: "Someone",
+          title: "💞 It's a match!",
+          description: "You both favorited each other",
+          read: false,
+        });
+      }
     }
   };
 
