@@ -3,6 +3,8 @@ import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
 import HangLooseLogo from "@/components/HangLooseLogo";
+import NearbyCounter from "@/components/home/NearbyCounter";
+import TrendingScents from "@/components/home/TrendingScents";
 
 const FEATURES = [
   {
@@ -64,10 +66,7 @@ export default function Home() {
                 </Button>
               </Link>
             </div>
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <span className="w-2 h-2 rounded-full bg-green-400 inline-block" />
-              No swiping. No pretending. Just real vibes nearby.
-            </div>
+            <NearbyCounter />
           </motion.div>
 
           {/* Right — sample profile card */}
@@ -138,8 +137,8 @@ export default function Home() {
         <p className="text-muted-foreground mb-10 max-w-xl">
           A live, proximity-based grid of people around you. Some show their faces, some stay low-key with the hang-loose icon, all of them are here for real-world chemistry.
         </p>
-        <div className="grid md:grid-cols-2 gap-5">
-          <div className="bg-card border border-border rounded-2xl p-6">
+        <div className="grid md:grid-cols-3 gap-5">
+          <div className="md:col-span-2 bg-card border border-border rounded-2xl p-6">
             <div className="text-xs font-semibold tracking-widest text-primary uppercase mb-3">Sneak Peek</div>
             <p className="text-sm text-muted-foreground mb-5 leading-relaxed">
               Picture a grid of tiles, each one a profile with name, scent vibe, and distance. Tap to open a quick preview, send a message, or fire off a playful vibe check.
@@ -150,12 +149,7 @@ export default function Home() {
               ))}
             </div>
           </div>
-          <div className="bg-card border border-border rounded-2xl p-6">
-            <div className="text-xs font-semibold tracking-widest text-accent uppercase mb-3">Coming Soon</div>
-            <p className="text-sm text-muted-foreground leading-relaxed">
-              Stinkrz is evolving into a full web and mobile experience. For now, we're shaping the vibe, visuals, and features with people like you.
-            </p>
-          </div>
+          <TrendingScents />
         </div>
       </section>
 

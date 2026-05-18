@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { Home, Grid3X3, MessageCircle, HelpCircle, User, Menu, X, Zap, Eye } from "lucide-react";
+import { Home, Grid3X3, MessageCircle, HelpCircle, User, Menu, X, Zap, Eye, Heart } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import HangLooseLogo from "./HangLooseLogo";
 import { useAuth } from "@/lib/AuthContext";
@@ -12,6 +12,7 @@ const NAV_ITEMS = [
   { label: "Scent Block", path: "/scent-block", icon: Grid3X3 },
   { label: "Live Feed", path: "/feed", icon: Zap },
   { label: "Messages", path: "/messages", icon: MessageCircle },
+  { label: "Matches", path: "/matches", icon: Heart },
   { label: "Who Viewed Me", path: "/viewers", icon: Eye },
   { label: "Help", path: "/help", icon: HelpCircle },
   { label: "Settings", path: "/settings", icon: null },

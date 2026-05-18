@@ -15,6 +15,7 @@ import { useAuth } from "@/lib/AuthContext";
 
 const SCENT_CATEGORIES = ["Fresh", "Musky", "Ripe", "Earthy", "Neutral"];
 const SHOWER_OPTIONS = ["Daily", "Every other day", "Twice a week", "Weekly", "When inspired", "Classified"];
+const LOOKING_FOR_OPTIONS = ["Casual chat", "Meetup", "Just browsing", "Friends", "Whatever happens"];
 
 export default function Profile() {
   const { user } = useAuth();
@@ -40,6 +41,7 @@ export default function Profile() {
     shower_frequency: "Classified",
     scent_preferences: [],
     fuzzy_location: false,
+    looking_for: "",
   });
 
   useEffect(() => {
@@ -54,6 +56,7 @@ export default function Profile() {
         shower_frequency: myProfile.shower_frequency || "Classified",
         scent_preferences: myProfile.scent_preferences || [],
         fuzzy_location: myProfile.fuzzy_location || false,
+        looking_for: myProfile.looking_for || "",
       });
     }
   }, [myProfile]);
@@ -83,6 +86,7 @@ export default function Profile() {
       shower_frequency: form.shower_frequency,
       scent_preferences: form.scent_preferences,
       fuzzy_location: form.fuzzy_location,
+      looking_for: form.looking_for || undefined,
     });
   };
 
@@ -191,6 +195,16 @@ export default function Profile() {
         <div className="space-y-2">
           <Label className="font-body text-sm">Bio</Label>
           <Textarea value={form.bio} onChange={(e) => setForm({ ...form, bio: e.target.value })} className="font-body bg-muted border-0 min-h-[80px]" />
+        </div>
+
+        <div className="space-y-2">
+          <Label className="font-body text-sm">Looking For</Label>
+          <Select value={form.looking_for} onValueChange={(val) => setForm({ ...form, looking_for: val })}>
+            <SelectTrigger className="font-body bg-muted border-0"><SelectValue placeholder="Select..." /></SelectTrigger>
+            <SelectContent>
+              {LOOKING_FOR_OPTIONS.map((opt) => <SelectItem key={opt} value={opt}>{opt}</SelectItem>)}
+            </SelectContent>
+          </Select>
         </div>
 
         <div className="grid grid-cols-2 gap-3">

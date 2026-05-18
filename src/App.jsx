@@ -11,6 +11,7 @@ import Layout from "@/components/Layout";
 
 // Eagerly loaded (lightweight / auth pages)
 import Home from "@/pages/Home";
+import AgeGate from "@/components/AgeGate";
 import SignIn from "@/pages/SignIn";
 import Register from "@/pages/Register";
 import ForgotPassword from "@/pages/ForgotPassword";
@@ -28,6 +29,7 @@ const Help = lazy(() => import("@/pages/Help"));
 const ReportPage = lazy(() => import("@/pages/ReportPage"));
 const AdminReports = lazy(() => import("@/pages/AdminReports"));
 const Viewers = lazy(() => import("@/pages/Viewers"));
+const Matches = lazy(() => import("@/pages/Matches"));
 const Onboarding = lazy(() => import("@/pages/Onboarding"));
 
 const PageLoader = () => (
@@ -90,6 +92,7 @@ const AuthenticatedApp = () => {
             <Route path="/admin/reports" element={<AdminReports />} />
             <Route path="/settings" element={<Settings />} />
             <Route path="/viewers" element={<Viewers />} />
+            <Route path="/matches" element={<Matches />} />
             <Route path="/onboarding" element={<Onboarding />} />
           </Route>
         </Route>
@@ -104,9 +107,11 @@ function App() {
   return (
     <AuthProvider>
       <QueryClientProvider client={queryClientInstance}>
-        <Router>
-          <AuthenticatedApp />
-        </Router>
+        <AgeGate>
+          <Router>
+            <AuthenticatedApp />
+          </Router>
+        </AgeGate>
         <Toaster />
       </QueryClientProvider>
     </AuthProvider>

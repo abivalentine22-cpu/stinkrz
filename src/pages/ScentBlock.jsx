@@ -6,6 +6,7 @@ import FilterChips from "@/components/scent/FilterChips";
 import { base44 } from "@/api/base44Client";
 import { useNavigate } from "react-router-dom";
 import { Crosshair, Eye, Home, MessageCircle, User } from "lucide-react";
+import MapFilterPanel from "@/components/map/MapFilterPanel";
 import { Link } from "react-router-dom";
 import { useScentMatchNotifications } from "@/hooks/useScentMatchNotifications";
 import { useBlockedUsers } from "@/hooks/useBlockedUsers";
@@ -106,6 +107,7 @@ function createPinEl(profile, isYou = false) {
 export default function ScentBlock() {
   const { user } = useAuth();
   const [filter, setFilter] = useState("All");
+  const [mapFilters, setMapFilters] = useState({ minAge: "", maxAge: "", maxDistance: "", showerFrequency: "Any", lookingFor: "Any" });
   const [selectedProfile, setSelectedProfile] = useState(null);
   const [userPos, setUserPos] = useState(null);
   const [tracking, setTracking] = useState(false);
@@ -329,12 +331,17 @@ export default function ScentBlock() {
         if (filter !== "All" && p.scent_category !== filter) return false;
         if (isBlocked(p.user_email)) return false;
         if (p.invisible_mode) return false;
+        if (mapFilters.minAge !== "" && (p.age || 0) < parseInt(mapFilters.minAge)) return false;
+        if (mapFilters.maxAge !== "" && (p.age || 999) > parseInt(mapFilters.maxAge)) return false;
+        if (mapFilters.showerFrequency !== "Any" && p.shower_frequency !== mapFilters.showerFrequency) return false;
+        if (mapFilters.lookingFor !== "Any" && p.looking_for !== mapFilters.lookingFor) return false;
         return true;
       })
       .map((p) => ({
         ...p,
         distance: calcDistance(p.location_lat, p.location_lng, youPos.lat, youPos.lng),
-      }));
+      }))
+      .filter(p => mapFilters.maxDistance === "" || parseFloat(p.distance) <= parseFloat(mapFilters.maxDistance));
   }, [profiles, filter, isBlocked, youPos.lat, youPos.lng]);
 
   const onlineCount = useMemo(() => filtered.filter(p => p.is_online).length, [filtered]);
@@ -475,6 +482,7 @@ export default function ScentBlock() {
           </Link>
         ))}
         <FilterChips active={filter} onChange={setFilter} />
+        <MapFilterPanel filters={mapFilters} onChange={setMapFilters} />
       </div>
 
       <button

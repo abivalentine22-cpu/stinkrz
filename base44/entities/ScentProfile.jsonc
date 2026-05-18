@@ -61,6 +61,17 @@
       "type": "string",
       "format": "date"
     },
+    "looking_for": {
+      "type": "string",
+      "enum": [
+        "Casual chat",
+        "Meetup",
+        "Just browsing",
+        "Friends",
+        "Whatever happens"
+      ],
+      "description": "What the user is looking for"
+    },
     "scent_preferences": {
       "type": "array",
       "items": {
@@ -91,12 +102,12 @@
     "fuzzy_location": {
       "type": "boolean",
       "default": false,
-      "description": "If true, show approximate location (within ~0.5 mile) instead of exact"
+      "description": "If true, show approximate location"
     },
     "invisible_mode": {
       "type": "boolean",
       "default": false,
-      "description": "If true, user does not appear on the map to others"
+      "description": "If true, user does not appear on the map"
     },
     "is_online": {
       "type": "boolean",

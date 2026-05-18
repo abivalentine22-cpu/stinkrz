@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, MapPin, Droplets, ShowerHead, MessageCircle, Wifi, WifiOff, Ban, Heart, ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -42,6 +42,37 @@ export default function ProfileDrawer({ profile, open, onClose, onMessage }) {
   const blocked = profile ? isBlocked(profile.user_email) : false;
   const favorited = profile ? isFavorited(profile.user_email) : false;
   const theyFavoritedMe = profile ? hasFavoritedMe(profile.user_email) : false;
+
+  // Scent compatibility score (based on preferences overlap)
+  const [myProfile, setMyProfile] = React.useState(null);
+  React.useEffect(() => {
+    if (!user?.email) return;
+    base44.entities.ScentProfile.filter({ user_email: user.email }).then(ps => setMyProfile(ps[0] || null));
+  }, [user?.email]);
+
+  const compatScore = React.useMemo(() => {
+    if (!myProfile || !profile) return null;
+    const myPrefs = myProfile.scent_preferences || [];
+    const theirCat = profile.scent_category;
+    const theirPrefs = profile.scent_preferences || [];
+    let score = 0;
+    if (myPrefs.includes(theirCat)) score += 50;
+    if (theirPrefs.includes(myProfile.scent_category)) score += 50;
+    const sharedPrefs = myPrefs.filter(p => theirPrefs.includes(p)).length;
+    score += Math.min(sharedPrefs * 10, 20);
+    return Math.min(score, 100);
+  }, [myProfile, profile]);
+
+  // Last seen text
+  const lastSeenText = React.useMemo(() => {
+    if (!profile) return null;
+    if (profile.is_online) return null;
+    if (!profile.last_active) return "Last seen: unknown";
+    const mins = (new Date() - new Date(profile.last_active)) / 60000;
+    if (mins < 60) return `Last seen ${Math.round(mins)}m ago`;
+    if (mins < 1440) return `Last seen ${Math.round(mins / 60)}h ago`;
+    return `Last seen ${Math.round(mins / 1440)}d ago`;
+  }, [profile]);
 
   const handleBlock = () => {
     if (!confirmBlock) { setConfirmBlock(true); return; }
@@ -154,7 +185,7 @@ export default function ProfileDrawer({ profile, open, onClose, onMessage }) {
                     </span>
                   ) : (
                     <span style={{ display: "flex", alignItems: "center", gap: "4px", fontSize: "11px", color: "#64748b", background: "rgba(100,116,139,0.1)", border: "1px solid rgba(100,116,139,0.2)", borderRadius: "9999px", padding: "2px 8px" }}>
-                      <WifiOff size={10} /> Away
+                      <WifiOff size={10} /> {lastSeenText || "Away"}
                     </span>
                   )}
                 </div>
@@ -163,6 +194,28 @@ export default function ProfileDrawer({ profile, open, onClose, onMessage }) {
                   {profile.distance} miles away
                 </div>
               </div>
+
+              {/* Compatibility score */}
+              {compatScore !== null && (
+                <div style={{
+                  display: "flex", alignItems: "center", gap: "8px",
+                  background: compatScore >= 70 ? "rgba(74,222,128,0.08)" : compatScore >= 40 ? "rgba(167,139,250,0.08)" : "rgba(255,255,255,0.04)",
+                  border: `1px solid ${compatScore >= 70 ? "rgba(74,222,128,0.25)" : compatScore >= 40 ? "rgba(167,139,250,0.2)" : "rgba(255,255,255,0.08)"}`,
+                  borderRadius: "9999px", padding: "5px 14px", alignSelf: "flex-start",
+                }}>
+                  <span style={{ fontSize: "13px" }}>{compatScore >= 70 ? "🔥" : compatScore >= 40 ? "✨" : "🤔"}</span>
+                  <span style={{ fontFamily: "var(--font-body)", fontSize: "12px", fontWeight: 600, color: compatScore >= 70 ? "#4ade80" : compatScore >= 40 ? "#a78bfa" : "#94a3b8" }}>
+                    {compatScore}% Scent Match
+                  </span>
+                </div>
+              )}
+
+              {/* Looking for */}
+              {profile.looking_for && (
+                <div style={{ fontSize: "12px", color: "#94a3b8", fontFamily: "var(--font-body)" }}>
+                  Looking for: <span style={{ color: "#e2e8f0", fontWeight: 500 }}>{profile.looking_for}</span>
+                </div>
+              )}
 
               {/* Scent stats */}
               <div style={{
