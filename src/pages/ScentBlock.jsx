@@ -5,7 +5,7 @@ import ProfileDrawer from "@/components/scent/ProfileDrawer";
 import FilterChips from "@/components/scent/FilterChips";
 import { base44 } from "@/api/base44Client";
 import { useNavigate } from "react-router-dom";
-import { Crosshair, Eye, Navigation, NavigationOff, Wifi } from "lucide-react";
+import { Crosshair, Eye } from "lucide-react";
 import { useScentMatchNotifications } from "@/hooks/useScentMatchNotifications";
 import { useBlockedUsers } from "@/hooks/useBlockedUsers";
 import { useAuth } from "@/lib/AuthContext";
@@ -20,7 +20,6 @@ const SCENT_RING = {
   Neutral: "#94a3b8",
 };
 
-// Stable helper — defined outside component
 function processProfile(p) {
   if (!p.location_lat || !p.location_lng) return null;
   if (p.invisible_mode) return null;
@@ -57,10 +56,10 @@ function createPinEl(profile, isYou = false) {
   const initial = profile.display_name?.[0]?.toUpperCase() || "?";
 
   const wrapper = document.createElement("div");
-  wrapper.style.cssText = "display:flex;flex-direction:column;align-items:center;cursor:pointer;";
+  wrapper.style.cssText = "display:flex;flex-direction:column;align-items:center;cursor:pointer;will-change:transform;";
 
   const avatarWrap = document.createElement("div");
-  avatarWrap.style.cssText = `position:relative;`;
+  avatarWrap.style.cssText = "position:relative;";
 
   if (isYou) {
     const pulse = document.createElement("div");
@@ -69,51 +68,34 @@ function createPinEl(profile, isYou = false) {
   }
 
   const circle = document.createElement("div");
-  circle.style.cssText = `
-    width:48px;height:48px;border-radius:50%;overflow:hidden;
-    border:3px solid ${ringColor};
-    background:#1e1b3a;
-    box-shadow:0 0 16px ${ringColor}66;
-    display:flex;align-items:center;justify-content:center;
-    font-weight:bold;color:#e2e8f0;position:relative;
-    transition: transform 0.15s ease;
-  `;
+  circle.style.cssText = `width:44px;height:44px;border-radius:50%;overflow:hidden;border:3px solid ${ringColor};background:#1e1b3a;box-shadow:0 0 14px ${ringColor}55;display:flex;align-items:center;justify-content:center;font-weight:bold;color:#e2e8f0;position:relative;transition:transform 0.15s ease;`;
 
   if (profile.avatar_url) {
     const img = document.createElement("img");
     img.src = profile.avatar_url;
     img.style.cssText = "width:100%;height:100%;object-fit:cover;border-radius:50%;";
     img.loading = "lazy";
+    img.decoding = "async";
     circle.appendChild(img);
   } else {
-    circle.innerHTML = `<span style="font-size:18px;">${isYou ? "🤙" : initial}</span>`;
+    circle.innerHTML = `<span style="font-size:16px;">${isYou ? "🤙" : initial}</span>`;
   }
 
   if (profile.is_online && !isYou) {
     const dot = document.createElement("span");
-    dot.style.cssText = "position:absolute;bottom:0;right:0;width:12px;height:12px;border-radius:50%;background:#4ade80;border:2px solid #0f0c23;";
+    dot.style.cssText = "position:absolute;bottom:0;right:0;width:10px;height:10px;border-radius:50%;background:#4ade80;border:2px solid #0f0c23;";
     circle.appendChild(dot);
   }
 
   avatarWrap.appendChild(circle);
 
   const nameTag = document.createElement("div");
-  nameTag.style.cssText = `
-    margin-top:4px;white-space:nowrap;font-size:11px;font-weight:600;
-    padding:2px 8px;border-radius:9999px;
-    background:${isYou ? "rgba(167,139,250,0.25)" : "rgba(15,12,35,0.88)"};
-    color:${isYou ? "#a78bfa" : "#e2e8f0"};
-    border:1px solid ${isYou ? "#a78bfa55" : "rgba(255,255,255,0.12)"};
-    box-shadow:0 2px 8px rgba(0,0,0,0.4);
-    font-family:sans-serif;
-    pointer-events:none;
-  `;
+  nameTag.style.cssText = `margin-top:3px;white-space:nowrap;font-size:10px;font-weight:600;padding:2px 7px;border-radius:9999px;background:${isYou ? "rgba(167,139,250,0.25)" : "rgba(15,12,35,0.88)"};color:${isYou ? "#a78bfa" : "#e2e8f0"};border:1px solid ${isYou ? "#a78bfa55" : "rgba(255,255,255,0.1)"};box-shadow:0 2px 6px rgba(0,0,0,0.4);font-family:sans-serif;pointer-events:none;`;
   nameTag.textContent = label;
 
   wrapper.appendChild(avatarWrap);
   wrapper.appendChild(nameTag);
 
-  // Hover scale effect
   wrapper.addEventListener("mouseenter", () => { circle.style.transform = "scale(1.12)"; });
   wrapper.addEventListener("mouseleave", () => { circle.style.transform = "scale(1)"; });
 
@@ -130,16 +112,21 @@ export default function ScentBlock() {
   const [profiles, setProfiles] = useState([]);
   const [myProfile, setMyProfile] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [mapReady, setMapReady] = useState(false);
 
   const mapContainerRef = useRef(null);
   const mapRef = useRef(null);
-  const markersRef = useRef({}); // id -> maplibregl.Marker
+  const markersRef = useRef({});
   const youMarkerRef = useRef(null);
   const watchIdRef = useRef(null);
+  const myProfileRef = useRef(null); // stable ref to avoid stale closure in saveLocation
   const navigate = useNavigate();
 
   useScentMatchNotifications(userPos, myProfile);
   const { isBlocked } = useBlockedUsers();
+
+  // Keep myProfileRef in sync
+  useEffect(() => { myProfileRef.current = myProfile; }, [myProfile]);
 
   // Inject ping keyframes once
   useEffect(() => {
@@ -147,7 +134,7 @@ export default function ScentBlock() {
     if (!document.getElementById(id)) {
       const style = document.createElement("style");
       style.id = id;
-      style.textContent = `@keyframes mapPing { 75%,100%{transform:scale(2);opacity:0;} }`;
+      style.textContent = `@keyframes mapPing { 75%,100%{transform:scale(2);opacity:0;} } @keyframes spin { to{transform:rotate(360deg);} }`;
       document.head.appendChild(style);
     }
   }, []);
@@ -170,6 +157,7 @@ export default function ScentBlock() {
             ],
             tileSize: 256,
             attribution: "© OpenStreetMap © CARTO",
+            maxzoom: 19,
           },
         },
         layers: [{ id: "carto-dark-layer", type: "raster", source: "carto-dark" }],
@@ -177,18 +165,22 @@ export default function ScentBlock() {
       center: [-122.675, 45.505],
       zoom: 13,
       attributionControl: false,
+      fadeDuration: 100, // faster tile fade-in
     });
 
     map.addControl(new maplibregl.NavigationControl({ showCompass: false }), "bottom-right");
     mapRef.current = map;
 
+    map.on("load", () => setMapReady(true));
+
     return () => {
       map.remove();
       mapRef.current = null;
+      setMapReady(false);
     };
   }, []);
 
-  // Load profiles + subscribe
+  // Load profiles + subscribe (real-time only, no redundant polling)
   useEffect(() => {
     if (!user?.email) return;
 
@@ -222,18 +214,20 @@ export default function ScentBlock() {
       }
     });
 
+    // Lighter periodic refresh — only to catch missed events (every 60s, not 30s)
     const interval = setInterval(async () => {
       const all = await base44.entities.ScentProfile.list();
       setProfiles(
         all.filter(p => p.user_email !== user.email).map(processProfile).filter(Boolean)
       );
-    }, 30000);
+    }, 60000);
 
     return () => { unsub(); clearInterval(interval); };
   }, [user?.email]);
 
-  const saveLocation = useCallback(async (lat, lng, profileOverride) => {
-    const profile = profileOverride || myProfile;
+  // saveLocation uses ref — never re-creates, no stale closure
+  const saveLocation = useCallback(async (lat, lng) => {
+    const profile = myProfileRef.current;
     if (!profile) return;
     await base44.entities.ScentProfile.update(profile.id, {
       location_lat: lat,
@@ -241,10 +235,10 @@ export default function ScentBlock() {
       is_online: true,
       last_active: new Date().toISOString(),
     });
-  }, [myProfile]);
+  }, []); // stable — no deps needed
 
   useEffect(() => {
-    if (myProfile && userPos) saveLocation(userPos.lat, userPos.lng, myProfile);
+    if (myProfile && userPos) saveLocation(userPos.lat, userPos.lng);
   }, [myProfile?.id]);
 
   useEffect(() => {
@@ -267,24 +261,23 @@ export default function ScentBlock() {
   }, []);
 
   useEffect(() => {
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (pos) => {
-          const { latitude: lat, longitude: lng } = pos.coords;
-          setUserPos({ lat, lng });
-          localStorage.setItem("stinkrz_last_pos", JSON.stringify({ lat, lng }));
-          saveLocation(lat, lng);
-          if (mapRef.current) {
-            mapRef.current.flyTo({ center: [lng, lat], zoom: 14, duration: 1200 });
-          }
-        },
-        () => {}
-      );
-    }
+    if (!navigator.geolocation) return;
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        const { latitude: lat, longitude: lng } = pos.coords;
+        setUserPos({ lat, lng });
+        localStorage.setItem("stinkrz_last_pos", JSON.stringify({ lat, lng }));
+        saveLocation(lat, lng);
+        if (mapRef.current) {
+          mapRef.current.flyTo({ center: [lng, lat], zoom: 14, duration: 1200 });
+        }
+      },
+      () => {}
+    );
     return () => {
       if (watchIdRef.current != null) navigator.geolocation.clearWatch(watchIdRef.current);
     };
-  }, [myProfile]);
+  }, []); // run once on mount — not on every myProfile change
 
   const startTracking = () => {
     if (!navigator.geolocation) { setGeoError("Geolocation not supported"); return; }
@@ -294,8 +287,8 @@ export default function ScentBlock() {
         const { latitude: lat, longitude: lng } = pos.coords;
         setUserPos({ lat, lng });
         saveLocation(lat, lng);
-        if (mapRef.current && tracking) {
-          mapRef.current.easeTo({ center: [lng, lat], duration: 800 });
+        if (mapRef.current) {
+          mapRef.current.easeTo({ center: [lng, lat], duration: 600 });
         }
       },
       () => setGeoError("Location access denied"),
@@ -314,7 +307,6 @@ export default function ScentBlock() {
 
   const toggleTracking = () => tracking ? stopTracking() : startTracking();
 
-  // Filtered profiles
   const youPos = userPos || { lat: 45.5051, lng: -122.6750 };
 
   const filtered = useMemo(() => {
@@ -333,31 +325,50 @@ export default function ScentBlock() {
 
   const onlineCount = useMemo(() => filtered.filter(p => p.is_online).length, [filtered]);
 
-  // Sync "You" marker
+  // Sync "You" marker — only move if already exists, recreate only on avatar change
   useEffect(() => {
+    if (!mapReady) return;
     const map = mapRef.current;
-    if (!map || !map.loaded()) return;
+    if (!map) return;
 
+    const lngLat = [youPos.lng, youPos.lat];
+
+    if (youMarkerRef.current) {
+      // Just move it — no DOM recreation needed
+      youMarkerRef.current.setLngLat(lngLat);
+      return;
+    }
+
+    // First creation
     const el = createPinEl(
       { display_name: "You", is_online: true, scent_category: "Neutral", avatar_url: myProfile?.avatar_url },
       true
     );
-
-    if (youMarkerRef.current) {
-      youMarkerRef.current.setLngLat([youPos.lng, youPos.lat]);
-      youMarkerRef.current.getElement().replaceWith(el);
-      // Swap element reference
-      youMarkerRef.current.remove();
-    }
-
-    const marker = new maplibregl.Marker({ element: el, anchor: "bottom" })
-      .setLngLat([youPos.lng, youPos.lat])
+    youMarkerRef.current = new maplibregl.Marker({ element: el, anchor: "bottom" })
+      .setLngLat(lngLat)
       .addTo(map);
-    youMarkerRef.current = marker;
-  }, [youPos.lat, youPos.lng, myProfile?.avatar_url]);
+  }, [mapReady, youPos.lat, youPos.lng]);
 
-  // Sync profile markers — add new, remove stale
+  // Recreate "You" marker only when avatar actually changes
   useEffect(() => {
+    if (!mapReady || !youMarkerRef.current) return;
+    const map = mapRef.current;
+    if (!map) return;
+    const lngLat = [youPos.lng, youPos.lat];
+    youMarkerRef.current.remove();
+    youMarkerRef.current = null;
+    const el = createPinEl(
+      { display_name: "You", is_online: true, scent_category: "Neutral", avatar_url: myProfile?.avatar_url },
+      true
+    );
+    youMarkerRef.current = new maplibregl.Marker({ element: el, anchor: "bottom" })
+      .setLngLat(lngLat)
+      .addTo(map);
+  }, [myProfile?.avatar_url]); // eslint-disable-line
+
+  // Sync profile markers — show/hide for filter changes, add/remove for data changes
+  useEffect(() => {
+    if (!mapReady) return;
     const map = mapRef.current;
     if (!map) return;
 
@@ -371,10 +382,8 @@ export default function ScentBlock() {
       }
     }
 
-    // Add or update markers
     filtered.forEach((profile) => {
       if (markersRef.current[profile.id]) {
-        // Update position silently
         markersRef.current[profile.id].setLngLat([profile.location_lng, profile.location_lat]);
         return;
       }
@@ -382,10 +391,9 @@ export default function ScentBlock() {
       const el = createPinEl(profile);
       el.addEventListener("click", () => setSelectedProfile(profile));
 
-      // Entrance animation
       el.style.opacity = "0";
-      el.style.transform = "scale(0.5)";
-      el.style.transition = "opacity 0.3s ease, transform 0.3s ease";
+      el.style.transform = "scale(0.6)";
+      el.style.transition = "opacity 0.25s ease, transform 0.25s ease";
 
       const marker = new maplibregl.Marker({ element: el, anchor: "bottom" })
         .setLngLat([profile.location_lng, profile.location_lat])
@@ -393,7 +401,6 @@ export default function ScentBlock() {
 
       markersRef.current[profile.id] = marker;
 
-      // Trigger entrance animation
       requestAnimationFrame(() => {
         requestAnimationFrame(() => {
           el.style.opacity = "1";
@@ -401,11 +408,10 @@ export default function ScentBlock() {
         });
       });
     });
-  }, [filtered]);
+  }, [mapReady, filtered]);
 
   return (
     <div style={{ position: "relative", width: "100vw", height: "100vh", overflow: "hidden" }}>
-      {/* MapLibre CSS overrides */}
       <style>{`
         .maplibregl-ctrl-bottom-right { bottom: 16px !important; right: 16px !important; }
         .maplibregl-ctrl-group {
@@ -425,35 +431,24 @@ export default function ScentBlock() {
         .maplibregl-ctrl-attrib { display: none !important; }
       `}</style>
 
-      {/* Loading overlay */}
       {loading && (
         <div style={{
           position: "absolute", inset: 0, zIndex: 2000,
           background: "rgba(10,8,25,0.9)",
-          display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: "12px",
+          display: "flex", alignItems: "center", justifyContent: "center",
         }}>
           <div style={{ width: "28px", height: "28px", borderRadius: "50%", border: "2px solid rgba(167,139,250,0.2)", borderTopColor: "#a78bfa", animation: "spin 0.8s linear infinite" }} />
         </div>
       )}
 
-      {/* Map container */}
       <div ref={mapContainerRef} style={{ width: "100%", height: "100%" }} />
 
-      {/* Filter chips — top left, minimal */}
-      <div style={{
-        position: "absolute", top: "14px", left: "14px",
-        zIndex: 1000, pointerEvents: "auto",
-      }}>
+      <div style={{ position: "absolute", top: "14px", left: "14px", zIndex: 1000 }}>
         <FilterChips active={filter} onChange={setFilter} />
       </div>
 
-      {/* Recenter button — above zoom controls, bottom right */}
       <button
-        onClick={() => {
-          if (mapRef.current) {
-            mapRef.current.flyTo({ center: [youPos.lng, youPos.lat], zoom: 14, duration: 1000 });
-          }
-        }}
+        onClick={() => mapRef.current?.flyTo({ center: [youPos.lng, youPos.lat], zoom: 14, duration: 1000 })}
         style={{
           position: "absolute", bottom: "62px", right: "16px", zIndex: 1000,
           width: "36px", height: "36px", borderRadius: "50%",
@@ -467,7 +462,6 @@ export default function ScentBlock() {
         <Crosshair size={14} />
       </button>
 
-      {/* Nearby badge — bottom left */}
       <button
         onClick={toggleTracking}
         style={{
@@ -477,8 +471,7 @@ export default function ScentBlock() {
           fontSize: "12px", color: tracking ? "#c4b5fd" : "#94a3b8",
           display: "flex", alignItems: "center", gap: "6px",
           boxShadow: "0 2px 8px rgba(0,0,0,0.4)",
-          cursor: "pointer",
-          fontFamily: "var(--font-body)",
+          cursor: "pointer", fontFamily: "var(--font-body)",
         }}
       >
         <Eye size={13} color={tracking ? "#c4b5fd" : "#94a3b8"} />
@@ -495,14 +488,12 @@ export default function ScentBlock() {
           position: "absolute", bottom: "60px", left: "14px", zIndex: 1000,
           background: "rgba(239,68,68,0.15)", border: "1px solid rgba(239,68,68,0.3)",
           borderRadius: "9999px", padding: "5px 12px",
-          fontSize: "11px", color: "#f87171",
-          fontFamily: "var(--font-body)",
+          fontSize: "11px", color: "#f87171", fontFamily: "var(--font-body)",
         }}>
           {geoError}
         </div>
       )}
 
-      {/* Profile drawer */}
       <ProfileDrawer
         profile={selectedProfile}
         open={!!selectedProfile}
