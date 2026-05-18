@@ -5,7 +5,8 @@ import ProfileDrawer from "@/components/scent/ProfileDrawer";
 import FilterChips from "@/components/scent/FilterChips";
 import { base44 } from "@/api/base44Client";
 import { useNavigate } from "react-router-dom";
-import { Crosshair, Eye } from "lucide-react";
+import { Crosshair, Eye, Home } from "lucide-react";
+import { Link } from "react-router-dom";
 import { useScentMatchNotifications } from "@/hooks/useScentMatchNotifications";
 import { useBlockedUsers } from "@/hooks/useBlockedUsers";
 import { useAuth } from "@/lib/AuthContext";
@@ -456,7 +457,17 @@ export default function ScentBlock() {
 
       <div ref={mapContainerRef} style={{ width: "100%", height: "100%" }} />
 
-      <div style={{ position: "absolute", top: "14px", left: "14px", zIndex: 1000 }}>
+      {/* Top nav bar */}
+      <div style={{ position: "absolute", top: "14px", left: "14px", right: "14px", zIndex: 1000, display: "flex", alignItems: "center", gap: "8px" }}>
+        <Link to="/" style={{
+          display: "flex", alignItems: "center", justifyContent: "center",
+          width: "36px", height: "36px", borderRadius: "50%",
+          background: "rgba(20,17,40,0.85)", border: "1px solid rgba(255,255,255,0.1)",
+          boxShadow: "0 2px 8px rgba(0,0,0,0.5)", color: "#c4b5fd", flexShrink: 0,
+          textDecoration: "none",
+        }} title="Back to Home">
+          <Home size={14} />
+        </Link>
         <FilterChips active={filter} onChange={setFilter} />
       </div>
 
