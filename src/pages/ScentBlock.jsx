@@ -496,6 +496,34 @@ export default function ScentBlock() {
         )}
       </button>
 
+      {/* Empty state for brand new users with no profile/location */}
+      {!loading && myProfile && !myProfile.location_lat && !userPos && (
+        <div style={{
+          position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)",
+          zIndex: 1000, background: "rgba(20,17,40,0.95)", border: "1px solid rgba(167,139,250,0.3)",
+          borderRadius: "16px", padding: "24px", maxWidth: "280px", textAlign: "center",
+          boxShadow: "0 8px 32px rgba(0,0,0,0.6)",
+        }}>
+          <div style={{ fontSize: "36px", marginBottom: "12px" }}>📍</div>
+          <p style={{ fontFamily: "var(--font-heading)", fontWeight: 700, fontSize: "16px", color: "#e2e8f0", marginBottom: "8px" }}>
+            Let people find you
+          </p>
+          <p style={{ fontFamily: "var(--font-body)", fontSize: "12px", color: "#94a3b8", lineHeight: 1.5, marginBottom: "16px" }}>
+            Allow location access so others can see you on the Scent Block — and you can see them.
+          </p>
+          <button
+            onClick={startTracking}
+            style={{
+              background: "hsl(263 70% 58%)", color: "white", border: "none",
+              borderRadius: "9999px", padding: "10px 20px", fontSize: "13px",
+              fontFamily: "var(--font-body)", fontWeight: 600, cursor: "pointer",
+            }}
+          >
+            Enable Location
+          </button>
+        </div>
+      )}
+
       {geoError && (
         <div style={{
           position: "absolute", bottom: "60px", left: "14px", zIndex: 1000,

@@ -14,6 +14,7 @@ export default function Register() {
   const [step, setStep] = useState("register"); // register | otp
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [agreedToTerms, setAgreedToTerms] = useState(false);
 
   const handleRegister = async (e) => {
     e.preventDefault();
@@ -88,7 +89,21 @@ export default function Register() {
                 <Label className="font-body text-sm">Confirm Password</Label>
                 <Input type="password" required value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} placeholder="••••••••" className="font-body bg-muted border-0" />
               </div>
-              <Button type="submit" disabled={loading} className="w-full font-body font-semibold">
+              <label className="flex items-start gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={agreedToTerms}
+                  onChange={e => setAgreedToTerms(e.target.checked)}
+                  className="mt-0.5 accent-primary"
+                />
+                <span className="font-body text-xs text-muted-foreground leading-relaxed">
+                  I agree to the{" "}
+                  <Link to="/terms" target="_blank" className="text-primary hover:underline">Terms of Service</Link>
+                  {" "}and{" "}
+                  <Link to="/privacy" target="_blank" className="text-primary hover:underline">Privacy Policy</Link>
+                </span>
+              </label>
+              <Button type="submit" disabled={loading || !agreedToTerms} className="w-full font-body font-semibold">
                 {loading ? "Creating account..." : "Join the Block"}
               </Button>
             </form>

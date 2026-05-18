@@ -18,6 +18,7 @@ const NAV_ITEMS = [
 
 export default function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [logoutConfirm, setLogoutConfirm] = useState(false);
   const [unreadMessages, setUnreadMessages] = useState(0);
   const location = useLocation();
   const { user } = useAuth();
@@ -73,6 +74,22 @@ export default function Navbar() {
         <div className="hidden md:flex items-center gap-3">
           {user && (
             <NotificationCenter userEmail={user.email} />
+          )}
+          {user && (
+            logoutConfirm ? (
+              <div className="flex items-center gap-2">
+                <span className="font-body text-xs text-muted-foreground">Log out?</span>
+                <Button size="sm" variant="destructive" className="font-body font-semibold px-3 h-8 text-xs"
+                  onClick={() => base44.auth.logout("/")}>Yes</Button>
+                <Button size="sm" variant="ghost" className="font-body px-3 h-8 text-xs"
+                  onClick={() => setLogoutConfirm(false)}>Cancel</Button>
+              </div>
+            ) : (
+              <button onClick={() => setLogoutConfirm(true)}
+                className="font-body text-xs text-muted-foreground hover:text-foreground transition-colors px-2">
+                Log out
+              </button>
+            )
           )}
           {user ? (
             <Link to="/profile">
