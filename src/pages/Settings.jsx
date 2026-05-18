@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Save, ArrowLeft, Eye, Volume2, Lock } from "lucide-react";
+import { Save, ArrowLeft, Eye, Volume2, Lock, Trash2 } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import { useAuth } from "@/lib/AuthContext";
 
@@ -44,6 +44,8 @@ export default function Settings() {
   const [travelMode, setTravelMode] = useState("neither");
   const [invisibleMode, setInvisibleMode] = useState(false);
   const [myProfile, setMyProfile] = useState(null);
+  const [deleteConfirm, setDeleteConfirm] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     if (!user?.email) return;
@@ -296,11 +298,59 @@ export default function Settings() {
       <Button
         onClick={() => saveMutation.mutate()}
         disabled={saveMutation.isPending}
-        className="w-full gap-2 font-body font-semibold"
+        className="w-full gap-2 font-body font-semibold mb-5"
       >
         <Save className="w-4 h-4" />
         {saveMutation.isPending ? "Saving..." : "Save All Settings"}
       </Button>
+
+      {/* Danger Zone — Account Deletion */}
+      <div className="bg-card border border-destructive/20 rounded-2xl p-6">
+        <h3 className="font-heading text-sm font-semibold mb-1 flex items-center gap-2 text-destructive">
+          <Trash2 className="w-4 h-4" />
+          Danger Zone
+        </h3>
+        <p className="font-body text-xs text-muted-foreground mb-4">
+          Permanently delete your account and all associated data. This cannot be undone.
+        </p>
+        {!deleteConfirm ? (
+          <Button
+            variant="outline"
+            className="w-full border-destructive/30 text-destructive hover:bg-destructive/10 font-body"
+            onClick={() => setDeleteConfirm(true)}
+          >
+            <Trash2 className="w-4 h-4 mr-2" />
+            Delete My Account
+          </Button>
+        ) : (
+          <div className="space-y-3">
+            <p className="font-body text-sm text-destructive font-semibold text-center">
+              Are you absolutely sure? All your data will be gone forever.
+            </p>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                className="flex-1 font-body"
+                onClick={() => setDeleteConfirm(false)}
+                disabled={deleting}
+              >
+                Cancel
+              </Button>
+              <Button
+                className="flex-1 bg-destructive hover:bg-destructive/90 text-white font-body"
+                disabled={deleting}
+                onClick={async () => {
+                  setDeleting(true);
+                  await base44.functions.invoke("deleteAccount", {});
+                  base44.auth.logout("/");
+                }}
+              >
+                {deleting ? "Deleting…" : "Yes, Delete Everything"}
+              </Button>
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

@@ -256,8 +256,21 @@ export default function ScentBlock() {
   useEffect(() => {
     const saved = localStorage.getItem("stinkrz_last_pos");
     if (saved) {
-      try { setUserPos(JSON.parse(saved)); } catch (_) {}
+      try { setUserPos(JSON.parse(saved)); return; } catch (_) {}
     }
+    // No saved position — try IP-based geolocation as a better default than hardcoded Portland
+    fetch("https://ipapi.co/json/")
+      .then(r => r.json())
+      .then(d => {
+        if (d.latitude && d.longitude) {
+          const pos = { lat: d.latitude, lng: d.longitude };
+          setUserPos(pos);
+          if (mapRef.current) {
+            mapRef.current.setCenter([pos.lng, pos.lat]);
+          }
+        }
+      })
+      .catch(() => {}); // fail silently, GPS will override anyway
   }, []);
 
   useEffect(() => {

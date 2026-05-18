@@ -18,15 +18,23 @@ export default function Messages() {
   const location = useLocation();
   const { isBlocked } = useBlockedUsers();
 
-  // Auto-open conversation if navigated from profile drawer
+  // Auto-open conversation from profile drawer OR from ?with=email deep link (notifications)
   useEffect(() => {
     const profile = location.state?.openConversationWith;
     if (profile) {
       setActiveConversation({ partnerEmail: profile.user_email, partnerProfile: profile });
-      // Clear state so back navigation doesn't re-open
       window.history.replaceState({}, "");
+      return;
     }
-  }, [location.state]);
+    // Deep link: /messages?with=someone@email.com
+    const params = new URLSearchParams(window.location.search);
+    const withEmail = params.get("with");
+    if (withEmail && allProfiles.length > 0) {
+      const p = allProfiles.find(x => x.user_email === withEmail);
+      setActiveConversation({ partnerEmail: withEmail, partnerProfile: p || null });
+      window.history.replaceState({}, "", "/messages");
+    }
+  }, [location.state, allProfiles]);
 
   // Real-time messages via subscribe + fallback polling
   const [allMessages, setAllMessages] = useState([]);
