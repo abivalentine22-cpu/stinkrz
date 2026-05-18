@@ -1,12 +1,15 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Send, ShieldAlert, Ban, Smile, Image as ImageIcon, Loader } from "lucide-react";
+import { Send, ShieldAlert, Ban, Smile, Image as ImageIcon, Loader, ChevronDown } from "lucide-react";
 import { format } from "date-fns";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useToast } from "@/components/ui/use-toast";
 import { base44 } from "@/api/base44Client";
 import { useBlockedUsers } from "@/hooks/useBlockedUsers";
+import { useTypingIndicator } from "@/hooks/useTypingIndicator";
+import { useChatSounds } from "@/hooks/useChatSounds";
+import { useMessageReactions } from "@/hooks/useMessageReactions";
 
 const SCENT_STICKERS = [
   { id: "s1", emoji: "🧼", label: "Fresh & Clean" },
@@ -23,6 +26,8 @@ const SCENT_STICKERS = [
   { id: "s12", emoji: "✨", label: "Sparkling" },
 ];
 
+const REACTION_EMOJIS = ["💨", "🤙", "👃", "🔥", "💜", "😂", "❤️", "😮"];
+
 export default function ChatWindow({ me, conversation, messages, onVibeCheck, onMessageSent }) {
   const [input, setInput] = useState("");
   const [stickersOpen, setStickersOpen] = useState(false);
@@ -30,11 +35,72 @@ export default function ChatWindow({ me, conversation, messages, onVibeCheck, on
   const [uploading, setUploading] = useState(false);
   const [blockConfirm, setBlockConfirm] = useState(false);
   const [optimisticMsgs, setOptimisticMsgs] = useState([]);
+  const [showScrollDown, setShowScrollDown] = useState(false);
+  const [reactionPickerMsgId, setReactionPickerMsgId] = useState(null);
+
   const scrollRef = useRef(null);
   const fileInputRef = useRef(null);
   const prevMsgCountRef = useRef(0);
+  const isNearBottomRef = useRef(true);
+
   const { toast } = useToast();
   const { blockUser } = useBlockedUsers();
+  const { isPartnerTyping, broadcastTyping } = useTypingIndicator(me?.email, conversation?.partnerEmail);
+  const { playSend, playReceive, playReaction } = useChatSounds();
+  const { reactions, toggleReaction } = useMessageReactions(messages, me?.email);
+
+  const hideReadReceipts = localStorage.getItem("stinkrz_hide_read_receipts") === "true";
+
+  // Track scroll position to show/hide jump button
+  const handleScroll = useCallback(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const distFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
+    isNearBottomRef.current = distFromBottom < 80;
+    setShowScrollDown(distFromBottom > 120);
+  }, []);
+
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    el.addEventListener("scroll", handleScroll, { passive: true });
+    return () => el.removeEventListener("scroll", handleScroll);
+  }, [handleScroll]);
+
+  // Auto-scroll logic
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const isInitialLoad = prevMsgCountRef.current === 0 && messages.length > 0;
+    if (isInitialLoad) {
+      el.scrollTop = el.scrollHeight;
+    } else if (messages.length > prevMsgCountRef.current) {
+      const lastMsg = messages[messages.length - 1];
+      const isMyMsg = lastMsg?.sender_email === me?.email;
+      if (isNearBottomRef.current || isMyMsg) {
+        el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
+      } else {
+        // New message from partner while scrolled up — show jump button
+        setShowScrollDown(true);
+        // Play receive sound for incoming messages
+        if (!isMyMsg) playReceive();
+      }
+    }
+    prevMsgCountRef.current = messages.length;
+  }, [messages]);
+
+  // Clear state on conversation switch
+  useEffect(() => {
+    setOptimisticMsgs([]);
+    setShowScrollDown(false);
+    prevMsgCountRef.current = 0;
+    isNearBottomRef.current = true;
+  }, [conversation?.partnerEmail]);
+
+  const scrollToBottom = () => {
+    scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
+    setShowScrollDown(false);
+  };
 
   const handleBlock = () => {
     if (!blockConfirm) {
@@ -47,24 +113,9 @@ export default function ChatWindow({ me, conversation, messages, onVibeCheck, on
     setBlockConfirm(false);
   };
 
-  useEffect(() => {
-    const el = scrollRef.current;
-    if (!el) return;
-    const isInitialLoad = prevMsgCountRef.current === 0 && messages.length > 0;
-    if (isInitialLoad) {
-      // Instant jump on first load — no janky smooth scroll through history
-      el.scrollTop = el.scrollHeight;
-    } else if (messages.length > prevMsgCountRef.current) {
-      // New message arrived — smooth scroll
-      el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
-    }
-    prevMsgCountRef.current = messages.length;
-  }, [messages]);
-
   const sendMessage = async (content, isSticker = false, mediaUrl = null, mediaType = null) => {
     if (!content?.trim() || !me || !conversation) return;
 
-    // Optimistic message — show immediately before server confirms
     const optimisticId = `opt-${Date.now()}`;
     const optimistic = {
       id: optimisticId,
@@ -81,6 +132,7 @@ export default function ChatWindow({ me, conversation, messages, onVibeCheck, on
     setOptimisticMsgs(prev => [...prev, optimistic]);
     setInput("");
     setStickersOpen(false);
+    playSend();
 
     setSending(true);
     const msg = await base44.entities.ChatMessage.create({
@@ -92,7 +144,6 @@ export default function ChatWindow({ me, conversation, messages, onVibeCheck, on
       media_type: mediaType,
       read: false,
     });
-    // Remove optimistic once real message arrives via subscription
     setOptimisticMsgs(prev => prev.filter(m => m.id !== optimisticId));
     setSending(false);
 
@@ -133,7 +184,6 @@ export default function ChatWindow({ me, conversation, messages, onVibeCheck, on
   const handleMediaUpload = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    
     setUploading(true);
     try {
       const isVideo = file.type.startsWith("video/");
@@ -150,32 +200,39 @@ export default function ChatWindow({ me, conversation, messages, onVibeCheck, on
 
   const sendSticker = (sticker) => sendMessage(`${sticker.emoji} ${sticker.label}`, true);
 
-  // Clear optimistic messages when switching conversations
-  useEffect(() => { setOptimisticMsgs([]); prevMsgCountRef.current = 0; }, [conversation?.partnerEmail]);
+  const handleInputChange = (e) => {
+    setInput(e.target.value);
+    if (e.target.value.trim()) broadcastTyping();
+  };
+
+  const handleReactionClick = async (msgId, emoji) => {
+    playReaction();
+    setReactionPickerMsgId(null);
+    await toggleReaction(msgId, emoji);
+  };
 
   const profile = conversation?.partnerProfile;
   const partnerName = profile?.display_name || conversation?.partnerEmail || "";
 
-  // Merge real + optimistic, deduping by content+sender for instant feel
   const displayMessages = [
     ...messages,
-    ...optimisticMsgs.filter(o => !messages.some(m => m.content === o.content && m.sender_email === o.sender_email && !m._optimistic)),
+    ...optimisticMsgs.filter(o => !messages.some(m => m.content === o.content && m.sender_email === o.sender_email)),
   ];
 
   if (!conversation) {
     return (
       <div className="flex-1 flex items-center justify-center text-center p-8">
         <div>
-          <p className="text-5xl mb-3 select-none">💬</p>
-          <p className="font-heading text-lg font-semibold">Pick a chat</p>
-          <p className="font-body text-sm text-muted-foreground">Select a conversation to start messaging</p>
+          <p className="text-5xl mb-3 select-none">💨</p>
+          <p className="font-heading text-lg font-semibold">No chat selected</p>
+          <p className="font-body text-sm text-muted-foreground mt-1">Pick a conversation or tap someone on the map</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="flex-1 flex flex-col min-h-0">
+    <div className="flex-1 flex flex-col min-h-0 relative">
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-border bg-card/50">
         <div className="flex items-center gap-3">
@@ -188,9 +245,13 @@ export default function ChatWindow({ me, conversation, messages, onVibeCheck, on
           </div>
           <div>
             <h3 className="font-heading font-semibold text-sm">{partnerName}</h3>
-            {profile?.is_online && (
+            {isPartnerTyping ? (
+              <span className="text-xs text-primary font-body flex items-center gap-1">
+                <TypingDots /> typing…
+              </span>
+            ) : profile?.is_online ? (
               <span className="text-xs text-green-400 font-body">Online</span>
-            )}
+            ) : null}
           </div>
         </div>
         <Button variant="ghost" size="sm" onClick={onVibeCheck} className="gap-1.5 text-accent hover:text-accent font-body">
@@ -202,45 +263,143 @@ export default function ChatWindow({ me, conversation, messages, onVibeCheck, on
       {/* Messages */}
       <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-4 space-y-3">
         {messages.length === 0 && (
-          <div className="flex items-center justify-center h-full text-muted-foreground">
-            <p className="font-body text-sm">No messages yet. Say hi! 👋</p>
+          <div className="flex flex-col items-center justify-center h-full text-center gap-3 py-12">
+            <span className="text-4xl">👃</span>
+            <p className="font-heading text-base font-semibold">{partnerName} is waiting for a whiff</p>
+            <p className="font-body text-sm text-muted-foreground max-w-[220px]">Break the ice — send a Scent Sticker to start the vibe</p>
+            <button
+              onClick={() => setStickersOpen(true)}
+              className="mt-1 px-4 py-2 rounded-full bg-primary/15 border border-primary/30 text-primary text-sm font-body font-medium hover:bg-primary/25 transition-colors"
+            >
+              Send a Sticker 😄
+            </button>
           </div>
         )}
+
         {displayMessages.map((msg) => {
           const isMe = msg.sender_email === me?.email;
+          const msgReactions = reactions[msg.id] || [];
+          const reactionGroups = msgReactions.reduce((acc, r) => {
+            acc[r.emoji] = (acc[r.emoji] || []);
+            acc[r.emoji].push(r.user_email);
+            return acc;
+          }, {});
+          const showPicker = reactionPickerMsgId === msg.id;
+
           return (
-            <div key={msg.id} className={`flex ${isMe ? "justify-end" : "justify-start"}`}>
-              <div className={`max-w-[75%] rounded-2xl px-4 py-2.5 transition-opacity ${
-                msg._optimistic ? "opacity-60" : "opacity-100"
-              } ${
-                msg.is_sticker
-                  ? "bg-transparent text-3xl text-center"
-                  : isMe
-                  ? "bg-primary text-primary-foreground rounded-br-md"
-                  : "bg-muted text-foreground rounded-bl-md"
-              }`}>
-                {msg.media_url && msg.media_type === "image" && (
-                  <img src={msg.media_url} alt="shared" className="max-w-full rounded-lg mb-2" />
+            <div
+              key={msg.id}
+              className={`flex flex-col ${isMe ? "items-end" : "items-start"}`}
+              onMouseLeave={() => setReactionPickerMsgId(null)}
+            >
+              <div className="relative group">
+                {/* Reaction picker trigger */}
+                {!msg._optimistic && (
+                  <button
+                    onClick={() => setReactionPickerMsgId(showPicker ? null : msg.id)}
+                    className={`absolute ${isMe ? "-left-7" : "-right-7"} top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity text-base z-10 hover:scale-110`}
+                    title="React"
+                  >
+                    😄
+                  </button>
                 )}
-                {msg.media_url && msg.media_type === "video" && (
-                  <video controls className="max-w-full rounded-lg mb-2" style={{ maxHeight: "300px" }}>
-                    <source src={msg.media_url} type="video/mp4" />
-                  </video>
+
+                {/* Reaction picker dropdown */}
+                {showPicker && (
+                  <div
+                    className={`absolute ${isMe ? "right-full mr-2" : "left-full ml-2"} top-0 z-20 flex gap-1 bg-card border border-border rounded-full px-2 py-1 shadow-lg`}
+                    onMouseLeave={() => setReactionPickerMsgId(null)}
+                  >
+                    {REACTION_EMOJIS.map(emoji => (
+                      <button
+                        key={emoji}
+                        onClick={() => handleReactionClick(msg.id, emoji)}
+                        className="text-lg hover:scale-125 transition-transform"
+                      >
+                        {emoji}
+                      </button>
+                    ))}
+                  </div>
                 )}
-                <p className={msg.is_sticker ? "text-3xl" : "font-body text-sm"}>{msg.content}</p>
-                <p className={`text-[10px] mt-1 flex items-center gap-1 ${isMe ? "text-primary-foreground/60" : "text-muted-foreground"}`}>
-                  {msg._optimistic ? "Sending…" : format(new Date(msg.created_date), "h:mm a")}
-                  {isMe && !msg._optimistic && (
-                    <span style={{ fontSize: "10px" }} title={msg.read ? "Read" : "Sent"}>
-                      {msg.read ? "✓✓" : "✓"}
-                    </span>
+
+                <div className={`max-w-[75%] rounded-2xl px-4 py-2.5 transition-opacity ${
+                  msg._optimistic ? "opacity-60" : "opacity-100"
+                } ${
+                  msg.is_sticker
+                    ? "bg-transparent text-3xl text-center"
+                    : isMe
+                    ? "bg-primary text-primary-foreground rounded-br-md"
+                    : "bg-muted text-foreground rounded-bl-md"
+                }`}>
+                  {msg.media_url && msg.media_type === "image" && (
+                    <img src={msg.media_url} alt="shared" className="max-w-full rounded-lg mb-2" />
                   )}
-                </p>
+                  {msg.media_url && msg.media_type === "video" && (
+                    <video controls className="max-w-full rounded-lg mb-2" style={{ maxHeight: "300px" }}>
+                      <source src={msg.media_url} type="video/mp4" />
+                    </video>
+                  )}
+                  <p className={msg.is_sticker ? "text-3xl" : "font-body text-sm"}>{msg.content}</p>
+                  <p className={`text-[10px] mt-1 flex items-center gap-1 ${isMe ? "text-primary-foreground/60" : "text-muted-foreground"}`}>
+                    {msg._optimistic
+                      ? <><Loader className="w-2.5 h-2.5 animate-spin inline" /> Sending…</>
+                      : format(new Date(msg.created_date), "h:mm a")
+                    }
+                    {isMe && !msg._optimistic && !hideReadReceipts && (
+                      <span style={{ fontSize: "10px" }} title={msg.read ? "Read" : "Sent"}>
+                        {msg.read ? "✓✓" : "✓"}
+                      </span>
+                    )}
+                  </p>
+                </div>
               </div>
+
+              {/* Reactions below bubble */}
+              {Object.keys(reactionGroups).length > 0 && (
+                <div className={`flex gap-1 mt-1 flex-wrap ${isMe ? "justify-end" : "justify-start"}`}>
+                  {Object.entries(reactionGroups).map(([emoji, users]) => {
+                    const iMine = users.includes(me?.email);
+                    return (
+                      <button
+                        key={emoji}
+                        onClick={() => handleReactionClick(msg.id, emoji)}
+                        className={`text-xs px-2 py-0.5 rounded-full border transition-colors flex items-center gap-0.5 ${
+                          iMine
+                            ? "bg-primary/20 border-primary/40 text-primary"
+                            : "bg-muted/60 border-border text-muted-foreground hover:bg-muted"
+                        }`}
+                      >
+                        {emoji}{users.length > 1 && <span className="ml-0.5">{users.length}</span>}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           );
         })}
+
+        {/* Typing indicator */}
+        {isPartnerTyping && (
+          <div className="flex items-center gap-2">
+            <div className="bg-muted rounded-2xl rounded-bl-md px-4 py-2.5 flex items-center gap-1.5">
+              <TypingDots />
+              <span className="font-body text-xs text-muted-foreground">{partnerName} is typing</span>
+            </div>
+          </div>
+        )}
       </div>
+
+      {/* Jump to bottom button */}
+      {showScrollDown && (
+        <button
+          onClick={scrollToBottom}
+          className="absolute bottom-24 left-1/2 -translate-x-1/2 z-10 flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-primary text-primary-foreground text-xs font-body font-semibold shadow-lg hover:bg-primary/90 transition-colors animate-bounce"
+        >
+          <ChevronDown className="w-3.5 h-3.5" />
+          New messages
+        </button>
+      )}
 
       {/* Input */}
       <div className="border-t border-border bg-card/80">
@@ -296,7 +455,7 @@ export default function ChatWindow({ me, conversation, messages, onVibeCheck, on
 
           <Input
             value={input}
-            onChange={(e) => setInput(e.target.value)}
+            onChange={handleInputChange}
             onKeyDown={(e) => e.key === "Enter" && sendMessage(input)}
             placeholder="Send a whiff..."
             className="flex-1 font-body bg-muted border-0 focus-visible:ring-1"
@@ -307,5 +466,26 @@ export default function ChatWindow({ me, conversation, messages, onVibeCheck, on
         </div>
       </div>
     </div>
+  );
+}
+
+// Animated typing dots
+function TypingDots() {
+  return (
+    <span className="flex gap-0.5 items-center">
+      {[0, 1, 2].map(i => (
+        <span
+          key={i}
+          className="w-1.5 h-1.5 rounded-full bg-primary inline-block"
+          style={{ animation: `typingBounce 1.2s ease-in-out ${i * 0.2}s infinite` }}
+        />
+      ))}
+      <style>{`
+        @keyframes typingBounce {
+          0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
+          30% { transform: translateY(-4px); opacity: 1; }
+        }
+      `}</style>
+    </span>
   );
 }

@@ -1,0 +1,26 @@
+{
+  "name": "TypingIndicator",
+  "type": "object",
+  "properties": {
+    "user_email": {
+      "type": "string",
+      "description": "Who is typing"
+    },
+    "conversation_partner": {
+      "type": "string",
+      "description": "The other person in the conversation"
+    },
+    "display_name": {
+      "type": "string"
+    },
+    "expires_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Auto-expires after a few seconds"
+    }
+  },
+  "required": [
+    "user_email",
+    "conversation_partner"
+  ]
+}
