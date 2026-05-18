@@ -29,8 +29,10 @@ export default function ChatWindow({ me, conversation, messages, onVibeCheck, on
   const [sending, setSending] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [blockConfirm, setBlockConfirm] = useState(false);
+  const [optimisticMsgs, setOptimisticMsgs] = useState([]);
   const scrollRef = useRef(null);
   const fileInputRef = useRef(null);
+  const prevMsgCountRef = useRef(0);
   const { toast } = useToast();
   const { blockUser } = useBlockedUsers();
 
@@ -46,11 +48,40 @@ export default function ChatWindow({ me, conversation, messages, onVibeCheck, on
   };
 
   useEffect(() => {
-    scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
+    const el = scrollRef.current;
+    if (!el) return;
+    const isInitialLoad = prevMsgCountRef.current === 0 && messages.length > 0;
+    if (isInitialLoad) {
+      // Instant jump on first load — no janky smooth scroll through history
+      el.scrollTop = el.scrollHeight;
+    } else if (messages.length > prevMsgCountRef.current) {
+      // New message arrived — smooth scroll
+      el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
+    }
+    prevMsgCountRef.current = messages.length;
   }, [messages]);
 
   const sendMessage = async (content, isSticker = false, mediaUrl = null, mediaType = null) => {
-    if (!content.trim() || !me || !conversation) return;
+    if (!content?.trim() || !me || !conversation) return;
+
+    // Optimistic message — show immediately before server confirms
+    const optimisticId = `opt-${Date.now()}`;
+    const optimistic = {
+      id: optimisticId,
+      sender_email: me.email,
+      receiver_email: conversation.partnerEmail,
+      content,
+      is_sticker: isSticker,
+      media_url: mediaUrl,
+      media_type: mediaType,
+      read: false,
+      created_date: new Date().toISOString(),
+      _optimistic: true,
+    };
+    setOptimisticMsgs(prev => [...prev, optimistic]);
+    setInput("");
+    setStickersOpen(false);
+
     setSending(true);
     const msg = await base44.entities.ChatMessage.create({
       sender_email: me.email,
@@ -61,19 +92,18 @@ export default function ChatWindow({ me, conversation, messages, onVibeCheck, on
       media_type: mediaType,
       read: false,
     });
-    
-    // Trigger notification for receiver
-    await base44.functions.invoke('createMessageNotification', {
+    // Remove optimistic once real message arrives via subscription
+    setOptimisticMsgs(prev => prev.filter(m => m.id !== optimisticId));
+    setSending(false);
+
+    base44.functions.invoke('createMessageNotification', {
       message_id: msg.id,
       sender_email: me.email,
-      sender_name: conversation.partnerProfile?.display_name || me.full_name,
+      sender_name: me.full_name,
       sender_avatar: conversation.partnerProfile?.avatar_url,
       receiver_email: conversation.partnerEmail,
     }).catch(() => {});
-    
-    setInput("");
-    setStickersOpen(false);
-    setSending(false);
+
     onMessageSent?.();
   };
 
@@ -120,8 +150,17 @@ export default function ChatWindow({ me, conversation, messages, onVibeCheck, on
 
   const sendSticker = (sticker) => sendMessage(`${sticker.emoji} ${sticker.label}`, true);
 
+  // Clear optimistic messages when switching conversations
+  useEffect(() => { setOptimisticMsgs([]); prevMsgCountRef.current = 0; }, [conversation?.partnerEmail]);
+
   const profile = conversation?.partnerProfile;
   const partnerName = profile?.display_name || conversation?.partnerEmail || "";
+
+  // Merge real + optimistic, deduping by content+sender for instant feel
+  const displayMessages = [
+    ...messages,
+    ...optimisticMsgs.filter(o => !messages.some(m => m.content === o.content && m.sender_email === o.sender_email && !m._optimistic)),
+  ];
 
   if (!conversation) {
     return (
@@ -167,11 +206,13 @@ export default function ChatWindow({ me, conversation, messages, onVibeCheck, on
             <p className="font-body text-sm">No messages yet. Say hi! 👋</p>
           </div>
         )}
-        {messages.map((msg) => {
+        {displayMessages.map((msg) => {
           const isMe = msg.sender_email === me?.email;
           return (
             <div key={msg.id} className={`flex ${isMe ? "justify-end" : "justify-start"}`}>
-              <div className={`max-w-[75%] rounded-2xl px-4 py-2.5 ${
+              <div className={`max-w-[75%] rounded-2xl px-4 py-2.5 transition-opacity ${
+                msg._optimistic ? "opacity-60" : "opacity-100"
+              } ${
                 msg.is_sticker
                   ? "bg-transparent text-3xl text-center"
                   : isMe
@@ -188,8 +229,8 @@ export default function ChatWindow({ me, conversation, messages, onVibeCheck, on
                 )}
                 <p className={msg.is_sticker ? "text-3xl" : "font-body text-sm"}>{msg.content}</p>
                 <p className={`text-[10px] mt-1 flex items-center gap-1 ${isMe ? "text-primary-foreground/60" : "text-muted-foreground"}`}>
-                  {format(new Date(msg.created_date), "h:mm a")}
-                  {isMe && (
+                  {msg._optimistic ? "Sending…" : format(new Date(msg.created_date), "h:mm a")}
+                  {isMe && !msg._optimistic && (
                     <span style={{ fontSize: "10px" }} title={msg.read ? "Read" : "Sent"}>
                       {msg.read ? "✓✓" : "✓"}
                     </span>

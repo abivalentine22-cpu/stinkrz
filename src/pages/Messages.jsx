@@ -97,13 +97,17 @@ export default function Messages() {
       .reverse();
   }, [myMessages, activeConversation?.partnerEmail, me?.email]);
 
-  // Mark messages as read when conversation is opened
+  // Mark messages as read when conversation opens — only dep on partnerEmail, not every message change
   useEffect(() => {
     if (!activeConversation || !me?.email) return;
-    allMessages
-      .filter(m => m.receiver_email === me.email && m.sender_email === activeConversation.partnerEmail && !m.read)
-      .forEach(m => base44.entities.ChatMessage.update(m.id, { read: true }));
-  }, [activeConversation?.partnerEmail, allMessages]);
+    // Small delay so message list has rendered before we fire updates
+    const timer = setTimeout(() => {
+      allMessages
+        .filter(m => m.receiver_email === me.email && m.sender_email === activeConversation.partnerEmail && !m.read)
+        .forEach(m => base44.entities.ChatMessage.update(m.id, { read: true }));
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [activeConversation?.partnerEmail]); // intentionally exclude allMessages
 
   const handleVibeCheck = () => {
     const vibes = [
