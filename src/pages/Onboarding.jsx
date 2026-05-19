@@ -13,6 +13,8 @@ import { useAuth } from "@/lib/AuthContext";
 
 const SCENT_CATEGORIES = ["Fresh", "Musky", "Ripe", "Earthy", "Neutral"];
 const SCENT_EMOJIS = { Fresh: "🧼", Musky: "🌲", Ripe: "🧀", Earthy: "🍂", Neutral: "⚖️" };
+const LOOKING_FOR_OPTIONS = ["Casual chat", "Meetup", "Just browsing", "Friends", "Whatever happens"];
+const SHOWER_OPTIONS = ["Daily", "Every other day", "Twice a week", "Weekly", "When inspired", "Classified"];
 
 export default function Onboarding() {
   const navigate = useNavigate();
@@ -36,6 +38,8 @@ export default function Onboarding() {
     vibe_badges: [],
     shower_frequency: "",
     scent_preferences: [],
+    looking_for: "",
+    shower_frequency: "",
     personality_prompts: [
       { prompt: PERSONALITY_PROMPTS[0], answer: "" },
       { prompt: PERSONALITY_PROMPTS[5], answer: "" },
@@ -63,6 +67,7 @@ export default function Onboarding() {
       scent_intensity: profile.scent_intensity,
       vibe_badges: profile.vibe_badges,
       shower_frequency: profile.shower_frequency || "Classified",
+      looking_for: profile.looking_for || undefined,
       scent_preferences: profile.scent_preferences,
       personality_prompts: profile.personality_prompts.filter((p) => p.answer),
       is_online: true,
@@ -178,6 +183,36 @@ export default function Onboarding() {
         />
         <div className="flex justify-between text-[10px] font-body text-muted-foreground">
           <span>Subtle</span><span>Nuclear</span>
+        </div>
+      </div>
+      <div className="space-y-3">
+        <Label className="font-body text-sm">Shower frequency</Label>
+        <div className="flex flex-wrap gap-2">
+          {SHOWER_OPTIONS.map((opt) => (
+            <Badge
+              key={opt}
+              variant={profile.shower_frequency === opt ? "default" : "outline"}
+              className="cursor-pointer font-body text-xs"
+              onClick={() => updateProfile("shower_frequency", opt)}
+            >
+              {opt}
+            </Badge>
+          ))}
+        </div>
+      </div>
+      <div className="space-y-3">
+        <Label className="font-body text-sm">Looking for</Label>
+        <div className="flex flex-wrap gap-2">
+          {LOOKING_FOR_OPTIONS.map((opt) => (
+            <Badge
+              key={opt}
+              variant={profile.looking_for === opt ? "default" : "outline"}
+              className="cursor-pointer font-body text-xs"
+              onClick={() => updateProfile("looking_for", opt)}
+            >
+              {opt}
+            </Badge>
+          ))}
         </div>
       </div>
       <div className="space-y-3">

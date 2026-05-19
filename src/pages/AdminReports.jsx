@@ -6,6 +6,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Shield, Clock, CheckCircle, XCircle, AlertTriangle } from "lucide-react";
+import { useState } from "react";
+import { Textarea } from "@/components/ui/textarea";
 import { format } from "date-fns";
 
 const STATUS_STYLES = {
@@ -23,8 +25,10 @@ export default function AdminReports() {
     queryFn: () => base44.entities.Report.list("-created_date"),
   });
 
+  const [notes, setNotes] = useState({});
+
   const updateMutation = useMutation({
-    mutationFn: ({ id, status }) => base44.entities.Report.update(id, { status }),
+    mutationFn: ({ id, status, admin_notes }) => base44.entities.Report.update(id, { status, ...(admin_notes !== undefined ? { admin_notes } : {}) }),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["reports"] }),
   });
 
@@ -85,20 +89,33 @@ export default function AdminReports() {
                     </p>
                   </div>
 
-                  <Select
-                    value={report.status}
-                    onValueChange={(val) => updateMutation.mutate({ id: report.id, status: val })}
-                  >
-                    <SelectTrigger className="w-36 font-body text-xs bg-muted border-0">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="pending">Pending</SelectItem>
-                      <SelectItem value="reviewed">Reviewed</SelectItem>
-                      <SelectItem value="resolved">Resolved</SelectItem>
-                      <SelectItem value="dismissed">Dismissed</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <div className="flex flex-col gap-2 min-w-[160px]">
+                    <Select
+                      value={report.status}
+                      onValueChange={(val) => updateMutation.mutate({ id: report.id, status: val })}
+                    >
+                      <SelectTrigger className="w-full font-body text-xs bg-muted border-0">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="pending">Pending</SelectItem>
+                        <SelectItem value="reviewed">Reviewed</SelectItem>
+                        <SelectItem value="resolved">Resolved</SelectItem>
+                        <SelectItem value="dismissed">Dismissed</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <Textarea
+                      placeholder="Admin notes..."
+                      className="font-body text-xs bg-muted border-0 min-h-[60px] resize-none"
+                      value={notes[report.id] ?? (report.admin_notes || "")}
+                      onChange={(e) => setNotes(n => ({ ...n, [report.id]: e.target.value }))}
+                      onBlur={() => {
+                        if (notes[report.id] !== undefined) {
+                          updateMutation.mutate({ id: report.id, status: report.status, admin_notes: notes[report.id] });
+                        }
+                      }}
+                    />
+                  </div>
                 </div>
               </motion.div>
             );

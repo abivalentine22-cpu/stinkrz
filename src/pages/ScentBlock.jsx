@@ -4,7 +4,7 @@ import "maplibre-gl/dist/maplibre-gl.css";
 import ProfileDrawer from "@/components/scent/ProfileDrawer";
 import FilterChips from "@/components/scent/FilterChips";
 import { base44 } from "@/api/base44Client";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { Crosshair, Eye, Home, MessageCircle, User } from "lucide-react";
 import MapFilterPanel from "@/components/map/MapFilterPanel";
 import { Link } from "react-router-dom";
@@ -567,6 +567,9 @@ export default function ScentBlock() {
         onMessage={(profile) => {
           setSelectedProfile(null);
           navigate("/messages", { state: { openConversationWith: profile } });
+        }}
+        onReport={(profile) => {
+          navigate("/report", { state: { reportedName: profile.display_name, reportedEmail: profile.user_email } });
         }}
       />
     </div>

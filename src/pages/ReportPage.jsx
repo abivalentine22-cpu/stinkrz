@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,12 +7,15 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Label } from "@/components/ui/label";
 import { Shield, Send, CheckCircle } from "lucide-react";
 import { base44 } from "@/api/base44Client";
+import { useLocation } from "react-router-dom";
 
 export default function ReportPage() {
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
+  const location = useLocation();
   const [form, setForm] = useState({
-    reported_user_name: "",
+    reported_user_name: location.state?.reportedName || "",
+    reported_user_email: location.state?.reportedEmail || "",
     reason: "",
     details: "",
   });
@@ -23,7 +26,7 @@ export default function ReportPage() {
     const user = await base44.auth.me();
     await base44.entities.Report.create({
       reporter_email: user?.email || "anonymous",
-      reported_user_email: form.reported_user_name.toLowerCase().replace(/\s/g, "") + "@stinkrz.demo",
+      reported_user_email: form.reported_user_email || form.reported_user_name.toLowerCase().replace(/\s/g, "") + "@stinkrz.demo",
       reported_user_name: form.reported_user_name,
       reason: form.reason,
       details: form.details,

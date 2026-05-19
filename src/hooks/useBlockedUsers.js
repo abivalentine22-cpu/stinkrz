@@ -1,31 +1,43 @@
-import { useState, useCallback } from "react";
+import { useState, useEffect, useCallback } from "react";
+import { base44 } from "@/api/base44Client";
+import { useAuth } from "@/lib/AuthContext";
 
-const STORAGE_KEY = "stinkrz_blocked_users";
-
-function getBlocked() {
-  try {
-    return JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
-  } catch {
-    return [];
-  }
-}
-
+// DB-backed block list — persists across devices
 export function useBlockedUsers() {
-  const [blockedUsers, setBlockedUsers] = useState(getBlocked);
+  const { user } = useAuth();
+  const [blockedEmails, setBlockedEmails] = useState([]);
 
-  const blockUser = useCallback((email) => {
-    const updated = [...new Set([...getBlocked(), email])];
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
-    setBlockedUsers(updated);
-  }, []);
+  useEffect(() => {
+    if (!user?.email) return;
+    base44.entities.BlockedUser.filter({ blocker_email: user.email })
+      .then(rows => setBlockedEmails(rows.map(r => r.blocked_email)));
 
-  const unblockUser = useCallback((email) => {
-    const updated = getBlocked().filter((e) => e !== email);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
-    setBlockedUsers(updated);
-  }, []);
+    const unsub = base44.entities.BlockedUser.subscribe((event) => {
+      if (event.data?.blocker_email !== user.email) return;
+      if (event.type === "create") {
+        setBlockedEmails(prev => [...new Set([...prev, event.data.blocked_email])]);
+      } else if (event.type === "delete") {
+        base44.entities.BlockedUser.filter({ blocker_email: user.email })
+          .then(rows => setBlockedEmails(rows.map(r => r.blocked_email)));
+      }
+    });
+    return unsub;
+  }, [user?.email]);
 
-  const isBlocked = useCallback((email) => blockedUsers.includes(email), [blockedUsers]);
+  const blockUser = useCallback(async (email) => {
+    if (!user?.email || blockedEmails.includes(email)) return;
+    setBlockedEmails(prev => [...prev, email]); // optimistic
+    await base44.entities.BlockedUser.create({ blocker_email: user.email, blocked_email: email });
+  }, [user?.email, blockedEmails]);
 
-  return { blockedUsers, blockUser, unblockUser, isBlocked };
+  const unblockUser = useCallback(async (email) => {
+    if (!user?.email) return;
+    setBlockedEmails(prev => prev.filter(e => e !== email)); // optimistic
+    const rows = await base44.entities.BlockedUser.filter({ blocker_email: user.email, blocked_email: email });
+    await Promise.all(rows.map(r => base44.entities.BlockedUser.delete(r.id)));
+  }, [user?.email]);
+
+  const isBlocked = useCallback((email) => blockedEmails.includes(email), [blockedEmails]);
+
+  return { blockedUsers: blockedEmails, blockUser, unblockUser, isBlocked };
 }

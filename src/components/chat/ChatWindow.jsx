@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Send, ShieldAlert, Ban, Smile, Image as ImageIcon, Loader, ChevronDown } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { format } from "date-fns";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useToast } from "@/components/ui/use-toast";
@@ -29,6 +30,7 @@ const SCENT_STICKERS = [
 const REACTION_EMOJIS = ["💨", "🤙", "👃", "🔥", "💜", "😂", "❤️", "😮"];
 
 export default function ChatWindow({ me, conversation, messages, onVibeCheck, onMessageSent }) {
+  const navigate = useNavigate();
   const [input, setInput] = useState("");
   const [stickersOpen, setStickersOpen] = useState(false);
   const [sending, setSending] = useState(false);
@@ -420,7 +422,7 @@ export default function ChatWindow({ me, conversation, messages, onVibeCheck, on
             <Ban className="w-3 h-3" /> {blockConfirm ? "Tap again to confirm" : "Block"}
           </Button>
           <Button variant="ghost" size="sm" className="h-7 px-2 text-xs font-body text-muted-foreground hover:text-destructive gap-1"
-            onClick={() => toast({ title: "Report submitted", description: "Thank you for keeping Stinkrz safe." })}>
+            onClick={() => navigate("/report", { state: { reportedName: profile?.display_name || conversation?.partnerEmail, reportedEmail: conversation?.partnerEmail } })}>
             <ShieldAlert className="w-3 h-3" /> Report
           </Button>
         </div>

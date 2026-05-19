@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, MapPin, Droplets, ShowerHead, MessageCircle, Wifi, WifiOff, Ban, Heart, ChevronLeft, ChevronRight } from "lucide-react";
+import { X, MapPin, Droplets, ShowerHead, MessageCircle, Wifi, WifiOff, Ban, Heart, ChevronLeft, ChevronRight, ShieldAlert } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { format } from "date-fns";
 import { useBlockedUsers } from "@/hooks/useBlockedUsers";
@@ -16,7 +16,7 @@ const SCENT_COLORS = {
   Neutral: "#94a3b8",
 };
 
-export default function ProfileDrawer({ profile, open, onClose, onMessage }) {
+export default function ProfileDrawer({ profile, open, onClose, onMessage, onReport }) {
   const ringColor = SCENT_COLORS[profile?.scent_category] || "#94a3b8";
   const intensityDots = Array.from({ length: 5 }, (_, i) => i < (profile?.scent_intensity || 0));
   const { isBlocked, blockUser, unblockUser } = useBlockedUsers();
@@ -82,6 +82,11 @@ export default function ProfileDrawer({ profile, open, onClose, onMessage }) {
   };
 
   const handleUnblock = () => unblockUser(profile.user_email);
+
+  const handleReport = () => {
+    onClose();
+    onReport?.(profile);
+  };
 
   return (
     <AnimatePresence>
@@ -335,20 +340,31 @@ export default function ProfileDrawer({ profile, open, onClose, onMessage }) {
                     Unblock {profile.display_name}
                   </Button>
                 ) : (
-                  <Button
-                    variant="ghost"
-                    onClick={handleBlock}
-                    className="w-full gap-2 font-body"
-                    style={{
-                      height: "40px", fontSize: "13px",
-                      color: confirmBlock ? "#f87171" : "#64748b",
-                      background: confirmBlock ? "rgba(248,113,113,0.08)" : "transparent",
-                      border: confirmBlock ? "1px solid rgba(248,113,113,0.25)" : "1px solid transparent",
-                    }}
-                  >
-                    <Ban size={14} />
-                    {confirmBlock ? "Tap again to confirm block" : `Block ${profile.display_name}`}
-                  </Button>
+                  <div style={{ display: "flex", gap: "8px" }}>
+                    <Button
+                      variant="ghost"
+                      onClick={handleBlock}
+                      className="flex-1 gap-2 font-body"
+                      style={{
+                        height: "36px", fontSize: "12px",
+                        color: confirmBlock ? "#f87171" : "#64748b",
+                        background: confirmBlock ? "rgba(248,113,113,0.08)" : "transparent",
+                        border: confirmBlock ? "1px solid rgba(248,113,113,0.25)" : "1px solid rgba(255,255,255,0.08)",
+                      }}
+                    >
+                      <Ban size={13} />
+                      {confirmBlock ? "Confirm block" : "Block"}
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      onClick={handleReport}
+                      className="flex-1 gap-2 font-body"
+                      style={{ height: "36px", fontSize: "12px", color: "#64748b", border: "1px solid rgba(255,255,255,0.08)" }}
+                    >
+                      <ShieldAlert size={13} />
+                      Report
+                    </Button>
+                  </div>
                 )}
               </div>
             </div>

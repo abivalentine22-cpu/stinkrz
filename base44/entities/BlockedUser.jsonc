@@ -1,0 +1,18 @@
+{
+  "name": "BlockedUser",
+  "type": "object",
+  "properties": {
+    "blocker_email": {
+      "type": "string",
+      "description": "User who did the blocking"
+    },
+    "blocked_email": {
+      "type": "string",
+      "description": "User who got blocked"
+    }
+  },
+  "required": [
+    "blocker_email",
+    "blocked_email"
+  ]
+}
