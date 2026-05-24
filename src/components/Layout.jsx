@@ -26,6 +26,10 @@ export default function Layout() {
         if (!profile && !NO_GATE_PATHS.includes(pathname)) {
           navigate("/onboarding", { replace: true });
         }
+        // Redirect authenticated users from the landing page to the map
+        if (profile && pathname === "/") {
+          navigate("/scent-block", { replace: true });
+        }
       });
   }, [user?.email, pathname]);
 
