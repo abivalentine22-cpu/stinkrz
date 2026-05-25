@@ -47,6 +47,7 @@ export default function ChatWindow({ me, conversation, messages, onVibeCheck, on
 
   const { toast } = useToast();
   const { blockUser } = useBlockedUsers();
+  const partnerName = conversation?.partnerProfile?.display_name || conversation?.partnerEmail || "";
   const { isPartnerTyping, broadcastTyping } = useTypingIndicator(me?.email, conversation?.partnerEmail);
   const { playSend, playReceive, playReaction } = useChatSounds();
   const { reactions, toggleReaction } = useMessageReactions(messages, me?.email);
@@ -214,7 +215,6 @@ export default function ChatWindow({ me, conversation, messages, onVibeCheck, on
   };
 
   const profile = conversation?.partnerProfile;
-  const partnerName = profile?.display_name || conversation?.partnerEmail || "";
 
   const displayMessages = [
     ...messages,

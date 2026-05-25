@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Save, ArrowLeft, Eye, Volume2, CheckCheck, Lock, Trash2 } from "lucide-react";
+import { Save, ArrowLeft, Eye, Volume2, CheckCheck, Lock, Trash2, UserX } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import { useAuth } from "@/lib/AuthContext";
 
@@ -43,6 +43,7 @@ export default function Settings() {
   const [invisibleMode, setInvisibleMode] = useState(false);
   const [hideInactive, setHideInactive] = useState(false);
   const [myProfile, setMyProfile] = useState(null);
+  const [blockedUsers, setBlockedUsers] = useState([]);
   const [deleteConfirm, setDeleteConfirm] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
@@ -61,6 +62,9 @@ export default function Settings() {
     // Load invisible mode from profile
     base44.entities.ScentProfile.filter({ user_email: user.email }).then(p => {
       if (p[0]) { setMyProfile(p[0]); setInvisibleMode(p[0].invisible_mode || false); }
+    });
+    base44.entities.BlockedUser.filter({ blocker_email: user.email }).then(rows => {
+      setBlockedUsers(rows.map(r => r.blocked_email));
     });
   }, [prefs, user?.email]);
 
@@ -293,8 +297,31 @@ export default function Settings() {
           Block Settings
         </h3>
         <div className="bg-muted/50 rounded-xl p-4 border border-border">
-          <p className="font-body text-xs text-muted-foreground">Manage your blocked users</p>
-          <p className="font-body text-sm text-muted-foreground italic mt-2">No blocked users yet</p>
+          <p className="font-body text-xs text-muted-foreground mb-3">Users you've blocked won't appear on the map or in your feed.</p>
+          {blockedUsers.length === 0 ? (
+            <p className="font-body text-sm text-muted-foreground italic">No blocked users yet</p>
+          ) : (
+            <div className="space-y-2">
+              {blockedUsers.map(email => (
+                <div key={email} className="flex items-center justify-between bg-background/50 rounded-lg px-3 py-2">
+                  <div className="flex items-center gap-2">
+                    <UserX className="w-3.5 h-3.5 text-muted-foreground" />
+                    <span className="font-body text-sm text-muted-foreground">{email}</span>
+                  </div>
+                  <button
+                    onClick={async () => {
+                      const rows = await base44.entities.BlockedUser.filter({ blocker_email: user.email, blocked_email: email });
+                      await Promise.all(rows.map(r => base44.entities.BlockedUser.delete(r.id)));
+                      setBlockedUsers(prev => prev.filter(e => e !== email));
+                    }}
+                    className="font-body text-xs text-destructive hover:underline"
+                  >
+                    Unblock
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
 

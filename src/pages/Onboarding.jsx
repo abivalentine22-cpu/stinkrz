@@ -39,7 +39,6 @@ export default function Onboarding() {
     shower_frequency: "",
     scent_preferences: [],
     looking_for: "",
-    shower_frequency: "",
     personality_prompts: [
       { prompt: PERSONALITY_PROMPTS[0], answer: "" },
       { prompt: PERSONALITY_PROMPTS[5], answer: "" },
