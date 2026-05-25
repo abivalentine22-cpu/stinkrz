@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { Map, MessageCircle, User, Menu, X } from "lucide-react";
+import { Map, MessageCircle, User, Zap, Menu, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import HangLooseLogo from "./HangLooseLogo";
 import { useAuth } from "@/lib/AuthContext";
@@ -9,6 +9,7 @@ import { base44 } from "@/api/base44Client";
 
 const NAV_ITEMS = [
   { label: "Map", path: "/scent-block", icon: Map },
+  { label: "Feed", path: "/feed", icon: Zap },
   { label: "Messages", path: "/messages", icon: MessageCircle },
   { label: "Profile", path: "/profile", icon: User },
 ];
