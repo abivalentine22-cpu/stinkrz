@@ -292,7 +292,7 @@ export default function ChatWindow({ me, conversation, messages, onVibeCheck, on
           const isMe = msg.sender_email === me?.email;
           const msgReactions = reactions[msg.id] || [];
           const reactionGroups = msgReactions.reduce((acc, r) => {
-            acc[r.emoji] = (acc[r.emoji] || []);
+            if (!acc[r.emoji]) acc[r.emoji] = [];
             acc[r.emoji].push(r.user_email);
             return acc;
           }, {});

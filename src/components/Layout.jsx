@@ -31,7 +31,7 @@ export default function Layout() {
           navigate("/scent-block", { replace: true });
         }
       });
-  }, [user?.email, pathname]);
+  }, [user?.email, pathname, navigate]);
 
   const showBanner = !isMap && myProfile && myProfile.onboarding_complete;
 

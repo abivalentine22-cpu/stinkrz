@@ -147,7 +147,10 @@ export default function Settings() {
               <p className="font-body text-xs text-muted-foreground">Show location within ~½ mile</p>
             </div>
             <button
-              onClick={() => handleToggle("stinkrz_fuzzy_location", fuzzyLocation, setFuzzyLocation)}
+              onClick={async () => {
+                handleToggle("stinkrz_fuzzy_location", fuzzyLocation, setFuzzyLocation);
+                if (myProfile) await base44.entities.ScentProfile.update(myProfile.id, { fuzzy_location: !fuzzyLocation });
+              }}
               className={`w-11 h-6 rounded-full transition-colors shrink-0 relative ${fuzzyLocation ? "bg-primary" : "bg-muted-foreground/30"}`}
             >
               <span className={`absolute top-0.5 w-5 h-5 rounded-full bg-white transition-all ${fuzzyLocation ? "left-[22px]" : "left-0.5"}`} />
