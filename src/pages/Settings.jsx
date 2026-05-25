@@ -1,10 +1,9 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Save, ArrowLeft, Eye, Volume2, Lock, Trash2 } from "lucide-react";
+import { Save, ArrowLeft, Eye, Volume2, CheckCheck, Lock, Trash2 } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import { useAuth } from "@/lib/AuthContext";
 
@@ -20,7 +19,6 @@ const SCENT_EMOJIS = {
 
 export default function Settings() {
   const { user } = useAuth();
-  const navigate = useNavigate();
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -43,6 +41,7 @@ export default function Settings() {
   const [hideReadReceipts, setHideReadReceipts] = useState(false);
   const [travelMode, setTravelMode] = useState("neither");
   const [invisibleMode, setInvisibleMode] = useState(false);
+  const [hideInactive, setHideInactive] = useState(false);
   const [myProfile, setMyProfile] = useState(null);
   const [deleteConfirm, setDeleteConfirm] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -58,6 +57,7 @@ export default function Settings() {
     setSendReadReceipts(localStorage.getItem("stinkrz_send_read_receipts") !== "false");
     setHideReadReceipts(localStorage.getItem("stinkrz_hide_read_receipts") === "true");
     setTravelMode(localStorage.getItem("stinkrz_travel_mode") || "neither");
+    setHideInactive(localStorage.getItem("stinkrz_hide_inactive") === "true");
     // Load invisible mode from profile
     base44.entities.ScentProfile.filter({ user_email: user.email }).then(p => {
       if (p[0]) { setMyProfile(p[0]); setInvisibleMode(p[0].invisible_mode || false); }
@@ -105,7 +105,7 @@ export default function Settings() {
   return (
     <div className="max-w-lg mx-auto px-4 py-8">
       <div className="flex items-center gap-3 mb-6">
-        <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
+        <Button variant="ghost" size="icon" onClick={() => window.history.back()}>
           <ArrowLeft className="w-4 h-4" />
         </Button>
         <h1 className="font-heading text-2xl font-bold">Settings</h1>
@@ -189,10 +189,10 @@ export default function Settings() {
               <p className="font-body text-xs text-muted-foreground">Don't show offline profiles on map</p>
             </div>
             <button
-              onClick={() => handleToggle("stinkrz_hide_inactive", true, () => {})}
-              className={`w-11 h-6 rounded-full transition-colors shrink-0 relative bg-primary`}
+              onClick={() => handleToggle("stinkrz_hide_inactive", hideInactive, setHideInactive)}
+              className={`w-11 h-6 rounded-full transition-colors shrink-0 relative ${hideInactive ? "bg-primary" : "bg-muted-foreground/30"}`}
             >
-              <span className={`absolute top-0.5 w-5 h-5 rounded-full bg-white left-[22px]`} />
+              <span className={`absolute top-0.5 w-5 h-5 rounded-full bg-white transition-all ${hideInactive ? "left-[22px]" : "left-0.5"}`} />
             </button>
           </div>
         </div>
@@ -221,7 +221,7 @@ export default function Settings() {
       {/* Read Receipt Settings */}
       <div className="bg-card border border-border rounded-2xl p-6 mb-5">
         <h3 className="font-heading text-sm font-semibold mb-4 flex items-center gap-2">
-          <Volume2 className="w-4 h-4 text-primary" />
+          <CheckCheck className="w-4 h-4 text-primary" />
           Read Receipts
         </h3>
         <div className="space-y-3">

@@ -1,7 +1,6 @@
-import React from "react";
+import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import { AlertCircle, X } from "lucide-react";
-import { useState } from "react";
 
 function getCompleteness(profile) {
   if (!profile) return { pct: 0, missing: ["profile"] };
