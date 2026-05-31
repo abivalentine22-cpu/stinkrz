@@ -184,12 +184,23 @@ export default function ChatWindow({ me, conversation, messages, onVibeCheck, on
       reader.readAsDataURL(file);
     });
 
+  const MAX_IMAGE_SIZE = 10 * 1024 * 1024; // 10MB
+  const MAX_VIDEO_SIZE = 50 * 1024 * 1024; // 50MB
+
   const handleMediaUpload = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
+
+    const isVideo = file.type.startsWith("video/");
+    const maxSize = isVideo ? MAX_VIDEO_SIZE : MAX_IMAGE_SIZE;
+    if (file.size > maxSize) {
+      toast({ title: "File too large", description: `Max size is ${isVideo ? "50MB for videos" : "10MB for images"}.`, variant: "destructive" });
+      if (fileInputRef.current) fileInputRef.current.value = "";
+      return;
+    }
+
     setUploading(true);
     try {
-      const isVideo = file.type.startsWith("video/");
       const uploadFile = isVideo ? file : await compressImage(file);
       const { file_url } = await base44.integrations.Core.UploadFile({ file: uploadFile });
       const message = isVideo ? "🎥 Sent a video" : "📸 Sent a photo";
