@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { VIBE_OPTIONS, PERSONALITY_PROMPTS } from "@/lib/demoData";
-import { Camera, Save, LogOut, Droplets, Shield, Plus, Trash2 } from "lucide-react";
+import { Camera, Save, LogOut, Droplets, Shield, Plus, Trash2, X, ChevronLeft, ChevronRight } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import { useAuth } from "@/lib/AuthContext";
 
@@ -24,6 +24,7 @@ export default function Profile() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const [lightboxIndex, setLightboxIndex] = useState(null);
 
   const { data: profiles = [] } = useQuery({
     queryKey: ["my-profile", user?.email],
@@ -137,7 +138,28 @@ export default function Profile() {
   const handleGalleryUpload = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    const compressed = await compressImage(file);
+    // Use higher res for gallery (1024px)
+    const compressed = await new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        const img = new Image();
+        img.onload = () => {
+          const maxSize = 1024;
+          let { width, height } = img;
+          if (width > height) {
+            if (width > maxSize) { height = Math.round((height * maxSize) / width); width = maxSize; }
+          } else {
+            if (height > maxSize) { width = Math.round((width * maxSize) / height); height = maxSize; }
+          }
+          const canvas = document.createElement("canvas");
+          canvas.width = width; canvas.height = height;
+          canvas.getContext("2d").drawImage(img, 0, 0, width, height);
+          canvas.toBlob((blob) => resolve(new File([blob], "gallery.jpg", { type: "image/jpeg" })), "image/jpeg", 0.88);
+        };
+        img.src = ev.target.result;
+      };
+      reader.readAsDataURL(file);
+    });
     const { file_url } = await base44.integrations.Core.UploadFile({ file: compressed });
     if (myProfile) {
       const gallery = [...(myProfile.photo_gallery || []), file_url];
@@ -317,14 +339,19 @@ export default function Profile() {
         <div className="space-y-2">
           <Label className="font-body text-sm">Photo Gallery</Label>
           <div className="flex flex-wrap gap-2">
-            {(myProfile?.photo_gallery || []).map((url) => (
+            {(myProfile?.photo_gallery || []).map((url, idx) => (
               <div key={url} className="relative w-20 h-20 rounded-xl overflow-hidden group">
-                <img src={url} alt="" className="w-full h-full object-cover" />
+                <img
+                  src={url}
+                  alt=""
+                  className="w-full h-full object-cover cursor-pointer"
+                  onClick={() => setLightboxIndex(idx)}
+                />
                 <button
                   onClick={() => handleDeleteGalleryPhoto(url)}
-                  className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center"
+                  className="absolute top-1 right-1 w-6 h-6 rounded-full bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center z-10"
                 >
-                  <Trash2 className="w-4 h-4 text-white" />
+                  <Trash2 className="w-3 h-3 text-white" />
                 </button>
               </div>
             ))}
@@ -335,8 +362,59 @@ export default function Profile() {
               </label>
             )}
           </div>
-          <p className="font-body text-xs text-muted-foreground">Add up to 6 photos to your gallery</p>
+          <p className="font-body text-xs text-muted-foreground">Add up to 6 photos · tap to view</p>
         </div>
+
+        {/* Lightbox */}
+        {lightboxIndex !== null && (() => {
+          const gallery = myProfile?.photo_gallery || [];
+          const canPrev = lightboxIndex > 0;
+          const canNext = lightboxIndex < gallery.length - 1;
+          return (
+            <div
+              className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center"
+              onClick={() => setLightboxIndex(null)}
+            >
+              <button
+                onClick={() => setLightboxIndex(null)}
+                className="absolute top-4 right-4 w-10 h-10 rounded-full bg-white/10 flex items-center justify-center hover:bg-white/20 transition-colors"
+              >
+                <X className="w-5 h-5 text-white" />
+              </button>
+              {canPrev && (
+                <button
+                  onClick={(e) => { e.stopPropagation(); setLightboxIndex(lightboxIndex - 1); }}
+                  className="absolute left-4 w-10 h-10 rounded-full bg-white/10 flex items-center justify-center hover:bg-white/20 transition-colors"
+                >
+                  <ChevronLeft className="w-5 h-5 text-white" />
+                </button>
+              )}
+              <img
+                src={gallery[lightboxIndex]}
+                alt=""
+                className="max-w-[90vw] max-h-[85vh] rounded-xl object-contain"
+                onClick={(e) => e.stopPropagation()}
+              />
+              {canNext && (
+                <button
+                  onClick={(e) => { e.stopPropagation(); setLightboxIndex(lightboxIndex + 1); }}
+                  className="absolute right-4 w-10 h-10 rounded-full bg-white/10 flex items-center justify-center hover:bg-white/20 transition-colors"
+                >
+                  <ChevronRight className="w-5 h-5 text-white" />
+                </button>
+              )}
+              <div className="absolute bottom-4 flex gap-1.5">
+                {gallery.map((_, i) => (
+                  <button
+                    key={i}
+                    onClick={(e) => { e.stopPropagation(); setLightboxIndex(i); }}
+                    className={`w-2 h-2 rounded-full transition-colors ${i === lightboxIndex ? "bg-white" : "bg-white/30"}`}
+                  />
+                ))}
+              </div>
+            </div>
+          );
+        })()}
 
         <Button onClick={handleSave} disabled={saveMutation.isPending} className="w-full gap-2 font-body font-semibold">
           <Save className="w-4 h-4" />
