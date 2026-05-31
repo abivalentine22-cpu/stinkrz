@@ -194,10 +194,11 @@ export default function ChatWindow({ me, conversation, messages, onVibeCheck, on
       const { file_url } = await base44.integrations.Core.UploadFile({ file: uploadFile });
       const message = isVideo ? "🎥 Sent a video" : "📸 Sent a photo";
       await sendMessage(message, false, file_url, isVideo ? "video" : "image");
-    } catch {
-      toast({ title: "Upload failed", description: "Couldn't upload file." });
+    } catch (err) {
+      toast({ title: "Upload failed", description: err?.message || "Couldn't upload file. Try a smaller file.", variant: "destructive" });
+    } finally {
+      setUploading(false);
     }
-    setUploading(false);
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
