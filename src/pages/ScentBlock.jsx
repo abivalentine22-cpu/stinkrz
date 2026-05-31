@@ -2,7 +2,6 @@ import React, { useState, useEffect, useRef, useMemo, useCallback } from "react"
 import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import ProfileDrawer from "@/components/scent/ProfileDrawer";
-import FilterChips from "@/components/scent/FilterChips";
 import { base44 } from "@/api/base44Client";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Crosshair, Eye, Home, MessageCircle, User } from "lucide-react";
@@ -106,8 +105,7 @@ function createPinEl(profile, isYou = false) {
 
 export default function ScentBlock() {
   const { user } = useAuth();
-  const [filter, setFilter] = useState("All");
-  const [mapFilters, setMapFilters] = useState({ minAge: "", maxAge: "", maxDistance: "", showerFrequency: "Any", lookingFor: "Any" });
+  const [mapFilters, setMapFilters] = useState({ minAge: "", maxAge: "", maxDistance: "", showerFrequency: "Any", lookingFor: "Any", scentCategory: "All", gender: "Any", sexuality: "Any" });
   const [selectedProfile, setSelectedProfile] = useState(null);
   const [userPos, setUserPos] = useState(null);
   const [tracking, setTracking] = useState(false);
@@ -328,13 +326,15 @@ export default function ScentBlock() {
   const filtered = useMemo(() => {
     return profiles
       .filter((p) => {
-        if (filter !== "All" && p.scent_category !== filter) return false;
+        if (mapFilters.scentCategory !== "All" && p.scent_category !== mapFilters.scentCategory) return false;
         if (isBlocked(p.user_email)) return false;
         if (p.invisible_mode) return false;
         if (mapFilters.minAge !== "" && (p.age || 0) < parseInt(mapFilters.minAge)) return false;
         if (mapFilters.maxAge !== "" && (p.age || 999) > parseInt(mapFilters.maxAge)) return false;
         if (mapFilters.showerFrequency !== "Any" && p.shower_frequency !== mapFilters.showerFrequency) return false;
         if (mapFilters.lookingFor !== "Any" && p.looking_for !== mapFilters.lookingFor) return false;
+        if (mapFilters.gender !== "Any" && p.gender !== mapFilters.gender) return false;
+        if (mapFilters.sexuality !== "Any" && p.sexuality !== mapFilters.sexuality) return false;
         return true;
       })
       .map((p) => ({
@@ -342,7 +342,7 @@ export default function ScentBlock() {
         distance: calcDistance(p.location_lat, p.location_lng, youPos.lat, youPos.lng),
       }))
       .filter(p => mapFilters.maxDistance === "" || parseFloat(p.distance) <= parseFloat(mapFilters.maxDistance));
-  }, [profiles, filter, isBlocked, youPos.lat, youPos.lng]);
+  }, [profiles, mapFilters, isBlocked, youPos.lat, youPos.lng]);
 
   const onlineCount = useMemo(() => filtered.filter(p => p.is_online).length, [filtered]);
 
@@ -365,6 +365,7 @@ export default function ScentBlock() {
       { display_name: "You", is_online: true, scent_category: "Neutral", avatar_url: myProfile?.avatar_url },
       true
     );
+    if (myProfile) el.addEventListener("click", () => setSelectedProfile(myProfile));
     youMarkerRef.current = new maplibregl.Marker({ element: el, anchor: "bottom" })
       .setLngLat(lngLat)
       .addTo(map);
@@ -382,6 +383,7 @@ export default function ScentBlock() {
       { display_name: "You", is_online: true, scent_category: "Neutral", avatar_url: myProfile?.avatar_url },
       true
     );
+    if (myProfile) el.addEventListener("click", () => setSelectedProfile(myProfile));
     youMarkerRef.current = new maplibregl.Marker({ element: el, anchor: "bottom" })
       .setLngLat(lngLat)
       .addTo(map);
@@ -481,7 +483,6 @@ export default function ScentBlock() {
             {icon}
           </Link>
         ))}
-        <FilterChips active={filter} onChange={setFilter} />
         <MapFilterPanel filters={mapFilters} onChange={setMapFilters} />
       </div>
 

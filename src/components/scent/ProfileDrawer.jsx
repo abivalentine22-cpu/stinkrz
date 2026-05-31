@@ -215,12 +215,24 @@ export default function ProfileDrawer({ profile, open, onClose, onMessage, onRep
                 </div>
               )}
 
-              {/* Looking for */}
-              {profile.looking_for && (
-                <div style={{ fontSize: "12px", color: "#94a3b8", fontFamily: "var(--font-body)" }}>
-                  Looking for: <span style={{ color: "#e2e8f0", fontWeight: 500 }}>{profile.looking_for}</span>
-                </div>
-              )}
+              {/* Gender / Sexuality / Looking for */}
+              <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
+                {profile.gender && profile.gender !== "Prefer not to say" && (
+                  <span style={{ fontSize: "11px", fontFamily: "var(--font-body)", padding: "2px 10px", borderRadius: "9999px", background: "rgba(167,139,250,0.1)", color: "#a78bfa", border: "1px solid rgba(167,139,250,0.2)" }}>
+                    {profile.gender}
+                  </span>
+                )}
+                {profile.sexuality && profile.sexuality !== "Prefer not to say" && (
+                  <span style={{ fontSize: "11px", fontFamily: "var(--font-body)", padding: "2px 10px", borderRadius: "9999px", background: "rgba(45,212,191,0.1)", color: "#2dd4bf", border: "1px solid rgba(45,212,191,0.2)" }}>
+                    {profile.sexuality}
+                  </span>
+                )}
+                {profile.looking_for && (
+                  <span style={{ fontSize: "11px", fontFamily: "var(--font-body)", padding: "2px 10px", borderRadius: "9999px", background: "rgba(251,191,36,0.1)", color: "#fbbf24", border: "1px solid rgba(251,191,36,0.2)" }}>
+                    👀 {profile.looking_for}
+                  </span>
+                )}
+              </div>
 
               {/* Scent stats */}
               <div style={{
@@ -253,6 +265,17 @@ export default function ProfileDrawer({ profile, open, onClose, onMessage, onRep
                     </div>
                   </>
                 )}
+                {profile.last_showered && (
+                  <>
+                    <div style={{ width: "1px", height: "32px", background: "rgba(255,255,255,0.08)" }} />
+                    <div>
+                      <div style={{ fontSize: "10px", color: "#64748b", marginBottom: "2px", fontFamily: "var(--font-body)" }}>Last Showered</div>
+                      <div style={{ fontSize: "12px", color: "#e2e8f0", fontFamily: "var(--font-body)" }}>
+                        {format(new Date(profile.last_showered), "MMM d")}
+                      </div>
+                    </div>
+                  </>
+                )}
               </div>
 
               {/* Bio */}
@@ -260,13 +283,6 @@ export default function ProfileDrawer({ profile, open, onClose, onMessage, onRep
                 <p style={{ fontFamily: "var(--font-body)", fontSize: "13px", color: "#94a3b8", lineHeight: 1.6, margin: 0 }}>
                   {profile.bio}
                 </p>
-              )}
-
-              {/* Last showered */}
-              {profile.last_showered && (
-                <div style={{ fontSize: "12px", color: "#64748b", fontFamily: "var(--font-body)" }}>
-                  Last showered: {format(new Date(profile.last_showered), "MMM d, yyyy")}
-                </div>
               )}
 
               {/* Vibe badges */}

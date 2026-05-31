@@ -25,6 +25,32 @@
       },
       "description": "Additional photo URLs"
     },
+    "gender": {
+      "type": "string",
+      "enum": [
+        "Man",
+        "Woman",
+        "Non-binary",
+        "Genderfluid",
+        "Agender",
+        "Prefer not to say"
+      ],
+      "description": "User's gender identity"
+    },
+    "sexuality": {
+      "type": "string",
+      "enum": [
+        "Straight",
+        "Gay",
+        "Lesbian",
+        "Bisexual",
+        "Pansexual",
+        "Asexual",
+        "Queer",
+        "Prefer not to say"
+      ],
+      "description": "User's sexual orientation"
+    },
     "scent_category": {
       "type": "string",
       "enum": [

@@ -16,6 +16,8 @@ import { useAuth } from "@/lib/AuthContext";
 const SCENT_CATEGORIES = ["Fresh", "Musky", "Ripe", "Earthy", "Neutral"];
 const SHOWER_OPTIONS = ["Daily", "Every other day", "Twice a week", "Weekly", "When inspired", "Classified"];
 const LOOKING_FOR_OPTIONS = ["Casual chat", "Meetup", "Just browsing", "Friends", "Whatever happens"];
+const GENDER_OPTIONS = ["Man", "Woman", "Non-binary", "Genderfluid", "Agender", "Prefer not to say"];
+const SEXUALITY_OPTIONS = ["Straight", "Gay", "Lesbian", "Bisexual", "Pansexual", "Asexual", "Queer", "Prefer not to say"];
 
 export default function Profile() {
   const { user } = useAuth();
@@ -42,6 +44,8 @@ export default function Profile() {
     scent_preferences: [],
     fuzzy_location: false,
     looking_for: "",
+    gender: "",
+    sexuality: "",
   });
 
   useEffect(() => {
@@ -57,6 +61,8 @@ export default function Profile() {
         scent_preferences: myProfile.scent_preferences || [],
         fuzzy_location: myProfile.fuzzy_location || false,
         looking_for: myProfile.looking_for || "",
+        gender: myProfile.gender || "",
+        sexuality: myProfile.sexuality || "",
       });
     }
   }, [myProfile]);
@@ -87,6 +93,8 @@ export default function Profile() {
       scent_preferences: form.scent_preferences,
       fuzzy_location: form.fuzzy_location,
       looking_for: form.looking_for || undefined,
+      gender: form.gender || undefined,
+      sexuality: form.sexuality || undefined,
     });
   };
 
@@ -205,6 +213,27 @@ export default function Profile() {
               {LOOKING_FOR_OPTIONS.map((opt) => <SelectItem key={opt} value={opt}>{opt}</SelectItem>)}
             </SelectContent>
           </Select>
+        </div>
+
+        <div className="grid grid-cols-2 gap-3">
+          <div className="space-y-2">
+            <Label className="font-body text-sm">Gender</Label>
+            <Select value={form.gender} onValueChange={(val) => setForm({ ...form, gender: val })}>
+              <SelectTrigger className="font-body bg-muted border-0"><SelectValue placeholder="Select..." /></SelectTrigger>
+              <SelectContent>
+                {GENDER_OPTIONS.map((opt) => <SelectItem key={opt} value={opt}>{opt}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-2">
+            <Label className="font-body text-sm">Sexuality</Label>
+            <Select value={form.sexuality} onValueChange={(val) => setForm({ ...form, sexuality: val })}>
+              <SelectTrigger className="font-body bg-muted border-0"><SelectValue placeholder="Select..." /></SelectTrigger>
+              <SelectContent>
+                {SEXUALITY_OPTIONS.map((opt) => <SelectItem key={opt} value={opt}>{opt}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
         </div>
 
         <div className="grid grid-cols-2 gap-3">
