@@ -28,11 +28,6 @@ const PRIVACY_POINTS = [
   { icon: "🔒", title: "You control your data", desc: "Choose what's visible: scent details, last active time, and more." },
 ];
 
-const SAMPLE_PROFILES = [
-  { initial: "K", name: "Kyle, 29", scent: "Musky", online: true, dist: "0.4 mi", color: "#fbbf24" },
-  { initial: "S", name: "Sam, 25", scent: "Fresh", online: true, dist: "1.1 mi", color: "#34d399" },
-  { initial: "J", name: "Jordan, 31", scent: "Earthy", online: false, dist: "2.0 mi", color: "#fb923c" },
-];
 
 export default function Home() {
   const { user } = useAuth();
