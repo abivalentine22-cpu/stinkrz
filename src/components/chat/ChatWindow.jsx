@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Send, ShieldAlert, Ban, Smile, Image as ImageIcon, Loader, ChevronDown } from "lucide-react";
+import HangLooseLogo from "@/components/HangLooseLogo";
 import { useNavigate } from "react-router-dom";
 import { format } from "date-fns";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -250,11 +251,11 @@ export default function ChatWindow({ me, conversation, messages, onVibeCheck, on
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-border bg-card/50">
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-full overflow-hidden bg-muted">
+          <div className="w-9 h-9 rounded-full overflow-hidden bg-muted flex items-center justify-center">
             {profile?.avatar_url ? (
               <img src={profile.avatar_url} alt="" className="w-full h-full object-cover" />
             ) : (
-              <div className="w-full h-full flex items-center justify-center text-lg">🤙</div>
+              <div className="opacity-30"><HangLooseLogo size={22} /></div>
             )}
           </div>
           <div>

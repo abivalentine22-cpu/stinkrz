@@ -2,6 +2,8 @@ import React from "react";
 import { Badge } from "@/components/ui/badge";
 import { MapPin, Droplets } from "lucide-react";
 import { motion } from "framer-motion";
+import UserAvatar from "@/components/UserAvatar";
+import HangLooseLogo from "@/components/HangLooseLogo";
 
 const SCENT_COLORS = {
   Fresh: "bg-emerald-500/20 text-emerald-400 border-emerald-500/30",
@@ -27,7 +29,9 @@ export default function ScentCard({ profile, onClick, index = 0 }) {
         {profile.avatar_url ? (
           <img src={profile.avatar_url} alt={profile.display_name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
         ) : (
-          <div className="w-full h-full flex items-center justify-center text-6xl opacity-30">🤙</div>
+          <div className="w-full h-full flex items-center justify-center opacity-25">
+            <HangLooseLogo size={64} />
+          </div>
         )}
         {/* Online indicator */}
         <div className="absolute top-3 right-3">

@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, MapPin, Droplets, ShowerHead, MessageCircle, Wifi, WifiOff, Ban, Heart, ChevronLeft, ChevronRight, ShieldAlert } from "lucide-react";
+import HangLooseLogo from "@/components/HangLooseLogo";
 import { Button } from "@/components/ui/button";
 import { format } from "date-fns";
 import { useBlockedUsers } from "@/hooks/useBlockedUsers";
@@ -165,7 +166,9 @@ export default function ProfileDrawer({ profile, open, onClose, onMessage, onRep
                   )}
                 </>
               ) : (
-                <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "72px", opacity: 0.2 }}>🤙</div>
+                <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", opacity: 0.25 }}>
+          <HangLooseLogo size={80} />
+        </div>
               )}
               <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to top, hsl(258 30% 10%) 0%, transparent 55%)" }} />
             </div>

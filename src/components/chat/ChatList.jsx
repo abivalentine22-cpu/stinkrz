@@ -1,6 +1,7 @@
 import React from "react";
 import { format } from "date-fns";
 import { Badge } from "@/components/ui/badge";
+import UserAvatar from "@/components/UserAvatar";
 
 export default function ChatList({ conversations, activeConversation, onSelect }) {
   return (
@@ -20,13 +21,7 @@ export default function ChatList({ conversations, activeConversation, onSelect }
           >
             {/* Avatar */}
             <div className="relative shrink-0">
-              <div className="w-12 h-12 rounded-full overflow-hidden bg-muted">
-                {profile?.avatar_url ? (
-                  <img src={profile.avatar_url} alt="" className="w-full h-full object-cover" />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center text-xl">🤙</div>
-                )}
-              </div>
+              <UserAvatar avatarUrl={profile?.avatar_url} displayName={profile?.display_name} size={48} />
               {profile?.is_online && (
                 <div className="absolute bottom-0 right-0 w-3 h-3 rounded-full bg-green-500 ring-2 ring-card" />
               )}
