@@ -44,10 +44,6 @@ export default function Home() {
       <section className="max-w-6xl mx-auto px-6 pt-20 pb-16 md:pt-28 md:pb-24">
         <div className="grid md:grid-cols-2 gap-12 items-center">
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
-            <div className="inline-flex items-center gap-2 bg-primary/10 border border-primary/20 text-primary text-xs font-semibold px-3 py-1.5 rounded-full mb-6">
-              <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
-              Proximity-based · Scent-positive · Real humans
-            </div>
             <h1 className="font-heading text-4xl md:text-5xl lg:text-6xl font-bold leading-tight mb-6">
               You smell like{" "}
               <span className="bg-clip-text text-transparent" style={{ backgroundImage: "linear-gradient(90deg, #a78bfa, #2dd4bf)" }}>
@@ -55,8 +51,20 @@ export default function Home() {
               </span>
             </h1>
             <p className="text-muted-foreground text-lg leading-relaxed mb-8 max-w-md">
-              Stinkrz is the only app that matches people based on scent chemistry, proximity, and authentic energy — not filtered photos and fake bios.
+              Real chemistry starts with the real you. Stinkrz is the scent-positive place for people who like their connections unfiltered, unapologetic, and a little bit wild.
             </p>
+            <div className="flex flex-col sm:flex-row gap-3 mb-6">
+              <Link to="/register">
+                <Button size="lg" className="font-semibold px-8 py-5 text-base w-full sm:w-auto">
+                  Join the Scent Block
+                </Button>
+              </Link>
+              <a href="#how-it-works">
+                <Button variant="outline" size="lg" className="font-semibold px-8 py-5 text-base border-border hover:border-primary/40 w-full sm:w-auto">
+                  How it works
+                </Button>
+              </a>
+            </div>
             <NearbyCounter />
           </motion.div>
 
@@ -108,7 +116,7 @@ export default function Home() {
       </section>
 
       {/* ── How it works ── */}
-      <section className="max-w-6xl mx-auto px-6 py-16 border-t border-border">
+      <section id="how-it-works" className="max-w-6xl mx-auto px-6 py-16 border-t border-border">
         <motion.div initial={{ opacity: 0, y: 10 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
           <h2 className="font-heading text-2xl md:text-3xl font-bold mb-3">How it works</h2>
           <p className="text-muted-foreground mb-10 max-w-xl">Three steps. No algorithm games. No fake matching scores.</p>
