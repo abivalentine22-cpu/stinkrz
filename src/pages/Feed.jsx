@@ -31,7 +31,16 @@ export default function Feed() {
 
     const unsub = base44.entities.StatusPost.subscribe((event) => {
       if (event.type === "create") {
-        setPosts(prev => [event.data, ...prev]);
+        // Replace any optimistic temp entry first; otherwise prepend
+        setPosts(prev => {
+          const hasTemp = prev.some(p => p.id.startsWith("temp-"));
+          if (hasTemp) {
+            return prev.map(p => p.id.startsWith("temp-") ? event.data : p);
+          }
+          // Avoid duplicates from external creates
+          if (prev.some(p => p.id === event.data.id)) return prev;
+          return [event.data, ...prev];
+        });
       } else if (event.type === "update") {
         setPosts(prev => prev.map(p => p.id === event.id ? event.data : p));
       } else if (event.type === "delete") {
@@ -90,15 +99,14 @@ export default function Feed() {
       created_date: new Date().toISOString(),
     };
     setPosts(prev => [optimistic, ...prev]);
-    const created = await base44.entities.StatusPost.create({
+    await base44.entities.StatusPost.create({
       ...data,
       user_email: me.email,
       display_name: myProfile?.display_name || me.full_name || "Anonymous",
       avatar_url: myProfile?.avatar_url || null,
       scent_category: myProfile?.scent_category || null,
     });
-    // Replace temp with real record
-    setPosts(prev => prev.map(p => p.id === tempId ? created : p));
+    // The subscribe handler will replace the temp entry when the create event fires
   };
 
   const handleDelete = (id) => {
