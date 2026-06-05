@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { Map, MessageCircle, User, Zap, Menu, X } from "lucide-react";
+import { Map, MessageCircle, User, Zap, Menu, X, HelpCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import HangLooseLogo from "./HangLooseLogo";
 import { useAuth } from "@/lib/AuthContext";
@@ -12,6 +12,7 @@ const NAV_ITEMS = [
   { label: "Feed", path: "/feed", icon: Zap },
   { label: "Messages", path: "/messages", icon: MessageCircle },
   { label: "Profile", path: "/profile", icon: User },
+  { label: "Help", path: "/help", icon: HelpCircle },
 ];
 
 export default function Navbar() {
