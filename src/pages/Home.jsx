@@ -4,6 +4,8 @@ import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
 import HangLooseLogo from "@/components/HangLooseLogo";
 import NearbyCounter from "@/components/home/NearbyCounter";
+import HeroAuth from "@/components/home/HeroAuth";
+import { useAuth } from "@/lib/AuthContext";
 
 const SCENT_CATEGORIES = [
   { emoji: "🌊", name: "Fresh", desc: "Clean, light, just-showered energy", color: "from-cyan-500/20 to-teal-500/10", border: "border-cyan-500/30" },
@@ -33,6 +35,8 @@ const SAMPLE_PROFILES = [
 ];
 
 export default function Home() {
+  const { user } = useAuth();
+
   return (
     <div className="min-h-screen font-body">
 
@@ -53,49 +57,26 @@ export default function Home() {
             <p className="text-muted-foreground text-lg leading-relaxed mb-8 max-w-md">
               Stinkrz is the only app that matches people based on scent chemistry, proximity, and authentic energy — not filtered photos and fake bios.
             </p>
-            <div className="flex flex-wrap gap-3 mb-6">
-              <Link to="/register">
-                <Button size="lg" className="font-semibold px-7 py-5 text-base">
-                  Join for free
-                </Button>
-              </Link>
-              <Link to="/scent-block">
-                <Button variant="outline" size="lg" className="font-semibold px-7 py-5 text-base border-border hover:border-primary/40">
-                  See the map →
-                </Button>
-              </Link>
-            </div>
             <NearbyCounter />
           </motion.div>
 
-          {/* Sample profile cards */}
-          <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.5, delay: 0.15 }} className="relative">
-            <div className="space-y-3">
-              {SAMPLE_PROFILES.map((p, i) => (
-                <motion.div
-                  key={p.name}
-                  initial={{ opacity: 0, x: 20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: 0.2 + i * 0.1 }}
-                  className="bg-card border border-border rounded-2xl p-4 flex items-center gap-4 shadow-lg shadow-black/20"
-                >
-                  <div className="w-11 h-11 rounded-full flex items-center justify-center font-heading font-bold text-lg text-background shrink-0" style={{ background: p.color }}>
-                    {p.initial}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="font-heading font-semibold text-sm">{p.name}</div>
-                    <div className="text-xs text-muted-foreground flex items-center gap-1.5 mt-0.5">
-                      {p.online && <span className="w-1.5 h-1.5 rounded-full bg-green-400 shrink-0" />}
-                      {p.dist} away · {p.scent}
-                    </div>
-                  </div>
-                  <Button size="sm" variant="outline" className="text-xs shrink-0">Message</Button>
-                </motion.div>
-              ))}
-            </div>
-            <div className="absolute -bottom-3 left-1/2 -translate-x-1/2 text-xs text-muted-foreground bg-background px-3 py-1 rounded-full border border-border">
-              Live nearby activity
-            </div>
+          {/* Auth panel for guests / CTA for logged-in users */}
+          <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.5, delay: 0.15 }} className="flex justify-center md:justify-end">
+            {user ? (
+              <div className="bg-card/60 backdrop-blur-md border border-border rounded-3xl p-8 shadow-2xl shadow-black/30 w-full max-w-sm text-center space-y-5">
+                <p className="text-4xl">🤙</p>
+                <h2 className="font-heading text-xl font-bold">Welcome back!</h2>
+                <p className="font-body text-sm text-muted-foreground">You're on the block. See who's nearby right now.</p>
+                <Link to="/scent-block">
+                  <Button size="lg" className="w-full font-semibold">Open the Scent Block →</Button>
+                </Link>
+                <Link to="/feed">
+                  <Button variant="outline" size="lg" className="w-full font-semibold">Check the Feed</Button>
+                </Link>
+              </div>
+            ) : (
+              <HeroAuth />
+            )}
           </motion.div>
         </div>
       </section>
