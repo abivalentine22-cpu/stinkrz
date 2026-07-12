@@ -7,6 +7,7 @@ import { MessageCircle, Eye } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { formatDistanceToNow } from "date-fns";
 import { useFavorites } from "@/hooks/useFavorites";
+import EmptyState from "@/components/EmptyState";
 
 export default function Viewers() {
   const { user } = useAuth();
@@ -54,10 +55,14 @@ export default function Viewers() {
           <div className="w-8 h-8 border-2 border-primary/20 border-t-primary rounded-full animate-spin" />
         </div>
       ) : uniqueViews.length === 0 ? (
-        <div className="text-center py-16 text-muted-foreground">
-          <p className="text-4xl mb-3">👀</p>
-          <p className="font-body text-sm">No profile views yet. Get on the map!</p>
-        </div>
+        <EmptyState
+          className="py-16"
+          icon="👀"
+          title="No one's checked you out yet"
+          subtitle="Share your profile and get on the map to get noticed"
+          actionLabel="Open Scent Block"
+          to="/scent-block"
+        />
       ) : (
         <div className="space-y-3">
           {uniqueViews.map((view) => {

@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { Zap, Eye } from "lucide-react";
 import PostComposer from "@/components/feed/PostComposer";
 import StatusCard from "@/components/feed/StatusCard";
+import EmptyState from "@/components/EmptyState";
 import { useBlockedUsers } from "@/hooks/useBlockedUsers";
 import { useAuth } from "@/lib/AuthContext";
 
@@ -241,10 +242,12 @@ export default function Feed() {
         )}
 
         {activePosts.length === 0 && (
-          <div className="flex flex-col items-center justify-center py-20 text-center text-muted-foreground">
-            <p className="text-4xl mb-3">💨</p>
-            <p className="font-body text-sm">No active vibes yet. Be the first to post!</p>
-          </div>
+          <EmptyState
+            className="py-20"
+            icon="💨"
+            title="No posts right now"
+            subtitle="Drop the first one — what's your vibe?"
+          />
         )}
       </div>
     </div>

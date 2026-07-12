@@ -6,6 +6,7 @@ import { useNavigate } from "react-router-dom";
 import { MessageCircle, Heart } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { formatDistanceToNow } from "date-fns";
+import EmptyState from "@/components/EmptyState";
 
 const SCENT_COLORS = {
   Fresh: "#34d399", Musky: "#fbbf24", Ripe: "#f87171",
@@ -69,10 +70,14 @@ export default function Matches() {
       </div>
 
       {matches.length === 0 && pendingThem.length === 0 ? (
-        <div className="text-center py-16 text-muted-foreground">
-          <p className="text-4xl mb-3">💞</p>
-          <p className="font-body text-sm">No matches yet — tap some hearts on the map!</p>
-        </div>
+        <EmptyState
+          className="py-16"
+          icon="💞"
+          title="No favorites yet"
+          subtitle="Tap the star on profiles you like — when they star you back, it's a match ✨"
+          actionLabel="Browse the Scent Block"
+          to="/scent-block"
+        />
       ) : (
         <>
           {matches.length > 0 && (

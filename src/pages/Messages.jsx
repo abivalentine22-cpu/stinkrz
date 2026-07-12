@@ -9,6 +9,7 @@ import ChatWindow from "@/components/chat/ChatWindow";
 import { useToast } from "@/components/ui/use-toast";
 import { useBlockedUsers } from "@/hooks/useBlockedUsers";
 import { useAuth } from "@/lib/AuthContext";
+import EmptyState from "@/components/EmptyState";
 
 export default function Messages() {
   const { user: me } = useAuth();
@@ -180,10 +181,14 @@ export default function Messages() {
           )}
           <div className="flex-1 overflow-y-auto p-2">
             {conversations.length === 0 ? (
-              <div className="flex flex-col items-center justify-center h-full text-center p-6 text-muted-foreground">
-                <p className="text-4xl mb-3">💨</p>
-                <p className="font-body text-sm">No messages yet. Send a whiff from the map!</p>
-              </div>
+              <EmptyState
+                className="h-full p-6"
+                icon="💬"
+                title="No chats yet"
+                subtitle="Find someone on the Scent Block and say hi 👋"
+                actionLabel="Open Scent Block"
+                to="/scent-block"
+              />
             ) : (
               <ChatList
                 conversations={conversations}
