@@ -27,6 +27,14 @@ Deno.serve(async (req) => {
       read: false,
     });
 
+    // Send a background push notification (best-effort, fire-and-forget)
+    base44.functions.invoke('sendPushNotification', {
+      user_email: post_owner_email,
+      title: `${interactor_name || 'A user'} reacted to your post`,
+      body: 'They want to whiff you!',
+      data: { type: 'status_interaction', post_id, actor_email: interactor_email, url: '/feed' },
+    }).catch(() => {});
+
     return Response.json({ success: true });
   } catch (error) {
     return Response.json({ error: error.message }, { status: 500 });

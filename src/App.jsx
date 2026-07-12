@@ -7,6 +7,7 @@ import PageNotFound from "./lib/PageNotFound";
 import { AuthProvider, useAuth } from "@/lib/AuthContext";
 import UserNotRegisteredError from "@/components/UserNotRegisteredError";
 import ProtectedRoute from "@/components/ProtectedRoute";
+import { usePushNotifications } from "@/hooks/usePushNotifications";
 import Layout from "@/components/Layout";
 
 // Eagerly loaded (lightweight / auth pages)
@@ -42,7 +43,8 @@ const PageLoader = () => (
 );
 
 const AuthenticatedApp = () => {
-  const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
+  const { user, isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
+  usePushNotifications(user?.email);
 
   if (isLoadingPublicSettings || isLoadingAuth) {
     return (

@@ -22,6 +22,14 @@ Deno.serve(async (req) => {
       read: false,
     });
 
+    // Send a background push notification (best-effort, fire-and-forget)
+    base44.functions.invoke('sendPushNotification', {
+      user_email: receiver_email,
+      title: `New message from ${sender_name || 'a user'}`,
+      body: 'Tap to view your messages',
+      data: { type: 'new_message', message_id, partner_email: sender_email, url: '/messages' },
+    }).catch(() => {});
+
     return Response.json({ success: true });
   } catch (error) {
     return Response.json({ error: error.message }, { status: 500 });

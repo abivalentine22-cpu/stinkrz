@@ -1,0 +1,22 @@
+{
+  "name": "PushToken",
+  "type": "object",
+  "properties": {
+    "user_email": {
+      "type": "string",
+      "description": "Email of the user who owns this push token"
+    },
+    "token": {
+      "type": "string",
+      "description": "The FCM registration token for this device/browser"
+    },
+    "device_info": {
+      "type": "string",
+      "description": "Optional user-agent or device label"
+    }
+  },
+  "required": [
+    "user_email",
+    "token"
+  ]
+}
