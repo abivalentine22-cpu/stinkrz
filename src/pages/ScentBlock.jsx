@@ -3,6 +3,7 @@ import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import ProfileDrawer from "@/components/scent/ProfileDrawer";
 import { base44 } from "@/api/base44Client";
+import { locationPatch } from "@/lib/location";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Crosshair, Eye, Home, MessageCircle, User } from "lucide-react";
 import MapFilterPanel from "@/components/map/MapFilterPanel";
@@ -230,12 +231,10 @@ export default function ScentBlock() {
   const saveLocation = useCallback(async (lat, lng) => {
     const profile = myProfileRef.current;
     if (!profile) return;
-    await base44.entities.ScentProfile.update(profile.id, {
-      location_lat: lat,
-      location_lng: lng,
-      is_online: true,
-      last_active: new Date().toISOString(),
-    });
+    await base44.entities.ScentProfile.update(
+      profile.id,
+      locationPatch(lat, lng, profile)
+    );
   }, []); // stable — no deps needed
 
   useEffect(() => {

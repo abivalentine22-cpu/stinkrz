@@ -4,6 +4,7 @@ import Navbar from "./Navbar";
 import ProfileCompletenessBanner from "./ProfileCompletenessBanner";
 import { base44 } from "@/api/base44Client";
 import { useAuth } from "@/lib/AuthContext";
+import { usePresence } from "@/hooks/usePresence";
 
 const NO_GATE_PATHS = ["/onboarding", "/sign-in", "/register", "/forgot-password", "/reset-password", "/terms", "/privacy", "/scent-block"];
 
@@ -29,6 +30,11 @@ export default function Layout() {
         // (no redirect from home — authenticated users can view the landing page)
       });
   }, [user?.email, pathname, navigate]);
+
+  // App-wide presence: keep the user "online" + location fresh on every page,
+  // respecting invisible/fuzzy privacy toggles. (The Scent Block map owns its
+  // own live geolocation while open; this covers the rest of the app.)
+  usePresence({ userEmail: user?.email, profile: myProfile, pathname });
 
   const showBanner = !isMap && myProfile && myProfile.onboarding_complete;
 
