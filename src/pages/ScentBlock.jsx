@@ -115,6 +115,8 @@ export default function ScentBlock() {
   const [myProfile, setMyProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [mapReady, setMapReady] = useState(false);
+  const [enableLocDismissed, setEnableLocDismissed] = useState(false);
+  const [earlyHintDismissed, setEarlyHintDismissed] = useState(false);
 
   const mapContainerRef = useRef(null);
   const mapRef = useRef(null);
@@ -522,13 +524,21 @@ export default function ScentBlock() {
       </button>
 
       {/* Empty state for brand new users with no profile/location */}
-      {!loading && myProfile && !myProfile.location_lat && !userPos && (
+      {!loading && myProfile && !myProfile.location_lat && !userPos && !enableLocDismissed && (
         <div style={{
           position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)",
           zIndex: 1000, background: "rgba(20,17,40,0.95)", border: "1px solid rgba(167,139,250,0.3)",
           borderRadius: "16px", padding: "24px", maxWidth: "280px", textAlign: "center",
           boxShadow: "0 8px 32px rgba(0,0,0,0.6)",
         }}>
+          <button
+            onClick={() => setEnableLocDismissed(true)}
+            aria-label="Dismiss"
+            style={{
+              position: "absolute", top: "8px", right: "8px", background: "transparent", border: "none",
+              color: "#94a3b8", cursor: "pointer", fontSize: "14px", lineHeight: 1, padding: "4px",
+            }}
+          >✕</button>
           <div style={{ fontSize: "36px", marginBottom: "12px" }}>📍</div>
           <p style={{ fontFamily: "var(--font-heading)", fontWeight: 700, fontSize: "16px", color: "#e2e8f0", marginBottom: "8px" }}>
             Let people find you
@@ -545,36 +555,50 @@ export default function ScentBlock() {
             }}
           >
             Enable Location
-            </button>
-            </div>
-            )}
+          </button>
+        </div>
+      )}
 
-            {/* Empty hint: user is on the map but nobody nearby yet */}
-            {!loading && userPos && filtered.length === 0 && (
-            <div style={{
-            position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)",
-            zIndex: 800, background: "rgba(20,17,40,0.92)", border: "1px solid rgba(255,255,255,0.08)",
-            borderRadius: "16px", padding: "22px", maxWidth: "260px", textAlign: "center",
-            boxShadow: "0 8px 32px rgba(0,0,0,0.5)",
-            }}>
-            <div style={{ fontSize: "30px", marginBottom: "10px" }}>🤙</div>
-            <p style={{ fontFamily: "var(--font-heading)", fontWeight: 700, fontSize: "15px", color: "#e2e8f0", marginBottom: "6px" }}>
-             You're early!
-            </p>
-            <p style={{ fontFamily: "var(--font-body)", fontSize: "12px", color: "#94a3b8", lineHeight: 1.5 }}>
-             No one's nearby yet. Invite a friend to join the block — the more noses, the better.
-            </p>
-            </div>
-            )}
+      {/* Empty hint: user is on the map but nobody nearby yet */}
+      {!loading && userPos && filtered.length === 0 && !earlyHintDismissed && (
+        <div style={{
+          position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)",
+          zIndex: 800, background: "rgba(20,17,40,0.92)", border: "1px solid rgba(255,255,255,0.08)",
+          borderRadius: "16px", padding: "22px", maxWidth: "260px", textAlign: "center",
+          boxShadow: "0 8px 32px rgba(0,0,0,0.5)",
+        }}>
+          <button
+            onClick={() => setEarlyHintDismissed(true)}
+            aria-label="Dismiss"
+            style={{
+              position: "absolute", top: "8px", right: "8px", background: "transparent", border: "none",
+              color: "#94a3b8", cursor: "pointer", fontSize: "14px", lineHeight: 1, padding: "4px",
+            }}
+          >✕</button>
+          <div style={{ fontSize: "30px", marginBottom: "10px" }}>🤙</div>
+          <p style={{ fontFamily: "var(--font-heading)", fontWeight: 700, fontSize: "15px", color: "#e2e8f0", marginBottom: "6px" }}>
+            You're early!
+          </p>
+          <p style={{ fontFamily: "var(--font-body)", fontSize: "12px", color: "#94a3b8", lineHeight: 1.5 }}>
+            No one's nearby yet. Invite a friend to join the block — the more noses, the better.
+          </p>
+        </div>
+      )}
 
-            {geoError && (
+      {geoError && (
         <div style={{
           position: "absolute", bottom: "60px", left: "14px", zIndex: 1000,
           background: "rgba(239,68,68,0.15)", border: "1px solid rgba(239,68,68,0.3)",
           borderRadius: "9999px", padding: "5px 12px",
           fontSize: "11px", color: "#f87171", fontFamily: "var(--font-body)",
+          display: "flex", alignItems: "center", gap: "8px",
         }}>
           {geoError}
+          <button
+            onClick={() => setGeoError(null)}
+            aria-label="Dismiss"
+            style={{ background: "transparent", border: "none", color: "#f87171", cursor: "pointer", fontSize: "12px", lineHeight: 1, padding: 0 }}
+          >✕</button>
         </div>
       )}
 
