@@ -260,7 +260,7 @@ export const FETISH_OPTIONS = [
   "Latex", "Leather", "Massage", "Worn Underwear", "Oral", "Pet Play", "Photo & Video",
   "Praise", "Public Play", "Puppy Play", "Rimming", "Roleplay", "Rope", "Rubber",
   "Sensory Play", "Servicing", "Sneakers", "Socks", "Spanking", "Spit", "Submissive",
-  "Switch", "Taking Orders", "Throat Training", "Uniforms", "Voyeurism", "Wax Play", "Wrestling",
+  "Switch", "Taking Orders", "Throat Training", "Uniforms", "Voyeurism", "Wax Play", "Water Sports", "Wrestling",
 ];
 
 export const PERSONALITY_PROMPTS = [
