@@ -110,6 +110,20 @@ export default function ProfileModal({ profile, open, onClose, onMessage }) {
             </div>
           )}
 
+          {/* Fetishes & Kinks */}
+          {profile.fetishes?.length > 0 && (
+            <div>
+              <p className="text-xs text-muted-foreground font-body mb-2">Fetishes & Kinks</p>
+              <div className="flex flex-wrap gap-1.5">
+                {profile.fetishes.map((fetish) => (
+                  <Badge key={fetish} variant="secondary" className="font-body text-xs bg-destructive/10 text-destructive border border-destructive/30">
+                    {fetish}
+                  </Badge>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* Personality prompts */}
           {profile.personality_prompts?.length > 0 && (
             <div className="space-y-2">

@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { base44 } from "@/api/base44Client";
-import { VIBE_BADGE_CATEGORIES, PERSONALITY_PROMPTS } from "@/lib/demoData";
+import { VIBE_BADGE_CATEGORIES, FETISH_OPTIONS, PERSONALITY_PROMPTS } from "@/lib/demoData";
 import { ArrowRight, ArrowLeft, Check, Sparkles } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/lib/AuthContext";
@@ -16,6 +16,7 @@ const SCENT_EMOJIS = { Fresh: "🧼", Musky: "🌲", Ripe: "🧀", Earthy: "🍂
 const LOOKING_FOR_OPTIONS = ["Casual chat", "Meetup", "Just browsing", "Friends", "Whatever happens"];
 const SHOWER_OPTIONS = ["Daily", "Every other day", "Twice a week", "Weekly", "When inspired", "Classified"];
 const MAX_VIBE_BADGES = 5;
+const MAX_FETISHES = 6;
 
 export default function Onboarding() {
   const navigate = useNavigate();
@@ -37,6 +38,7 @@ export default function Onboarding() {
     scent_category: "",
     scent_intensity: 3,
     vibe_badges: [],
+    fetishes: [],
     shower_frequency: "",
     scent_preferences: [],
     looking_for: "",
@@ -66,6 +68,16 @@ export default function Onboarding() {
     });
   };
 
+  const toggleFetish = (fetish) => {
+    setProfile((p) => {
+      if (p.fetishes.includes(fetish)) {
+        return { ...p, fetishes: p.fetishes.filter((v) => v !== fetish) };
+      }
+      if (p.fetishes.length >= MAX_FETISHES) return p;
+      return { ...p, fetishes: [...p.fetishes, fetish] };
+    });
+  };
+
   const handleFinish = async () => {
     setLoading(true);
     await base44.entities.ScentProfile.create({
@@ -76,6 +88,7 @@ export default function Onboarding() {
       scent_category: profile.scent_category || "Neutral",
       scent_intensity: profile.scent_intensity,
       vibe_badges: profile.vibe_badges,
+      fetishes: profile.fetishes,
       shower_frequency: profile.shower_frequency || "Classified",
       looking_for: profile.looking_for || undefined,
       scent_preferences: profile.scent_preferences,
@@ -142,6 +155,31 @@ export default function Onboarding() {
             </div>
           </div>
         ))}
+        <div className="pt-4 mt-2 border-t border-border">
+          <p className="font-heading text-xs font-semibold text-muted-foreground mb-1 flex items-center gap-1.5">
+            <span>🔥</span> Fetishes & Kinks
+            <span className="ml-auto">{profile.fetishes.length} / {MAX_FETISHES}</span>
+          </p>
+          <p className="font-body text-[10px] text-muted-foreground mb-2">Pick up to {MAX_FETISHES} favorites.</p>
+          <div className="flex flex-wrap gap-2">
+            {FETISH_OPTIONS.map((fetish) => {
+              const selected = profile.fetishes.includes(fetish);
+              const atCap = !selected && profile.fetishes.length >= MAX_FETISHES;
+              return (
+                <Badge
+                  key={fetish}
+                  variant={selected ? "default" : "outline"}
+                  className={`cursor-pointer font-body text-xs transition-all ${
+                    selected ? "bg-secondary text-secondary-foreground" : atCap ? "opacity-40 cursor-not-allowed" : "hover:border-secondary/50"
+                  }`}
+                  onClick={() => toggleFetish(fetish)}
+                >
+                  {fetish}
+                </Badge>
+              );
+            })}
+          </div>
+        </div>
       </div>
     </div>,
 
@@ -275,6 +313,13 @@ export default function Onboarding() {
           <div className="flex flex-wrap gap-1.5">
             {profile.vibe_badges.map((b) => (
               <Badge key={b} className="font-body text-[10px] bg-secondary text-secondary-foreground">{b}</Badge>
+            ))}
+          </div>
+        )}
+        {profile.fetishes.length > 0 && (
+          <div className="flex flex-wrap gap-1.5">
+            {profile.fetishes.map((f) => (
+              <Badge key={f} className="font-body text-[10px] bg-secondary text-secondary-foreground">{f}</Badge>
             ))}
           </div>
         )}

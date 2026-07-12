@@ -72,6 +72,13 @@
         "type": "string"
       }
     },
+    "fetishes": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Up to 6 fetish/kink favorites"
+    },
     "shower_frequency": {
       "type": "string",
       "enum": [

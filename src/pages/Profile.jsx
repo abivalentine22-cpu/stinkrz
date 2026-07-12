@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { VIBE_BADGE_CATEGORIES, PERSONALITY_PROMPTS } from "@/lib/demoData";
+import { VIBE_BADGE_CATEGORIES, FETISH_OPTIONS, PERSONALITY_PROMPTS } from "@/lib/demoData";
 import { Camera, Save, LogOut, Droplets, Shield, Plus, Trash2, X, ChevronLeft, ChevronRight } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import { useAuth } from "@/lib/AuthContext";
@@ -19,6 +19,7 @@ const LOOKING_FOR_OPTIONS = ["Casual chat", "Meetup", "Just browsing", "Friends"
 const GENDER_OPTIONS = ["Man", "Woman", "Non-binary", "Genderfluid", "Agender", "Prefer not to say"];
 const SEXUALITY_OPTIONS = ["Straight", "Gay", "Lesbian", "Bisexual", "Pansexual", "Asexual", "Queer", "Prefer not to say"];
 const MAX_VIBE_BADGES = 5;
+const MAX_FETISHES = 6;
 
 export default function Profile() {
   const { user } = useAuth();
@@ -42,6 +43,7 @@ export default function Profile() {
     scent_category: "Neutral",
     scent_intensity: 3,
     vibe_badges: [],
+    fetishes: [],
     shower_frequency: "Classified",
     scent_preferences: [],
     fuzzy_location: false,
@@ -59,6 +61,7 @@ export default function Profile() {
         scent_category: myProfile.scent_category || "Neutral",
         scent_intensity: myProfile.scent_intensity || 3,
         vibe_badges: myProfile.vibe_badges || [],
+        fetishes: myProfile.fetishes || [],
         shower_frequency: myProfile.shower_frequency || "Classified",
         scent_preferences: myProfile.scent_preferences || [],
         fuzzy_location: myProfile.fuzzy_location || false,
@@ -91,6 +94,7 @@ export default function Profile() {
       scent_category: form.scent_category,
       scent_intensity: form.scent_intensity,
       vibe_badges: form.vibe_badges,
+      fetishes: form.fetishes,
       shower_frequency: form.shower_frequency,
       scent_preferences: form.scent_preferences,
       fuzzy_location: form.fuzzy_location,
@@ -191,6 +195,16 @@ export default function Profile() {
       }
       if (p.vibe_badges.length >= MAX_VIBE_BADGES) return p;
       return { ...p, vibe_badges: [...p.vibe_badges, badge] };
+    });
+  };
+
+  const toggleFetish = (fetish) => {
+    setForm((p) => {
+      if (p.fetishes.includes(fetish)) {
+        return { ...p, fetishes: p.fetishes.filter((v) => v !== fetish) };
+      }
+      if (p.fetishes.length >= MAX_FETISHES) return p;
+      return { ...p, fetishes: [...p.fetishes, fetish] };
     });
   };
 
@@ -351,6 +365,38 @@ export default function Profile() {
                 </div>
               </div>
             ))}
+          </div>
+        </div>
+
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <Label className="font-body text-sm">Fetishes & Kinks</Label>
+            <span className="font-body text-xs text-muted-foreground">{form.fetishes.length} / {MAX_FETISHES}</span>
+          </div>
+          {form.fetishes.length > 0 && (
+            <div className="flex flex-wrap gap-1.5">
+              {form.fetishes.map((f) => (
+                <Badge key={f} className="cursor-pointer font-body text-[10px] bg-secondary text-secondary-foreground gap-1" onClick={() => toggleFetish(f)}>
+                  {f} <span className="opacity-60">✕</span>
+                </Badge>
+              ))}
+            </div>
+          )}
+          <div className="flex flex-wrap gap-1.5 max-h-56 overflow-y-auto pr-1">
+            {FETISH_OPTIONS.map((fetish) => {
+              const selected = form.fetishes.includes(fetish);
+              const atCap = !selected && form.fetishes.length >= MAX_FETISHES;
+              return (
+                <Badge
+                  key={fetish}
+                  variant={selected ? "default" : "outline"}
+                  className={`cursor-pointer font-body text-[10px] transition-all ${selected ? "bg-secondary text-secondary-foreground" : atCap ? "opacity-40 cursor-not-allowed" : ""}`}
+                  onClick={() => toggleFetish(fetish)}
+                >
+                  {fetish}
+                </Badge>
+              );
+            })}
           </div>
         </div>
 

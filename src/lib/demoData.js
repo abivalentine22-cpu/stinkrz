@@ -252,6 +252,17 @@ export const VIBE_BADGE_CATEGORIES = [
 
 export const VIBE_OPTIONS = VIBE_BADGE_CATEGORIES.flatMap((c) => c.badges);
 
+export const FETISH_OPTIONS = [
+  "ABDL", "Armpit Worship", "BDSM", "Gags", "Body Hair", "Body Sweat", "Bondage",
+  "Butt Plugs", "Chastity", "Choking", "Daddy", "Dominant", "Double Penetration",
+  "Edge Play", "Edging", "Exhibitionism", "Feet", "Fisting", "Furry", "Group Play",
+  "Hairy Body", "Handler", "Hole Stretching", "Impact Play", "Sloppy Kissing",
+  "Latex", "Leather", "Massage", "Worn Underwear", "Oral", "Pet Play", "Photo & Video",
+  "Praise", "Public Play", "Puppy Play", "Rimming", "Roleplay", "Rope", "Rubber",
+  "Sensory Play", "Servicing", "Sneakers", "Socks", "Spanking", "Spit", "Submissive",
+  "Switch", "Taking Orders", "Throat Training", "Uniforms", "Voyeurism", "Wax Play", "Wrestling",
+];
+
 export const PERSONALITY_PROMPTS = [
   "My signature scent is",
   "People say I smell like",

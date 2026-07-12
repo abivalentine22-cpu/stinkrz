@@ -220,6 +220,22 @@ export default function ProfileDrawer({ profile, open, onClose, onMessage, onRep
                 </div>
               )}
 
+              {profile.fetishes?.length > 0 && (
+                <div>
+                  <div style={{ fontSize: "10px", color: "#64748b", marginBottom: "8px", fontFamily: "var(--font-body)", textTransform: "uppercase", letterSpacing: "0.05em" }}>Fetishes & Kinks</div>
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
+                    {profile.fetishes.map((fetish) => (
+                      <span key={fetish} style={{
+                        fontSize: "11px", fontFamily: "var(--font-body)",
+                        padding: "3px 10px", borderRadius: "9999px",
+                        background: "rgba(248,113,113,0.1)", color: "#f87171",
+                        border: "1px solid rgba(248,113,113,0.2)",
+                      }}>{fetish}</span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               {/* Compatibility score */}
               {compatScore !== null && (
                 <div style={{
