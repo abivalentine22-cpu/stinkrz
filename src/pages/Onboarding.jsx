@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { base44 } from "@/api/base44Client";
-import { VIBE_OPTIONS, PERSONALITY_PROMPTS } from "@/lib/demoData";
+import { VIBE_BADGE_CATEGORIES, PERSONALITY_PROMPTS } from "@/lib/demoData";
 import { ArrowRight, ArrowLeft, Check, Sparkles } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/lib/AuthContext";
@@ -15,6 +15,7 @@ const SCENT_CATEGORIES = ["Fresh", "Musky", "Ripe", "Earthy", "Neutral"];
 const SCENT_EMOJIS = { Fresh: "🧼", Musky: "🌲", Ripe: "🧀", Earthy: "🍂", Neutral: "⚖️" };
 const LOOKING_FOR_OPTIONS = ["Casual chat", "Meetup", "Just browsing", "Friends", "Whatever happens"];
 const SHOWER_OPTIONS = ["Daily", "Every other day", "Twice a week", "Weekly", "When inspired", "Classified"];
+const MAX_VIBE_BADGES = 5;
 
 export default function Onboarding() {
   const navigate = useNavigate();
@@ -53,6 +54,16 @@ export default function Onboarding() {
       ...p,
       [key]: p[key].includes(value) ? p[key].filter((v) => v !== value) : [...p[key], value],
     }));
+  };
+
+  const toggleBadge = (badge) => {
+    setProfile((p) => {
+      if (p.vibe_badges.includes(badge)) {
+        return { ...p, vibe_badges: p.vibe_badges.filter((v) => v !== badge) };
+      }
+      if (p.vibe_badges.length >= MAX_VIBE_BADGES) return p;
+      return { ...p, vibe_badges: [...p.vibe_badges, badge] };
+    });
   };
 
   const handleFinish = async () => {
@@ -102,20 +113,34 @@ export default function Onboarding() {
       <div className="text-center mb-6">
         <p className="text-4xl mb-2">✨</p>
         <h2 className="font-heading text-xl font-bold">Vibe Setup</h2>
-        <p className="font-body text-sm text-muted-foreground">Pick badges that describe your energy (optional)</p>
+        <p className="font-body text-sm text-muted-foreground">Pin up to {MAX_VIBE_BADGES} badges that describe your energy</p>
+        <p className="font-body text-xs text-muted-foreground mt-1">{profile.vibe_badges.length} / {MAX_VIBE_BADGES} pinned</p>
       </div>
-      <div className="flex flex-wrap gap-2">
-        {VIBE_OPTIONS.map((vibe) => (
-          <Badge
-            key={vibe}
-            variant={profile.vibe_badges.includes(vibe) ? "default" : "outline"}
-            className={`cursor-pointer font-body text-xs transition-all ${
-              profile.vibe_badges.includes(vibe) ? "bg-secondary text-secondary-foreground" : "hover:border-secondary/50"
-            }`}
-            onClick={() => toggleArray("vibe_badges", vibe)}
-          >
-            {vibe}
-          </Badge>
+      <div className="space-y-4 max-h-[55vh] overflow-y-auto pr-1">
+        {VIBE_BADGE_CATEGORIES.map((cat) => (
+          <div key={cat.name}>
+            <p className="font-heading text-xs font-semibold text-muted-foreground mb-2 flex items-center gap-1.5">
+              <span>{cat.emoji}</span> {cat.name}
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {cat.badges.map((vibe) => {
+                const selected = profile.vibe_badges.includes(vibe);
+                const atCap = !selected && profile.vibe_badges.length >= MAX_VIBE_BADGES;
+                return (
+                  <Badge
+                    key={vibe}
+                    variant={selected ? "default" : "outline"}
+                    className={`cursor-pointer font-body text-xs transition-all ${
+                      selected ? "bg-secondary text-secondary-foreground" : atCap ? "opacity-40 cursor-not-allowed" : "hover:border-secondary/50"
+                    }`}
+                    onClick={() => toggleBadge(vibe)}
+                  >
+                    {vibe}
+                  </Badge>
+                );
+              })}
+            </div>
+          </div>
         ))}
       </div>
     </div>,
@@ -246,6 +271,13 @@ export default function Onboarding() {
             <p className="font-body text-xs text-muted-foreground">{profile.scent_category || "Neutral"} · Intensity {profile.scent_intensity}/5</p>
           </div>
         </div>
+        {profile.vibe_badges.length > 0 && (
+          <div className="flex flex-wrap gap-1.5">
+            {profile.vibe_badges.map((b) => (
+              <Badge key={b} className="font-body text-[10px] bg-secondary text-secondary-foreground">{b}</Badge>
+            ))}
+          </div>
+        )}
         {profile.bio && <p className="font-body text-sm text-muted-foreground">{profile.bio}</p>}
         {profile.personality_prompts.filter((p) => p.answer).length > 0 && (
           <div className="space-y-2">

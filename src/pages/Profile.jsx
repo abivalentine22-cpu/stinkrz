@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { VIBE_OPTIONS, PERSONALITY_PROMPTS } from "@/lib/demoData";
+import { VIBE_BADGE_CATEGORIES, PERSONALITY_PROMPTS } from "@/lib/demoData";
 import { Camera, Save, LogOut, Droplets, Shield, Plus, Trash2, X, ChevronLeft, ChevronRight } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import { useAuth } from "@/lib/AuthContext";
@@ -18,6 +18,7 @@ const SHOWER_OPTIONS = ["Daily", "Every other day", "Twice a week", "Weekly", "W
 const LOOKING_FOR_OPTIONS = ["Casual chat", "Meetup", "Just browsing", "Friends", "Whatever happens"];
 const GENDER_OPTIONS = ["Man", "Woman", "Non-binary", "Genderfluid", "Agender", "Prefer not to say"];
 const SEXUALITY_OPTIONS = ["Straight", "Gay", "Lesbian", "Bisexual", "Pansexual", "Asexual", "Queer", "Prefer not to say"];
+const MAX_VIBE_BADGES = 5;
 
 export default function Profile() {
   const { user } = useAuth();
@@ -183,6 +184,16 @@ export default function Profile() {
     }));
   };
 
+  const toggleBadge = (badge) => {
+    setForm((p) => {
+      if (p.vibe_badges.includes(badge)) {
+        return { ...p, vibe_badges: p.vibe_badges.filter((v) => v !== badge) };
+      }
+      if (p.vibe_badges.length >= MAX_VIBE_BADGES) return p;
+      return { ...p, vibe_badges: [...p.vibe_badges, badge] };
+    });
+  };
+
   return (
     <div className="max-w-lg mx-auto px-4 py-8">
       <div className="flex items-center justify-between mb-6">
@@ -303,17 +314,33 @@ export default function Profile() {
         </div>
 
         <div className="space-y-2">
-          <Label className="font-body text-sm">Vibe Badges</Label>
-          <div className="flex flex-wrap gap-1.5 max-h-40 overflow-y-auto">
-            {VIBE_OPTIONS.map((vibe) => (
-              <Badge
-                key={vibe}
-                variant={form.vibe_badges.includes(vibe) ? "default" : "outline"}
-                className={`cursor-pointer font-body text-[10px] transition-all ${form.vibe_badges.includes(vibe) ? "bg-secondary text-secondary-foreground" : ""}`}
-                onClick={() => toggleArray("vibe_badges", vibe)}
-              >
-                {vibe}
-              </Badge>
+          <div className="flex items-center justify-between">
+            <Label className="font-body text-sm">Vibe Badges</Label>
+            <span className="font-body text-xs text-muted-foreground">{form.vibe_badges.length} / {MAX_VIBE_BADGES} pinned</span>
+          </div>
+          <div className="space-y-3 max-h-56 overflow-y-auto pr-1">
+            {VIBE_BADGE_CATEGORIES.map((cat) => (
+              <div key={cat.name}>
+                <p className="font-heading text-[11px] font-semibold text-muted-foreground mb-1.5 flex items-center gap-1.5">
+                  <span>{cat.emoji}</span> {cat.name}
+                </p>
+                <div className="flex flex-wrap gap-1.5">
+                  {cat.badges.map((vibe) => {
+                    const selected = form.vibe_badges.includes(vibe);
+                    const atCap = !selected && form.vibe_badges.length >= MAX_VIBE_BADGES;
+                    return (
+                      <Badge
+                        key={vibe}
+                        variant={selected ? "default" : "outline"}
+                        className={`cursor-pointer font-body text-[10px] transition-all ${selected ? "bg-secondary text-secondary-foreground" : atCap ? "opacity-40 cursor-not-allowed" : ""}`}
+                        onClick={() => toggleBadge(vibe)}
+                      >
+                        {vibe}
+                      </Badge>
+                    );
+                  })}
+                </div>
+              </div>
             ))}
           </div>
         </div>

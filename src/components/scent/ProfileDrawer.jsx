@@ -203,6 +203,23 @@ export default function ProfileDrawer({ profile, open, onClose, onMessage, onRep
                 </div>
               </div>
 
+              {/* Vibe badges — pinned to top */}
+              {profile.vibe_badges?.length > 0 && (
+                <div>
+                  <div style={{ fontSize: "10px", color: "#64748b", marginBottom: "8px", fontFamily: "var(--font-body)", textTransform: "uppercase", letterSpacing: "0.05em" }}>Vibe Check</div>
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
+                    {profile.vibe_badges.map((badge) => (
+                      <span key={badge} style={{
+                        fontSize: "11px", fontFamily: "var(--font-body)",
+                        padding: "3px 10px", borderRadius: "9999px",
+                        background: "rgba(167,139,250,0.1)", color: "#a78bfa",
+                        border: "1px solid rgba(167,139,250,0.2)",
+                      }}>{badge}</span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               {/* Compatibility score */}
               {compatScore !== null && (
                 <div style={{
@@ -286,23 +303,6 @@ export default function ProfileDrawer({ profile, open, onClose, onMessage, onRep
                 <p style={{ fontFamily: "var(--font-body)", fontSize: "13px", color: "#94a3b8", lineHeight: 1.6, margin: 0 }}>
                   {profile.bio}
                 </p>
-              )}
-
-              {/* Vibe badges */}
-              {profile.vibe_badges?.length > 0 && (
-                <div>
-                  <div style={{ fontSize: "10px", color: "#64748b", marginBottom: "8px", fontFamily: "var(--font-body)", textTransform: "uppercase", letterSpacing: "0.05em" }}>Vibe Check</div>
-                  <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
-                    {profile.vibe_badges.map((badge) => (
-                      <span key={badge} style={{
-                        fontSize: "11px", fontFamily: "var(--font-body)",
-                        padding: "3px 10px", borderRadius: "9999px",
-                        background: "rgba(167,139,250,0.1)", color: "#a78bfa",
-                        border: "1px solid rgba(167,139,250,0.2)",
-                      }}>{badge}</span>
-                    ))}
-                  </div>
-                </div>
               )}
 
               {/* Personality prompts */}
