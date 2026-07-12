@@ -318,6 +318,15 @@ export default function Profile() {
             <Label className="font-body text-sm">Vibe Badges</Label>
             <span className="font-body text-xs text-muted-foreground">{form.vibe_badges.length} / {MAX_VIBE_BADGES} pinned</span>
           </div>
+          {form.vibe_badges.length > 0 && (
+            <div className="flex flex-wrap gap-1.5">
+              {form.vibe_badges.map((b) => (
+                <Badge key={b} className="cursor-pointer font-body text-[10px] bg-secondary text-secondary-foreground gap-1" onClick={() => toggleBadge(b)}>
+                  {b} <span className="opacity-60">✕</span>
+                </Badge>
+              ))}
+            </div>
+          )}
           <div className="space-y-3 max-h-56 overflow-y-auto pr-1">
             {VIBE_BADGE_CATEGORIES.map((cat) => (
               <div key={cat.name}>
