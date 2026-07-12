@@ -303,6 +303,10 @@ export default function Onboarding() {
   return (
     <div className="min-h-screen flex items-center justify-center px-4 py-12">
       <div className="w-full max-w-md">
+        <div className="text-center mb-6">
+          <h1 className="font-heading text-2xl font-bold">Welcome to Stinkrz 🤙</h1>
+          <p className="font-body text-sm text-muted-foreground mt-1">A quick vibe check and you're in — takes about a minute.</p>
+        </div>
         {/* Progress */}
         <div className="flex gap-1 mb-8">
           {steps.map((_, i) => (

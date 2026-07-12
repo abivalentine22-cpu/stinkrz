@@ -88,9 +88,10 @@ export default function NotificationCenter({ userEmail }) {
 
               {/* Notifications list */}
               {notifications.length === 0 ? (
-                <div className="p-8 text-center text-muted-foreground">
-                  <Bell className="w-8 h-8 mx-auto mb-3 opacity-30" />
-                  <p className="font-body text-sm">No notifications yet</p>
+                <div className="p-10 text-center text-muted-foreground">
+                  <div className="text-3xl mb-2">✅</div>
+                  <p className="font-heading text-sm font-semibold text-foreground mb-1">You're all caught up</p>
+                  <p className="font-body text-xs">No new notifications right now</p>
                 </div>
               ) : (
                 <div className="divide-y divide-border">

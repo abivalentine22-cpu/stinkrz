@@ -545,11 +545,29 @@ export default function ScentBlock() {
             }}
           >
             Enable Location
-          </button>
-        </div>
-      )}
+            </button>
+            </div>
+            )}
 
-      {geoError && (
+            {/* Empty hint: user is on the map but nobody nearby yet */}
+            {!loading && userPos && filtered.length === 0 && (
+            <div style={{
+            position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)",
+            zIndex: 800, background: "rgba(20,17,40,0.92)", border: "1px solid rgba(255,255,255,0.08)",
+            borderRadius: "16px", padding: "22px", maxWidth: "260px", textAlign: "center",
+            boxShadow: "0 8px 32px rgba(0,0,0,0.5)",
+            }}>
+            <div style={{ fontSize: "30px", marginBottom: "10px" }}>🤙</div>
+            <p style={{ fontFamily: "var(--font-heading)", fontWeight: 700, fontSize: "15px", color: "#e2e8f0", marginBottom: "6px" }}>
+             You're early!
+            </p>
+            <p style={{ fontFamily: "var(--font-body)", fontSize: "12px", color: "#94a3b8", lineHeight: 1.5 }}>
+             No one's nearby yet. Invite a friend to join the block — the more noses, the better.
+            </p>
+            </div>
+            )}
+
+            {geoError && (
         <div style={{
           position: "absolute", bottom: "60px", left: "14px", zIndex: 1000,
           background: "rgba(239,68,68,0.15)", border: "1px solid rgba(239,68,68,0.3)",
