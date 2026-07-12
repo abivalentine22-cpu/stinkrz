@@ -12,7 +12,7 @@ export const firebaseConfig = {
 };
 
 // Web Push certificate key pair — Firebase Console > Project settings > Cloud Messaging > Web Push certificates
-export const FCM_VAPID_KEY = "REPLACE_WITH_VAPID_KEY";
+export const FCM_VAPID_KEY = "BERzsHBw8TveVASAVICYIa0WbRqRRFCQSgWygOF1xUTGVBXnrh21m2OgZCgPeDy8nnY3U8lmAckgXYozg_l5COg";
 
 let app = null;
 let messaging = null;
