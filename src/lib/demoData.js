@@ -243,7 +243,7 @@ export const SCENT_STICKERS = [
 
 export const VIBE_BADGE_CATEGORIES = [
   { emoji: "🌿", name: "Scent Identity", badges: ["Fresh", "Musky", "Earthy", "Ripe", "Smoky", "Sweet", "Spicy", "Herbal", "Woody", "Clean Laundry", "Rainy Day", "Campfire", "Ocean Air"] },
-  { emoji: "💪", name: "Lifestyle", badges: ["Gym Rat", "Runner", "Hiker", "Cyclist", "Weightlifter", "Dancer", "Swimmer", "Night Shift", "Office Worker", "Student", "Traveler", "Festival Goer"] },
+  { emoji: "💪", name: "Lifestyle", badges: ["Gym Rat", "Runner", "Hiker", "Cyclist", "Weightlifter", "Dancer", "Swimmer", "Night Shift", "Office Worker", "Student", "Traveler", "Festival Goer", "Furry"] },
   { emoji: "🌙", name: "Daily Habits", badges: ["Early Bird", "Night Owl", "Coffee Lover", "Tea Lover", "Dog Parent", "Cat Parent", "Gamer", "Bookworm", "Homebody", "Outdoorsy"] },
   { emoji: "🛁", name: "Grooming", badges: ["Daily Shower", "Every Other Day", "Weekly Washer", "Cologne Fan", "Fragrance-Free", "Minimalist", "Skincare Enthusiast"] },
   { emoji: "💬", name: "Personality", badges: ["Introvert", "Extrovert", "Goofy", "Romantic", "Adventurous", "Chill", "Flirty", "Curious", "Hopeless Optimist", "Sarcastic", "Golden Retriever Energy", "Black Cat Energy"] },
