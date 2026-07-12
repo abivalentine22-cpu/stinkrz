@@ -41,7 +41,7 @@ const SECTIONS = [
   },
   {
     title: "10. Termination",
-    content: `We reserve the right to suspend or terminate your access to Stinkrz at any time, for any reason, including violation of these Terms. You may also delete your account at any time by contacting us.`,
+    content: `We reserve the right to suspend or terminate your access to Stinkrz at any time, for any reason, including violation of these Terms. You may also delete your account at any time from within the App's Settings.`,
   },
   {
     title: "11. Governing Law",
@@ -61,7 +61,7 @@ export default function Terms() {
       </Link>
 
       <h1 className="font-heading text-3xl font-bold mb-2">Terms of Service</h1>
-      <p className="font-body text-sm text-muted-foreground mb-10">Last updated: May 2026</p>
+      <p className="font-body text-sm text-muted-foreground mb-10">Last updated: July 2026</p>
 
       <p className="font-body text-sm text-muted-foreground leading-relaxed mb-8">
         Welcome to Stinkrz. Please read these Terms of Service carefully before using our platform. These terms govern your access to and use of the Stinkrz application and services.

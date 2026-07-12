@@ -21,7 +21,7 @@ const SECTIONS = [
   },
   {
     title: "5. Push Notifications",
-    content: `If you grant notification permissions, we may send you alerts about nearby scent matches. You can revoke notification permissions at any time through your device's settings. We use a 30-minute interval to avoid excessive notifications.`,
+    content: `If you grant notification permissions, we may send you alerts about nearby scent matches. You can revoke notification permissions at any time through your device's settings. We limit how often these notifications are sent to avoid excessive alerts.`,
   },
   {
     title: "6. Data Retention",
@@ -37,7 +37,7 @@ const SECTIONS = [
   },
   {
     title: "9. Your Rights",
-    content: `You have the right to access, correct, or delete your personal data. You can update most profile information directly in the App. To request account deletion or a data export, please contact us via the Help page.`,
+    content: `You have the right to access, correct, or delete your personal data. You can update most profile information directly in the App, and you can delete your account at any time from Settings. For a data export, please contact us via the Help page.`,
   },
   {
     title: "10. Changes to This Policy",
@@ -57,7 +57,7 @@ export default function Privacy() {
       </Link>
 
       <h1 className="font-heading text-3xl font-bold mb-2">Privacy Policy</h1>
-      <p className="font-body text-sm text-muted-foreground mb-10">Last updated: May 2026</p>
+      <p className="font-body text-sm text-muted-foreground mb-10">Last updated: July 2026</p>
 
       <p className="font-body text-sm text-muted-foreground leading-relaxed mb-8">
         At Stinkrz, your privacy matters. This Privacy Policy explains what data we collect, how we use it, and the choices you have. By using Stinkrz, you agree to the practices described here.
