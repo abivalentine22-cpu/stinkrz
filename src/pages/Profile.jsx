@@ -106,10 +106,12 @@ export default function Profile() {
   };
 
   const compressImage = (file) =>
-    new Promise((resolve) => {
+    new Promise((resolve, reject) => {
       const reader = new FileReader();
+      reader.onerror = () => reject(new Error("Could not read file"));
       reader.onload = (e) => {
         const img = new Image();
+        img.onerror = () => reject(new Error("Could not load image"));
         img.onload = () => {
           const maxSize = 512;
           let { width, height } = img;
@@ -121,8 +123,17 @@ export default function Profile() {
           const canvas = document.createElement("canvas");
           canvas.width = width;
           canvas.height = height;
-          canvas.getContext("2d").drawImage(img, 0, 0, width, height);
-          canvas.toBlob((blob) => resolve(new File([blob], "avatar.jpg", { type: "image/jpeg" })), "image/jpeg", 0.85);
+          const ctx = canvas.getContext("2d");
+          if (!ctx) { reject(new Error("Canvas not supported")); return; }
+          ctx.drawImage(img, 0, 0, width, height);
+          canvas.toBlob(
+            (blob) => {
+              if (!blob) { reject(new Error("Compression failed")); return; }
+              resolve(new File([blob], "avatar.jpg", { type: "image/jpeg" }));
+            },
+            "image/jpeg",
+            0.85
+          );
         };
         img.src = e.target.result;
       };
@@ -134,15 +145,21 @@ export default function Profile() {
     if (!file) return;
     setUploadingPhoto(true);
     try {
-      const compressed = await compressImage(file);
-      const { file_url } = await base44.integrations.Core.UploadFile({ file: compressed });
+      let fileToUpload;
+      try {
+        fileToUpload = await compressImage(file);
+      } catch {
+        // Fallback: upload the original file if compression fails
+        fileToUpload = file;
+      }
+      const { file_url } = await base44.integrations.Core.UploadFile({ file: fileToUpload });
       if (myProfile) {
         await base44.entities.ScentProfile.update(myProfile.id, { avatar_url: file_url });
         queryClient.invalidateQueries({ queryKey: ["my-profile"] });
         toast({ title: "Photo updated!" });
       }
-    } catch {
-      toast({ title: "Upload failed", description: "Please try again.", variant: "destructive" });
+    } catch (err) {
+      toast({ title: "Upload failed", description: err?.message || "Please try again.", variant: "destructive" });
     } finally {
       setUploadingPhoto(false);
       e.target.value = "";
