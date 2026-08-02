@@ -39,5 +39,40 @@
     "sender_email",
     "receiver_email",
     "content"
-  ]
+  ],
+  "rls": {
+    "read": {
+      "$or": [
+        {
+          "data.sender_email": "{{user.email}}"
+        },
+        {
+          "data.receiver_email": "{{user.email}}"
+        }
+      ]
+    },
+    "create": {
+      "data.sender_email": "{{user.email}}"
+    },
+    "update": {
+      "$or": [
+        {
+          "data.sender_email": "{{user.email}}"
+        },
+        {
+          "data.receiver_email": "{{user.email}}"
+        }
+      ]
+    },
+    "delete": {
+      "$or": [
+        {
+          "data.sender_email": "{{user.email}}"
+        },
+        {
+          "data.receiver_email": "{{user.email}}"
+        }
+      ]
+    }
+  }
 }

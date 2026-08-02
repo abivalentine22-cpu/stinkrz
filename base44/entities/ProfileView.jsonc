@@ -14,5 +14,26 @@
   "required": [
     "viewer_email",
     "viewed_email"
-  ]
+  ],
+  "rls": {
+    "read": {
+      "$or": [
+        {
+          "data.viewer_email": "{{user.email}}"
+        },
+        {
+          "data.viewed_email": "{{user.email}}"
+        }
+      ]
+    },
+    "create": {
+      "data.viewer_email": "{{user.email}}"
+    },
+    "update": {
+      "data.viewer_email": "{{user.email}}"
+    },
+    "delete": {
+      "data.viewer_email": "{{user.email}}"
+    }
+  }
 }
