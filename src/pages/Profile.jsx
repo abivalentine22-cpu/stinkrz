@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { VIBE_BADGE_CATEGORIES, FETISH_OPTIONS, PERSONALITY_PROMPTS } from "@/lib/demoData";
+import { VIBE_BADGE_CATEGORIES, FETISH_OPTIONS } from "@/lib/demoData";
 import { Camera, Save, LogOut, Droplets, Shield, Plus, Trash2, X, ChevronLeft, ChevronRight } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import { useAuth } from "@/lib/AuthContext";

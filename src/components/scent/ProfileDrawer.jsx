@@ -321,21 +321,6 @@ export default function ProfileDrawer({ profile, open, onClose, onMessage, onRep
                 </p>
               )}
 
-              {/* Personality prompts */}
-              {profile.personality_prompts?.length > 0 && (
-                <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-                  {profile.personality_prompts.map((p, i) => (
-                    <div key={i} style={{
-                      background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.07)",
-                      borderRadius: "10px", padding: "10px 12px",
-                    }}>
-                      <div style={{ fontSize: "10px", color: "#64748b", fontFamily: "var(--font-body)", marginBottom: "3px" }}>{p.prompt}</div>
-                      <div style={{ fontSize: "13px", color: "#e2e8f0", fontFamily: "var(--font-body)", fontWeight: 500 }}>{p.answer}</div>
-                    </div>
-                  ))}
-                </div>
-              )}
-
               {/* Actions */}
               <div style={{ marginTop: "auto", paddingTop: "8px", display: "flex", flexDirection: "column", gap: "8px" }}>
                 {!blocked && (

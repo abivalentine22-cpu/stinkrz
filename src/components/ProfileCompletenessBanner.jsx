@@ -10,7 +10,6 @@ function getCompleteness(profile) {
     { field: "age", label: "age" },
     { field: "scent_category", label: "scent type" },
     { field: "vibe_badges", label: "vibe badges", isArray: true },
-    { field: "personality_prompts", label: "personality prompts", isArray: true },
   ];
   const missing = checks.filter(c => {
     const v = profile[c.field];

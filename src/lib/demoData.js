@@ -262,21 +262,3 @@ export const FETISH_OPTIONS = [
   "Sensory Play", "Servicing", "Sneakers", "Socks", "Spanking", "Spit", "Submissive",
   "Switch", "Taking Orders", "Throat Training", "Uniforms", "Voyeurism", "Wax Play", "Water Sports", "Wrestling",
 ];
-
-export const PERSONALITY_PROMPTS = [
-  "My signature scent is",
-  "People say I smell like",
-  "The last time I showered was",
-  "My shower playlist is",
-  "My ideal date smells like",
-  "My gym bag smells like",
-  "Red flag:",
-  "Green flag:",
-  "Deal breaker:",
-  "Unpopular opinion:",
-  "My apartment smells like",
-  "First date idea:",
-  "The last time I used soap was",
-  "I'd describe my vibe as",
-  "My medicine cabinet has",
-];

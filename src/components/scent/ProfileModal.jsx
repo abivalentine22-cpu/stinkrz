@@ -124,18 +124,6 @@ export default function ProfileModal({ profile, open, onClose, onMessage }) {
             </div>
           )}
 
-          {/* Personality prompts */}
-          {profile.personality_prompts?.length > 0 && (
-            <div className="space-y-2">
-              {profile.personality_prompts.map((p, i) => (
-                <div key={i} className="bg-muted/30 rounded-xl p-3 border border-border/50">
-                  <p className="text-xs text-muted-foreground font-body">{p.prompt}</p>
-                  <p className="text-sm font-body mt-1 font-medium">{p.answer}</p>
-                </div>
-              ))}
-            </div>
-          )}
-
           {/* Scent preferences */}
           {profile.scent_preferences?.length > 0 && (
             <div>

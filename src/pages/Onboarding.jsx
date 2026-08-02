@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { base44 } from "@/api/base44Client";
-import { VIBE_BADGE_CATEGORIES, FETISH_OPTIONS, PERSONALITY_PROMPTS } from "@/lib/demoData";
+import { VIBE_BADGE_CATEGORIES, FETISH_OPTIONS } from "@/lib/demoData";
 import { ArrowRight, ArrowLeft, Check, Sparkles } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/lib/AuthContext";
@@ -42,11 +42,6 @@ export default function Onboarding() {
     shower_frequency: "",
     scent_preferences: [],
     looking_for: "",
-    personality_prompts: [
-      { prompt: PERSONALITY_PROMPTS[0], answer: "" },
-      { prompt: PERSONALITY_PROMPTS[5], answer: "" },
-      { prompt: PERSONALITY_PROMPTS[9], answer: "" },
-    ],
   });
 
   const updateProfile = (key, value) => setProfile((p) => ({ ...p, [key]: value }));
@@ -92,7 +87,6 @@ export default function Onboarding() {
       shower_frequency: profile.shower_frequency || "Classified",
       looking_for: profile.looking_for || undefined,
       scent_preferences: profile.scent_preferences,
-      personality_prompts: profile.personality_prompts.filter((p) => p.answer),
       is_online: true,
       onboarding_complete: true,
     });
@@ -183,31 +177,7 @@ export default function Onboarding() {
       </div>
     </div>,
 
-    // Step 2: Personality Prompts
-    <div key="prompts" className="space-y-5">
-      <div className="text-center mb-6">
-        <p className="text-4xl mb-2">💬</p>
-        <h2 className="font-heading text-xl font-bold">Personality Prompts</h2>
-        <p className="font-body text-sm text-muted-foreground">Fill these in or skip — no judgment here</p>
-      </div>
-      {profile.personality_prompts.map((p, i) => (
-        <div key={i} className="space-y-1.5">
-          <Label className="font-body text-sm text-muted-foreground">{p.prompt}</Label>
-          <Input
-            value={p.answer}
-            onChange={(e) => {
-              const updated = [...profile.personality_prompts];
-              updated[i] = { ...updated[i], answer: e.target.value };
-              updateProfile("personality_prompts", updated);
-            }}
-            placeholder="Type something funny (or skip)"
-            className="font-body bg-muted border-0"
-          />
-        </div>
-      ))}
-    </div>,
-
-    // Step 3: Scent Preferences
+    // Step 2: Scent Preferences
     <div key="scent" className="space-y-5">
       <div className="text-center mb-6">
         <p className="text-4xl mb-2">👃</p>
@@ -324,16 +294,6 @@ export default function Onboarding() {
           </div>
         )}
         {profile.bio && <p className="font-body text-sm text-muted-foreground">{profile.bio}</p>}
-        {profile.personality_prompts.filter((p) => p.answer).length > 0 && (
-          <div className="space-y-2">
-            {profile.personality_prompts.filter((p) => p.answer).map((p, i) => (
-              <div key={i} className="bg-muted/50 rounded-lg p-2.5">
-                <p className="text-[10px] text-muted-foreground font-body">{p.prompt}</p>
-                <p className="text-xs font-body font-medium">{p.answer}</p>
-              </div>
-            ))}
-          </div>
-        )}
         {profile.scent_preferences.length > 0 && (
           <div className="flex gap-1.5 flex-wrap">
             {profile.scent_preferences.map((s) => (

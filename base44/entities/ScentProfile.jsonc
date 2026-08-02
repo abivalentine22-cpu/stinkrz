@@ -112,20 +112,6 @@
       },
       "description": "What scent categories this user is into"
     },
-    "personality_prompts": {
-      "type": "array",
-      "items": {
-        "type": "object",
-        "properties": {
-          "prompt": {
-            "type": "string"
-          },
-          "answer": {
-            "type": "string"
-          }
-        }
-      }
-    },
     "location_lat": {
       "type": "number"
     },
