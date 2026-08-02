@@ -27,6 +27,7 @@ export default function Profile() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [lightboxIndex, setLightboxIndex] = useState(null);
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
 
   const { data: profiles = [] } = useQuery({
     queryKey: ["my-profile", user?.email],
@@ -131,13 +132,28 @@ export default function Profile() {
   const handlePhotoUpload = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    const compressed = await compressImage(file);
-    const { file_url } = await base44.integrations.Core.UploadFile({ file: compressed });
-    if (myProfile) {
-      await base44.entities.ScentProfile.update(myProfile.id, { avatar_url: file_url });
-      queryClient.invalidateQueries({ queryKey: ["my-profile"] });
-      toast({ title: "Photo updated!" });
+    setUploadingPhoto(true);
+    try {
+      const compressed = await compressImage(file);
+      const { file_url } = await base44.integrations.Core.UploadFile({ file: compressed });
+      if (myProfile) {
+        await base44.entities.ScentProfile.update(myProfile.id, { avatar_url: file_url });
+        queryClient.invalidateQueries({ queryKey: ["my-profile"] });
+        toast({ title: "Photo updated!" });
+      }
+    } catch {
+      toast({ title: "Upload failed", description: "Please try again.", variant: "destructive" });
+    } finally {
+      setUploadingPhoto(false);
+      e.target.value = "";
     }
+  };
+
+  const handleRemovePhoto = async () => {
+    if (!myProfile?.avatar_url) return;
+    await base44.entities.ScentProfile.update(myProfile.id, { avatar_url: "" });
+    queryClient.invalidateQueries({ queryKey: ["my-profile"] });
+    toast({ title: "Photo removed" });
   };
 
   const handleGalleryUpload = async (e) => {
@@ -222,7 +238,9 @@ export default function Profile() {
       <div className="flex justify-center mb-6">
         <div className="relative">
           <div className="w-24 h-24 rounded-full bg-muted overflow-hidden flex items-center justify-center text-4xl">
-            {myProfile?.avatar_url ? (
+            {uploadingPhoto ? (
+              <div className="w-8 h-8 border-4 border-primary/20 border-t-primary rounded-full animate-spin" />
+            ) : myProfile?.avatar_url ? (
               <img src={myProfile.avatar_url} alt="" className="w-full h-full object-cover" />
             ) : (
               "🤙"
@@ -230,8 +248,17 @@ export default function Profile() {
           </div>
           <label className="absolute bottom-0 right-0 w-8 h-8 rounded-full bg-primary flex items-center justify-center cursor-pointer hover:bg-primary/90 transition-colors">
             <Camera className="w-4 h-4 text-primary-foreground" />
-            <input type="file" accept="image/*" onChange={handlePhotoUpload} className="hidden" />
+            <input type="file" accept="image/*" onChange={handlePhotoUpload} className="hidden" disabled={uploadingPhoto} />
           </label>
+          {myProfile?.avatar_url && !uploadingPhoto && (
+            <button
+              onClick={handleRemovePhoto}
+              className="absolute top-0 right-0 w-7 h-7 rounded-full bg-destructive flex items-center justify-center hover:bg-destructive/90 transition-colors"
+              title="Remove photo"
+            >
+              <Trash2 className="w-3.5 h-3.5 text-destructive-foreground" />
+            </button>
+          )}
         </div>
       </div>
 
