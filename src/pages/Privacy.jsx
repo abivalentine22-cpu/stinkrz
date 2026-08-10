@@ -5,27 +5,27 @@ import { ArrowLeft } from "lucide-react";
 const SECTIONS = [
   {
     title: "1. Information We Collect",
-    content: `We collect information you provide directly, including your display name, age, bio, profile photo, scent preferences, and vibe badges. We also collect location data when you enable it, and messages you send through the App. We automatically collect usage data such as log-in times and feature interactions.`,
+    content: `We collect information you provide directly, including your display name, age, bio, profile photo, photo gallery (up to 6 additional photos), gender, sexuality, scent category and intensity, vibe badges, fetish and kink selections, shower frequency, last showered date, and what you're looking for. We also collect your location coordinates when you enable location sharing, and messages you send through the App (including photos, videos, and stickers). We automatically collect usage data such as log-in times, online status, last-active timestamps, and feature interactions. We store push notification tokens to deliver alerts to your device.`,
   },
   {
     title: "2. How We Use Your Information",
     content: `We use your information to provide and improve the Stinkrz service, show your profile to nearby users, deliver messages between users, send notifications about nearby matches (with your permission), enforce our Terms of Service, and respond to support requests.`,
   },
   {
-    title: "3. Location Data",
-    content: `Location data is central to Stinkrz. Your coordinates are stored and shared with other users so they can see you on the Scent Block map. You may enable "Approximate Location" mode in your profile to share only a general area (~½ mile radius) rather than your precise coordinates. You can stop sharing your location by disabling tracking in the App.`,
+    title: "3. Location Data & Visibility",
+    content: `Location data is central to Stinkrz. Your coordinates are stored and shared with other users so they can see you on the Scent Block map. You may enable "Approximate Location" mode in your profile to share only a general area (~½ mile radius) rather than your precise coordinates. You can also enable "Invisible Mode" to hide yourself from the map entirely while still browsing other users. Your online status and last-active time may be shown to other users. You can stop sharing your location by disabling tracking in the App.`,
   },
   {
     title: "4. Sharing Your Information",
-    content: `Your profile information (name, photo, scent details, bio, vibe badges) is visible to other Stinkrz users. Your messages are private between you and the recipient. We do not sell your personal data to third parties. We may share data with service providers who help us operate the App, subject to confidentiality obligations.`,
+    content: `Your profile information (name, photo, photo gallery, age, bio, scent details, vibe badges, fetishes, gender, and sexuality) is visible to other Stinkrz users. Your messages and shared media are private between you and the recipient. We record who views your profile and who favorites (taps) you, and this information is visible to the relevant users. We do not sell your personal data to third parties. We may share data with service providers who help us operate the App (such as cloud storage and push notification providers), subject to confidentiality obligations.`,
   },
   {
-    title: "5. Push Notifications",
-    content: `If you grant notification permissions, we may send you alerts about nearby scent matches. You can revoke notification permissions at any time through your device's settings. We limit how often these notifications are sent to avoid excessive alerts.`,
+    title: "5. Notifications",
+    content: `If you grant notification permissions, we may send you push notifications about new messages, nearby scent matches, status post interactions, and profile views. We may also send email notifications for missed messages. You can revoke notification permissions at any time through your device's settings, and you can manage email preferences in the App. We limit how often these notifications are sent to avoid excessive alerts.`,
   },
   {
-    title: "6. Data Retention",
-    content: `We retain your profile data for as long as your account is active. Messages are stored to allow conversation history. If you delete your account, we will remove your personal data within 30 days, except where retention is required by law.`,
+    title: "6. Data Retention & Account Deletion",
+    content: `We retain your profile data for as long as your account is active. Messages, media, and conversation history are stored to allow you to revisit past chats. Status posts automatically expire after a few hours. We retain records of blocked users and reports for as long as needed for safety and moderation. If you delete your account from Settings, we will remove your personal data within 30 days, except where retention is required by law. Blocking a user removes them from your map and feed immediately.`,
   },
   {
     title: "7. Security",
@@ -57,7 +57,7 @@ export default function Privacy() {
       </Link>
 
       <h1 className="font-heading text-3xl font-bold mb-2">Privacy Policy</h1>
-      <p className="font-body text-sm text-muted-foreground mb-10">Last updated: July 2026</p>
+      <p className="font-body text-sm text-muted-foreground mb-10">Last updated: August 2026</p>
 
       <p className="font-body text-sm text-muted-foreground leading-relaxed mb-8">
         At Stinkrz, your privacy matters. This Privacy Policy explains what data we collect, how we use it, and the choices you have. By using Stinkrz, you agree to the practices described here.

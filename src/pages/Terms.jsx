@@ -16,20 +16,20 @@ const SECTIONS = [
     content: `You are responsible for maintaining the confidentiality of your account credentials and for all activity that occurs under your account. You agree to notify us immediately of any unauthorized use of your account. We reserve the right to terminate accounts at our discretion.`,
   },
   {
-    title: "4. Acceptable Use",
-    content: `You agree not to use Stinkrz to harass, threaten, or harm other users; post false, misleading, or fraudulent content; impersonate another person; distribute spam or unsolicited messages; upload malicious software or harmful content; or engage in any activity that violates applicable laws or regulations.`,
+    title: "4. Acceptable Use & Community Guidelines",
+    content: `You agree not to use Stinkrz to harass, threaten, or harm other users; post false, misleading, or fraudulent content; impersonate another person; distribute spam or unsolicited messages; upload malicious software or harmful content; share non-consensual explicit content or content involving minors; or engage in any activity that violates applicable laws or regulations. Stinkrz includes features for expressing fetish and kink preferences — all interactions must be consensual and respectful. You can block or report any user who violates these guidelines, and our team reviews reports promptly.`,
   },
   {
     title: "5. User Content",
-    content: `You retain ownership of content you post on Stinkrz (photos, bios, messages). By posting content, you grant Stinkrz a non-exclusive, royalty-free license to use, display, and distribute that content within the App. You are solely responsible for the content you share.`,
+    content: `You retain ownership of content you post on Stinkrz, including profile photos, your photo gallery (up to 6 additional photos), bios, vibe badges, scent preferences, fetish and kink selections, status posts, and chat messages (including photos and videos shared in chat). By posting content, you grant Stinkrz a non-exclusive, royalty-free license to use, display, and distribute that content within the App. You are solely responsible for the content you share. Stinkrz may contain user-generated content of an adult nature (including fetish and kink preferences). You agree to keep all content legal and consensual, and to respect the boundaries and privacy of other users.`,
   },
   {
     title: "6. Privacy",
     content: `Your use of Stinkrz is also governed by our Privacy Policy, which is incorporated into these Terms by reference. Please review our Privacy Policy to understand our practices regarding your personal data, including location information.`,
   },
   {
-    title: "7. Location Data",
-    content: `Stinkrz uses your location to show nearby users. Location sharing is optional but required for core App functionality. You can enable approximate (fuzzy) location mode in your profile settings to share only a general area rather than your precise coordinates.`,
+    title: "7. Location & Visibility",
+    content: `Stinkrz uses your location to show nearby users on the Scent Block map. Location sharing is optional but required for core App functionality. You can enable "Approximate Location" mode in your profile to share only a general area (~½ mile radius) rather than precise coordinates. You can also enable "Invisible Mode" to hide yourself from the map entirely while still browsing other users. Your approximate online status and last-active time may be shown to other users.`,
   },
   {
     title: "8. Disclaimers",
@@ -61,7 +61,7 @@ export default function Terms() {
       </Link>
 
       <h1 className="font-heading text-3xl font-bold mb-2">Terms of Service</h1>
-      <p className="font-body text-sm text-muted-foreground mb-10">Last updated: July 2026</p>
+      <p className="font-body text-sm text-muted-foreground mb-10">Last updated: August 2026</p>
 
       <p className="font-body text-sm text-muted-foreground leading-relaxed mb-8">
         Welcome to Stinkrz. Please read these Terms of Service carefully before using our platform. These terms govern your access to and use of the Stinkrz application and services.
