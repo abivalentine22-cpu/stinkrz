@@ -82,16 +82,21 @@ export default function Settings() {
 
   const saveMutation = useMutation({
     mutationFn: async () => {
+      const ops = [];
       if (prefs) {
-        return base44.entities.UserPreferences.update(prefs.id, {
+        ops.push(base44.entities.UserPreferences.update(prefs.id, {
           preferred_scent_categories: selected,
-        });
+        }));
       } else {
-        return base44.entities.UserPreferences.create({
+        ops.push(base44.entities.UserPreferences.create({
           user_email: user.email,
           preferred_scent_categories: selected,
-        });
+        }));
       }
+      if (myProfile) {
+        ops.push(base44.entities.ScentProfile.update(myProfile.id, { travel_mode: travelMode }));
+      }
+      return Promise.all(ops);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["user-preferences"] });
