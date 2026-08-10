@@ -12,7 +12,6 @@ import Layout from "@/components/Layout";
 
 // Eagerly loaded (lightweight / auth pages)
 import Home from "@/pages/Home";
-import AgeGate from "@/components/AgeGate";
 import SignIn from "@/pages/SignIn";
 import Register from "@/pages/Register";
 import ForgotPassword from "@/pages/ForgotPassword";
@@ -109,11 +108,9 @@ function App() {
   return (
     <AuthProvider>
       <QueryClientProvider client={queryClientInstance}>
-        <AgeGate>
-          <Router>
-            <AuthenticatedApp />
-          </Router>
-        </AgeGate>
+        <Router>
+          <AuthenticatedApp />
+        </Router>
         <Toaster />
       </QueryClientProvider>
     </AuthProvider>
