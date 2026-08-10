@@ -117,6 +117,7 @@ export default function ScentBlock() {
   const [mapReady, setMapReady] = useState(false);
   const [enableLocDismissed, setEnableLocDismissed] = useState(false);
   const [earlyHintDismissed, setEarlyHintDismissed] = useState(false);
+  const [reportedEmails, setReportedEmails] = useState([]);
 
   const mapContainerRef = useRef(null);
   const mapRef = useRef(null);
@@ -128,6 +129,14 @@ export default function ScentBlock() {
 
   useScentMatchNotifications(userPos, myProfile);
   const { isBlocked } = useBlockedUsers();
+
+  // Load users I've reported so we can hide them from the map (consistent with Feed)
+  useEffect(() => {
+    if (!user?.email) return;
+    base44.entities.Report.filter({ reporter_email: user.email }).then(reports => {
+      setReportedEmails(reports.map(r => r.reported_user_email));
+    });
+  }, [user?.email]);
 
   // Keep myProfileRef in sync
   useEffect(() => { myProfileRef.current = myProfile; }, [myProfile]);
@@ -329,6 +338,7 @@ export default function ScentBlock() {
       .filter((p) => {
         if (mapFilters.scentCategory !== "All" && p.scent_category !== mapFilters.scentCategory) return false;
         if (isBlocked(p.user_email)) return false;
+        if (reportedEmails.includes(p.user_email)) return false;
         if (p.invisible_mode) return false;
         if (mapFilters.minAge !== "" && (p.age || 0) < parseInt(mapFilters.minAge)) return false;
         if (mapFilters.maxAge !== "" && (p.age || 999) > parseInt(mapFilters.maxAge)) return false;
@@ -343,7 +353,7 @@ export default function ScentBlock() {
         distance: calcDistance(p.location_lat, p.location_lng, youPos.lat, youPos.lng),
       }))
       .filter(p => mapFilters.maxDistance === "" || parseFloat(p.distance) <= parseFloat(mapFilters.maxDistance));
-  }, [profiles, mapFilters, isBlocked, youPos.lat, youPos.lng]);
+  }, [profiles, mapFilters, isBlocked, reportedEmails, youPos.lat, youPos.lng]);
 
   const onlineCount = useMemo(() => filtered.filter(p => p.is_online).length, [filtered]);
 

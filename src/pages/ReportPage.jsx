@@ -24,9 +24,19 @@ export default function ReportPage() {
     e.preventDefault();
     setLoading(true);
     const user = await base44.auth.me();
+    // If no email was passed in (manual report), look up the real email by display name
+    let reportedEmail = form.reported_user_email;
+    if (!reportedEmail && form.reported_user_name) {
+      const matches = await base44.entities.ScentProfile.filter({ display_name: form.reported_user_name });
+      reportedEmail = matches[0]?.user_email;
+    }
+    if (!reportedEmail) {
+      setLoading(false);
+      return;
+    }
     await base44.entities.Report.create({
       reporter_email: user?.email || "anonymous",
-      reported_user_email: form.reported_user_email || form.reported_user_name.toLowerCase().replace(/\s/g, "") + "@stinkrz.demo",
+      reported_user_email: reportedEmail,
       reported_user_name: form.reported_user_name,
       reason: form.reason,
       details: form.details,
