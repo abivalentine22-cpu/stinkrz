@@ -28,6 +28,7 @@ export default function Profile() {
   const queryClient = useQueryClient();
   const [lightboxIndex, setLightboxIndex] = useState(null);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const [uploadingGallery, setUploadingGallery] = useState(false);
 
   const { data: profiles = [] } = useQuery({
     queryKey: ["my-profile", user?.email],
@@ -105,7 +106,7 @@ export default function Profile() {
     });
   };
 
-  const compressImage = (file) =>
+  const compressImage = (file, maxSize = 512) =>
     new Promise((resolve, reject) => {
       const reader = new FileReader();
       reader.onerror = () => reject(new Error("Could not read file"));
@@ -113,7 +114,6 @@ export default function Profile() {
         const img = new Image();
         img.onerror = () => reject(new Error("Could not load image"));
         img.onload = () => {
-          const maxSize = 512;
           let { width, height } = img;
           if (width > height) {
             if (width > maxSize) { height = Math.round((height * maxSize) / width); width = maxSize; }
@@ -168,50 +168,51 @@ export default function Profile() {
 
   const handleRemovePhoto = async () => {
     if (!myProfile?.avatar_url) return;
-    await base44.entities.ScentProfile.update(myProfile.id, { avatar_url: "" });
-    queryClient.invalidateQueries({ queryKey: ["my-profile"] });
-    toast({ title: "Photo removed" });
+    try {
+      await base44.entities.ScentProfile.update(myProfile.id, { avatar_url: "" });
+      queryClient.invalidateQueries({ queryKey: ["my-profile"] });
+      toast({ title: "Photo removed" });
+    } catch (err) {
+      toast({ title: "Could not remove photo", description: err?.message || "Please try again.", variant: "destructive" });
+    }
   };
 
   const handleGalleryUpload = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    // Use higher res for gallery (1024px)
-    const compressed = await new Promise((resolve) => {
-      const reader = new FileReader();
-      reader.onload = (ev) => {
-        const img = new Image();
-        img.onload = () => {
-          const maxSize = 1024;
-          let { width, height } = img;
-          if (width > height) {
-            if (width > maxSize) { height = Math.round((height * maxSize) / width); width = maxSize; }
-          } else {
-            if (height > maxSize) { width = Math.round((width * maxSize) / height); height = maxSize; }
-          }
-          const canvas = document.createElement("canvas");
-          canvas.width = width; canvas.height = height;
-          canvas.getContext("2d").drawImage(img, 0, 0, width, height);
-          canvas.toBlob((blob) => resolve(new File([blob], "gallery.jpg", { type: "image/jpeg" })), "image/jpeg", 0.88);
-        };
-        img.src = ev.target.result;
-      };
-      reader.readAsDataURL(file);
-    });
-    const { file_url } = await base44.integrations.Core.UploadFile({ file: compressed });
-    if (myProfile) {
-      const gallery = [...(myProfile.photo_gallery || []), file_url];
-      await base44.entities.ScentProfile.update(myProfile.id, { photo_gallery: gallery });
-      queryClient.invalidateQueries({ queryKey: ["my-profile"] });
-      toast({ title: "Photo added to gallery!" });
+    setUploadingGallery(true);
+    try {
+      let fileToUpload;
+      try {
+        fileToUpload = await compressImage(file, 1024);
+      } catch {
+        fileToUpload = file;
+      }
+      const { file_url } = await base44.integrations.Core.UploadFile({ file: fileToUpload });
+      if (myProfile) {
+        const gallery = [...(myProfile.photo_gallery || []), file_url];
+        await base44.entities.ScentProfile.update(myProfile.id, { photo_gallery: gallery });
+        queryClient.invalidateQueries({ queryKey: ["my-profile"] });
+        toast({ title: "Photo added to gallery!" });
+      }
+    } catch (err) {
+      toast({ title: "Upload failed", description: err?.message || "Please try again.", variant: "destructive" });
+    } finally {
+      setUploadingGallery(false);
+      e.target.value = "";
     }
   };
 
   const handleDeleteGalleryPhoto = async (url) => {
     if (!myProfile) return;
-    const gallery = (myProfile.photo_gallery || []).filter(u => u !== url);
-    await base44.entities.ScentProfile.update(myProfile.id, { photo_gallery: gallery });
-    queryClient.invalidateQueries({ queryKey: ["my-profile"] });
+    try {
+      const gallery = (myProfile.photo_gallery || []).filter(u => u !== url);
+      await base44.entities.ScentProfile.update(myProfile.id, { photo_gallery: gallery });
+      queryClient.invalidateQueries({ queryKey: ["my-profile"] });
+      toast({ title: "Photo removed" });
+    } catch (err) {
+      toast({ title: "Could not remove photo", description: err?.message || "Please try again.", variant: "destructive" });
+    }
   };
 
   const toggleArray = (key, value) => {
@@ -482,9 +483,13 @@ export default function Profile() {
               </div>
             ))}
             {(myProfile?.photo_gallery || []).length < 6 && (
-              <label className="w-20 h-20 rounded-xl border-2 border-dashed border-border flex items-center justify-center cursor-pointer hover:border-primary/50 transition-colors">
-                <Plus className="w-5 h-5 text-muted-foreground" />
-                <input type="file" accept="image/*" onChange={handleGalleryUpload} className="hidden" />
+              <label className={`w-20 h-20 rounded-xl border-2 border-dashed flex items-center justify-center transition-colors ${uploadingGallery ? "border-primary/40 cursor-wait" : "border-border cursor-pointer hover:border-primary/50"}`}>
+                {uploadingGallery ? (
+                  <div className="w-6 h-6 border-3 border-primary/20 border-t-primary rounded-full animate-spin" />
+                ) : (
+                  <Plus className="w-5 h-5 text-muted-foreground" />
+                )}
+                <input type="file" accept="image/*" onChange={handleGalleryUpload} className="hidden" disabled={uploadingGallery} />
               </label>
             )}
           </div>
