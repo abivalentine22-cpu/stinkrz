@@ -61,7 +61,11 @@ export default function Settings() {
     setHideInactive(localStorage.getItem("stinkrz_hide_inactive") === "true");
     // Load invisible mode from profile
     base44.entities.ScentProfile.filter({ user_email: user.email }).then(p => {
-      if (p[0]) { setMyProfile(p[0]); setInvisibleMode(p[0].invisible_mode || false); }
+      if (p[0]) {
+        setMyProfile(p[0]);
+        setInvisibleMode(p[0].invisible_mode || false);
+        if (p[0].travel_mode) setTravelMode(p[0].travel_mode);
+      }
     });
     base44.entities.BlockedUser.filter({ blocker_email: user.email }).then(rows => {
       setBlockedUsers(rows.map(r => r.blocked_email));
@@ -271,12 +275,14 @@ export default function Settings() {
             { value: "neither", label: "Just living here" },
             { value: "hosting", label: "Looking to host" },
             { value: "traveling", label: "Looking to travel" },
+            { value: "traveling_from", label: "Traveling from" },
           ].map((opt) => (
             <button
               key={opt.value}
               onClick={() => {
                 setTravelMode(opt.value);
                 localStorage.setItem("stinkrz_travel_mode", opt.value);
+                if (myProfile) base44.entities.ScentProfile.update(myProfile.id, { travel_mode: opt.value });
               }}
               className={`w-full text-left px-4 py-3 rounded-lg border transition-colors ${
                 travelMode === opt.value

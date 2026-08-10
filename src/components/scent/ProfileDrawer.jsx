@@ -17,6 +17,12 @@ const SCENT_COLORS = {
   Neutral: "#94a3b8",
 };
 
+const TRAVEL_LABELS = {
+  hosting: "🏠 Looking to host",
+  traveling: "✈️ Looking to travel",
+  traveling_from: "🌍 Traveling from",
+};
+
 export default function ProfileDrawer({ profile, open, onClose, onMessage, onReport }) {
   const ringColor = SCENT_COLORS[profile?.scent_category] || "#94a3b8";
   const intensityDots = Array.from({ length: 5 }, (_, i) => i < (profile?.scent_intensity || 0));
@@ -266,6 +272,11 @@ export default function ProfileDrawer({ profile, open, onClose, onMessage, onRep
                 {profile.looking_for && (
                   <span style={{ fontSize: "11px", fontFamily: "var(--font-body)", padding: "2px 10px", borderRadius: "9999px", background: "rgba(251,191,36,0.1)", color: "#fbbf24", border: "1px solid rgba(251,191,36,0.2)" }}>
                     👀 {profile.looking_for}
+                  </span>
+                )}
+                {profile.travel_mode && profile.travel_mode !== "neither" && TRAVEL_LABELS[profile.travel_mode] && (
+                  <span style={{ fontSize: "11px", fontFamily: "var(--font-body)", padding: "2px 10px", borderRadius: "9999px", background: "rgba(45,212,191,0.1)", color: "#2dd4bf", border: "1px solid rgba(45,212,191,0.2)" }}>
+                    {TRAVEL_LABELS[profile.travel_mode]}
                   </span>
                 )}
               </div>

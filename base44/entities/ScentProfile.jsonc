@@ -105,6 +105,17 @@
       ],
       "description": "What the user is looking for"
     },
+    "travel_mode": {
+      "type": "string",
+      "enum": [
+        "neither",
+        "hosting",
+        "traveling",
+        "traveling_from"
+      ],
+      "default": "neither",
+      "description": "User's travel/hosting intent"
+    },
     "scent_preferences": {
       "type": "array",
       "items": {
