@@ -158,23 +158,7 @@ export default function ScentBlock() {
 
     const map = new maplibregl.Map({
       container: mapContainerRef.current,
-      style: {
-        version: 8,
-        sources: {
-          "carto-dark": {
-            type: "raster",
-            tiles: [
-              "https://a.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",
-              "https://b.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",
-              "https://c.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",
-            ],
-            tileSize: 256,
-            attribution: "© OpenStreetMap © CARTO",
-            maxzoom: 19,
-          },
-        },
-        layers: [{ id: "carto-dark-layer", type: "raster", source: "carto-dark" }],
-      },
+      style: "https://tiles.openfreemap.org/styles/dark",
       center: [-122.675, 45.505],
       zoom: 13,
       attributionControl: false,
