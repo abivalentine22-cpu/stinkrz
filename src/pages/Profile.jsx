@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { VIBE_BADGE_CATEGORIES, FETISH_OPTIONS } from "@/lib/demoData";
+import SexKinkTagPicker from "@/components/profile/SexKinkTagPicker";
 import { Camera, Save, LogOut, Droplets, Shield, Plus, Trash2, X, ChevronLeft, ChevronRight } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import { useAuth } from "@/lib/AuthContext";
@@ -46,6 +47,8 @@ export default function Profile() {
     scent_intensity: 3,
     vibe_badges: [],
     fetishes: [],
+    sex_kink_tags: [],
+    sexual_health: [],
     shower_frequency: "Classified",
     scent_preferences: [],
     fuzzy_location: false,
@@ -64,6 +67,8 @@ export default function Profile() {
         scent_intensity: myProfile.scent_intensity || 3,
         vibe_badges: myProfile.vibe_badges || [],
         fetishes: myProfile.fetishes || [],
+        sex_kink_tags: myProfile.sex_kink_tags || [],
+        sexual_health: myProfile.sexual_health || [],
         shower_frequency: myProfile.shower_frequency || "Classified",
         scent_preferences: myProfile.scent_preferences || [],
         fuzzy_location: myProfile.fuzzy_location || false,
@@ -97,6 +102,8 @@ export default function Profile() {
       scent_intensity: form.scent_intensity,
       vibe_badges: form.vibe_badges,
       fetishes: form.fetishes,
+      sex_kink_tags: form.sex_kink_tags,
+      sexual_health: form.sexual_health,
       shower_frequency: form.shower_frequency,
       scent_preferences: form.scent_preferences,
       fuzzy_location: form.fuzzy_location,
@@ -443,6 +450,18 @@ export default function Profile() {
               );
             })}
           </div>
+        </div>
+
+        {/* Sex & Kink Tags + Sexual Health (optional) */}
+        <div className="space-y-2">
+          <Label className="font-body text-sm">Sex & Kink Tags</Label>
+          <p className="font-body text-[10px] text-muted-foreground -mt-1">Optional. Pick what fits — sexual health is kept separate below.</p>
+          <SexKinkTagPicker
+            sexKinkTags={form.sex_kink_tags}
+            onSexKinkTagsChange={(v) => setForm((f) => ({ ...f, sex_kink_tags: v }))}
+            sexualHealth={form.sexual_health}
+            onSexualHealthChange={(v) => setForm((f) => ({ ...f, sexual_health: v }))}
+          />
         </div>
 
         {/* Proximity Privacy */}

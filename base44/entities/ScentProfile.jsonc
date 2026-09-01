@@ -79,6 +79,20 @@
       },
       "description": "Up to 6 fetish/kink favorites"
     },
+    "sex_kink_tags": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Optional sex & kink tags (position/dynamic + kink/interests)"
+    },
+    "sexual_health": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Optional, voluntary sexual health disclosures"
+    },
     "shower_frequency": {
       "type": "string",
       "enum": [

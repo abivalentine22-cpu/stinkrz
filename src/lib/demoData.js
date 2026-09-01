@@ -24,6 +24,19 @@ export const VIBE_BADGE_CATEGORIES = [
 
 export const VIBE_OPTIONS = VIBE_BADGE_CATEGORIES.flatMap((c) => c.badges);
 
+export const SEX_KINK_TAG_GROUPS = [
+  { emoji: "🎯", name: "Position / Dynamic", tags: ["Top", "Bottom", "Vers", "Side", "Dom", "Sub", "Switch"] },
+  { emoji: "🔥", name: "Kink / Interests", tags: ["Kinky", "Vanilla", "Musk", "Pits", "Feet", "Sweat", "Body Hair", "Socks", "Shoes / Sneakers", "Worn Clothes", "Underwear", "Gear", "Leather", "Pup"] },
+];
+
+export const SEXUAL_HEALTH_OPTIONS = [
+  "HIV Negative",
+  "HIV Positive",
+  "Undetectable (U=U)",
+  "On PrEP",
+  "DoxyPEP",
+];
+
 export const FETISH_OPTIONS = [
   "ABDL", "Armpit Worship", "BDSM", "Gags", "Body Hair", "Body Sweat", "Bondage",
   "Butt Plugs", "Chastity", "Choking", "Daddy", "Dominant", "Double Penetration",

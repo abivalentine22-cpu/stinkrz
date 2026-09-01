@@ -242,6 +242,43 @@ export default function ProfileDrawer({ profile, open, onClose, onMessage, onRep
                 </div>
               )}
 
+              {profile.sex_kink_tags?.length > 0 && (
+                <div>
+                  <div style={{ fontSize: "10px", color: "#64748b", marginBottom: "8px", fontFamily: "var(--font-body)", textTransform: "uppercase", letterSpacing: "0.05em" }}>Sex & Kink</div>
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
+                    {profile.sex_kink_tags.map((tag) => (
+                      <span key={tag} style={{
+                        fontSize: "11px", fontFamily: "var(--font-body)",
+                        padding: "3px 10px", borderRadius: "9999px",
+                        background: "rgba(167,139,250,0.1)", color: "#a78bfa",
+                        border: "1px solid rgba(167,139,250,0.2)",
+                      }}>{tag}</span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {profile.sexual_health?.length > 0 && (
+                <div style={{
+                  background: "rgba(16,185,129,0.06)", border: "1px solid rgba(16,185,129,0.18)",
+                  borderRadius: "12px", padding: "10px 12px",
+                }}>
+                  <div style={{ fontSize: "10px", color: "#64748b", marginBottom: "8px", fontFamily: "var(--font-body)", textTransform: "uppercase", letterSpacing: "0.05em", display: "flex", alignItems: "center", gap: "4px" }}>
+                    <span style={{ color: "#34d399" }}>♥</span> Sexual Health
+                  </div>
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
+                    {profile.sexual_health.map((opt) => (
+                      <span key={opt} style={{
+                        fontSize: "11px", fontFamily: "var(--font-body)",
+                        padding: "3px 10px", borderRadius: "9999px",
+                        background: "rgba(52,211,153,0.12)", color: "#34d399",
+                        border: "1px solid rgba(52,211,153,0.28)",
+                      }}>{opt}</span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               {/* Compatibility score */}
               {compatScore !== null && (
                 <div style={{

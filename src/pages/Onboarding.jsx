@@ -7,6 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { base44 } from "@/api/base44Client";
 import { VIBE_BADGE_CATEGORIES, FETISH_OPTIONS } from "@/lib/demoData";
+import SexKinkTagPicker from "@/components/profile/SexKinkTagPicker";
 import { ArrowRight, ArrowLeft, Check, Sparkles } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/lib/AuthContext";
@@ -39,6 +40,8 @@ export default function Onboarding() {
     scent_intensity: 3,
     vibe_badges: [],
     fetishes: [],
+    sex_kink_tags: [],
+    sexual_health: [],
     shower_frequency: "",
     scent_preferences: [],
     looking_for: "",
@@ -84,6 +87,8 @@ export default function Onboarding() {
       scent_intensity: profile.scent_intensity,
       vibe_badges: profile.vibe_badges,
       fetishes: profile.fetishes,
+      sex_kink_tags: profile.sex_kink_tags,
+      sexual_health: profile.sexual_health,
       shower_frequency: profile.shower_frequency || "Classified",
       looking_for: profile.looking_for || undefined,
       scent_preferences: profile.scent_preferences,
@@ -177,7 +182,24 @@ export default function Onboarding() {
       </div>
     </div>,
 
-    // Step 2: Scent Preferences
+    // Step 2: Sex & Kink (optional)
+    <div key="sexkink" className="space-y-5">
+      <div className="text-center mb-6">
+        <p className="text-4xl mb-2">🔥</p>
+        <h2 className="font-heading text-xl font-bold">Sex & Kink</h2>
+        <p className="font-body text-sm text-muted-foreground">Totally optional — skip if you'd rather not say.</p>
+      </div>
+      <div className="max-h-[55vh] overflow-y-auto pr-1">
+        <SexKinkTagPicker
+          sexKinkTags={profile.sex_kink_tags}
+          onSexKinkTagsChange={(v) => updateProfile("sex_kink_tags", v)}
+          sexualHealth={profile.sexual_health}
+          onSexualHealthChange={(v) => updateProfile("sexual_health", v)}
+        />
+      </div>
+    </div>,
+
+    // Step 3: Scent Preferences
     <div key="scent" className="space-y-5">
       <div className="text-center mb-6">
         <p className="text-4xl mb-2">👃</p>
@@ -290,6 +312,20 @@ export default function Onboarding() {
           <div className="flex flex-wrap gap-1.5">
             {profile.fetishes.map((f) => (
               <Badge key={f} className="font-body text-[10px] bg-secondary text-secondary-foreground">{f}</Badge>
+            ))}
+          </div>
+        )}
+        {profile.sex_kink_tags.length > 0 && (
+          <div className="flex flex-wrap gap-1.5">
+            {profile.sex_kink_tags.map((t) => (
+              <Badge key={t} className="font-body text-[10px] bg-secondary text-secondary-foreground">{t}</Badge>
+            ))}
+          </div>
+        )}
+        {profile.sexual_health.length > 0 && (
+          <div className="flex flex-wrap gap-1.5">
+            {profile.sexual_health.map((t) => (
+              <Badge key={t} variant="outline" className="font-body text-[10px] border-emerald-500/40 text-emerald-300">{t}</Badge>
             ))}
           </div>
         )}
