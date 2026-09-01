@@ -9,13 +9,20 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Missing required fields' }, { status: 400 });
     }
 
+    // Look up the sender's avatar from their ScentProfile if not provided
+    let avatar = sender_avatar || null;
+    if (!avatar) {
+      const senderProfiles = await base44.asServiceRole.entities.ScentProfile.filter({ user_email: sender_email });
+      avatar = senderProfiles[0]?.avatar_url || null;
+    }
+
     // Create notification for receiver
     await base44.asServiceRole.entities.Notification.create({
       user_email: receiver_email,
       type: 'new_message',
       actor_email: sender_email,
       actor_name: sender_name || 'Someone',
-      actor_avatar: sender_avatar || null,
+      actor_avatar: avatar,
       message_id,
       title: `New message from ${sender_name || 'a user'}`,
       description: 'Tap to view',

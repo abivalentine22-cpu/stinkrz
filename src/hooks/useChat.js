@@ -57,7 +57,6 @@ export function useChat({ me, conversation, onMessageSent, playSend, broadcastTy
       message_id: msg.id,
       sender_email: me.email,
       sender_name: me.full_name,
-      sender_avatar: conversation.partnerProfile?.avatar_url,
       receiver_email: conversation.partnerEmail,
     }).catch(() => {});
 
