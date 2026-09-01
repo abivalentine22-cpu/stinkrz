@@ -28,6 +28,10 @@ export default function Layout() {
           navigate("/onboarding", { replace: true });
         }
         // (no redirect from home — authenticated users can view the landing page)
+      })
+      .catch(() => {
+        // Never leave the app stuck on a blank screen if the profile check fails
+        setProfileChecked(true);
       });
   }, [user?.email, pathname, navigate]);
 
@@ -38,7 +42,13 @@ export default function Layout() {
 
   const showBanner = !isMap && myProfile && myProfile.onboarding_complete;
 
-  if (!profileChecked && user?.email) return null; // wait for check before rendering
+  if (!profileChecked && user?.email) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="w-8 h-8 border-4 border-primary/20 border-t-primary rounded-full animate-spin" />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">
