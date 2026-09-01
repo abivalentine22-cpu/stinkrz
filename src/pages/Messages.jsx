@@ -144,9 +144,11 @@ export default function Messages() {
               <h1 className="font-heading text-xl font-bold">Messages</h1>
               <p className="font-body text-xs text-muted-foreground mt-0.5">Your recent whiffs 💨</p>
             </div>
-            <Button size="icon" variant="ghost" onClick={() => setShowNewMsg(true)} title="New message">
-              <PenSquare className="w-4 h-4" />
-            </Button>
+            {me?.role === "admin" && (
+              <Button size="icon" variant="ghost" onClick={() => setShowNewMsg(true)} title="New message">
+                <PenSquare className="w-4 h-4" />
+              </Button>
+            )}
           </div>
 
           {/* New Message picker */}
