@@ -5,6 +5,16 @@ import { motion } from "framer-motion";
 import UserAvatar from "@/components/UserAvatar";
 import HangLooseLogo from "@/components/HangLooseLogo";
 
+const PROXIMITY_LABEL = (d) => {
+  const n = parseFloat(d);
+  if (isNaN(n)) return "On the block";
+  if (n < 2) return "Very close";
+  if (n < 5) return "Close by";
+  if (n < 15) return "Nearby";
+  if (n < 50) return "In the area";
+  return "Further out";
+};
+
 const SCENT_COLORS = {
   Fresh: "bg-emerald-500/20 text-emerald-400 border-emerald-500/30",
   Musky: "bg-amber-500/20 text-amber-400 border-amber-500/30",
@@ -44,7 +54,7 @@ export default function ScentCard({ profile, onClick, index = 0 }) {
         {/* Distance overlay */}
         <div className="absolute bottom-2 left-2 bg-background/80 backdrop-blur-sm rounded-full px-2.5 py-1 flex items-center gap-1">
           <MapPin className="w-3 h-3 text-primary" />
-          <span className="text-xs font-body font-medium">{profile.distance} mi</span>
+          <span className="text-xs font-body font-medium">{PROXIMITY_LABEL(profile.distance)}</span>
         </div>
       </div>
 

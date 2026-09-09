@@ -205,7 +205,15 @@ export default function ProfileDrawer({ profile, open, onClose, onMessage, onRep
                 </div>
                 <div style={{ display: "flex", alignItems: "center", gap: "6px", color: "#64748b", fontSize: "13px" }}>
                   <MapPin size={12} color="#a78bfa" />
-                  {profile.distance} miles away
+                  {(() => {
+                    const d = parseFloat(profile.distance);
+                    if (isNaN(d)) return "On the block";
+                    if (d < 2) return "Very close by";
+                    if (d < 5) return "Close by";
+                    if (d < 15) return "Nearby";
+                    if (d < 50) return "In the area";
+                    return "Further out";
+                  })()}
                 </div>
               </div>
 
