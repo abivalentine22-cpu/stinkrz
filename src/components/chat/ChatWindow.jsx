@@ -13,6 +13,7 @@ import ChatEmptyState from "./ChatEmptyState";
 import MessageBubble from "./MessageBubble";
 import ChatInput from "./ChatInput";
 import TypingDots from "./TypingDots";
+import ProfileDrawer from "@/components/scent/ProfileDrawer";
 
 export default function ChatWindow({ me, conversation, messages, onVibeCheck, onMessageSent }) {
   const navigate = useNavigate();
@@ -46,6 +47,7 @@ export default function ChatWindow({ me, conversation, messages, onVibeCheck, on
 
   const [blockConfirm, setBlockConfirm] = useState(false);
   const [reactionPickerMsgId, setReactionPickerMsgId] = useState(null);
+  const [showProfile, setShowProfile] = useState(false);
 
   const hideReadReceipts = localStorage.getItem("stinkrz_hide_read_receipts") === "true";
 
@@ -97,6 +99,7 @@ export default function ChatWindow({ me, conversation, messages, onVibeCheck, on
         partnerName={partnerName}
         isPartnerTyping={isPartnerTyping}
         onVibeCheck={onVibeCheck}
+        onOpenProfile={() => setShowProfile(true)}
       />
 
       {/* Messages */}
@@ -155,6 +158,17 @@ export default function ChatWindow({ me, conversation, messages, onVibeCheck, on
         blockConfirm={blockConfirm}
         onBlock={handleBlock}
         onReport={() => navigate("/report", { state: { reportedName: profile?.display_name || conversation?.partnerEmail, reportedEmail: conversation?.partnerEmail } })}
+      />
+
+      <ProfileDrawer
+        profile={profile}
+        open={showProfile}
+        onClose={() => setShowProfile(false)}
+        onMessage={() => setShowProfile(false)}
+        onReport={(p) => {
+          setShowProfile(false);
+          navigate("/report", { state: { reportedName: p.display_name, reportedEmail: p.user_email } });
+        }}
       />
     </div>
   );
