@@ -176,7 +176,7 @@ export default function ProfileDrawer({ profile, open, onClose, onMessage, onRep
           <HangLooseLogo size={80} />
         </div>
               )}
-              <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to top, hsl(258 30% 10%) 0%, transparent 55%)" }} />
+              <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to top, hsl(258 30% 10%) 0%, transparent 55%)", pointerEvents: "none" }} />
             </div>
 
             {/* Content */}
