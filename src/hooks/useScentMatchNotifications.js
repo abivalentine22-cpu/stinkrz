@@ -85,7 +85,7 @@ export function useScentMatchNotifications(userPos, myProfile) {
           p.location_lat,
           p.location_lng
         );
-        if (dist > 1) return false;
+        if (dist > 5) return false;
         return isCompatible(myProfile, p);
       });
 
