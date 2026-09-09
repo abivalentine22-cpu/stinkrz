@@ -1,19 +1,9 @@
 import React from "react";
 import { Badge } from "@/components/ui/badge";
-import { MapPin, Droplets } from "lucide-react";
+import { Droplets } from "lucide-react";
 import { motion } from "framer-motion";
 import UserAvatar from "@/components/UserAvatar";
 import HangLooseLogo from "@/components/HangLooseLogo";
-
-const PROXIMITY_LABEL = (d) => {
-  const n = parseFloat(d);
-  if (isNaN(n)) return "On the block";
-  if (n < 2) return "Very close";
-  if (n < 5) return "Close by";
-  if (n < 15) return "Nearby";
-  if (n < 50) return "In the area";
-  return "Further out";
-};
 
 const SCENT_COLORS = {
   Fresh: "bg-emerald-500/20 text-emerald-400 border-emerald-500/30",
@@ -51,11 +41,7 @@ export default function ScentCard({ profile, onClick, index = 0 }) {
             <div className="w-3 h-3 rounded-full bg-muted-foreground/40 ring-2 ring-card" />
           )}
         </div>
-        {/* Distance overlay */}
-        <div className="absolute bottom-2 left-2 bg-background/80 backdrop-blur-sm rounded-full px-2.5 py-1 flex items-center gap-1">
-          <MapPin className="w-3 h-3 text-primary" />
-          <span className="text-xs font-body font-medium">{PROXIMITY_LABEL(profile.distance)}</span>
-        </div>
+
       </div>
 
       {/* Info */}
