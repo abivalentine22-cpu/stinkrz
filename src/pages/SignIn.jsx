@@ -36,6 +36,7 @@ export default function SignIn() {
         <div className="text-center">
           <HangLooseLogo size={48} className="justify-center mb-4" />
           <p className="font-body text-sm text-muted-foreground">Welcome back, you fragrant human</p>
+          <p className="font-body text-xs text-muted-foreground mt-2">Sign in to open the Scent Block.</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">

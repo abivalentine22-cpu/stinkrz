@@ -66,6 +66,7 @@ export default function Register() {
           <HangLooseLogo size={48} className="justify-center mb-4" />
           <h1 className="font-heading text-2xl font-bold">How fresh are you?</h1>
           <p className="font-body text-sm text-muted-foreground mt-1">Quick Join — it takes 30 seconds 🤙</p>
+          <p className="font-body text-xs text-muted-foreground mt-2">Sign up to enter the Scent Block — the live map of people near you.</p>
         </div>
 
         {error && (

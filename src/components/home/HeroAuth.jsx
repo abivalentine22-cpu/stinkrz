@@ -81,6 +81,9 @@ export default function HeroAuth() {
 
   return (
     <div className="bg-card/60 backdrop-blur-md border border-border rounded-3xl p-7 shadow-2xl shadow-black/30 w-full max-w-sm">
+      <p className="text-center font-body text-xs text-muted-foreground mb-4">
+        {mode === "login" ? "Sign in to enter the Scent Block" : "Join to enter the Scent Block — the live map near you"}
+      </p>
       {/* Tab toggle */}
       {mode !== "otp" && (
         <div className="flex bg-muted rounded-full p-1 mb-6">

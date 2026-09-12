@@ -5,6 +5,7 @@ import { motion } from "framer-motion";
 import HangLooseLogo from "@/components/HangLooseLogo";
 import NearbyCounter from "@/components/home/NearbyCounter";
 import HeroAuth from "@/components/home/HeroAuth";
+import ScentBlockPreview from "@/components/home/ScentBlockPreview";
 import { useAuth } from "@/lib/AuthContext";
 
 const SCENT_CATEGORIES = [
@@ -36,20 +37,20 @@ export default function Home() {
     <div className="min-h-screen font-body">
 
       {/* ── Hero ── */}
-      <section className="max-w-6xl mx-auto px-6 pt-20 pb-16 md:pt-28 md:pb-24">
-        <div className="grid md:grid-cols-2 gap-12 items-center">
+      <section className="max-w-6xl mx-auto px-6 pt-12 pb-8 md:pt-16 md:pb-12">
+        <div className="grid md:grid-cols-2 gap-8 items-center">
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
-            <h1 className="font-heading text-4xl md:text-5xl lg:text-6xl font-bold leading-tight mb-6">
+            <h1 className="font-heading text-4xl md:text-5xl lg:text-6xl font-bold leading-tight mb-4">
               You smell like{" "}
               <span className="bg-clip-text text-transparent" style={{ backgroundImage: "linear-gradient(90deg, #a78bfa, #2dd4bf)" }}>
                 someone's type.
               </span>
             </h1>
-            <p className="text-muted-foreground text-lg leading-relaxed mb-8 max-w-md">
+            <p className="text-muted-foreground text-lg leading-relaxed mb-6 max-w-md">
               Real chemistry starts with the real you. Stinkrz is the scent-positive place for people who like their connections unfiltered, unapologetic, and a little bit wild.
             </p>
-            <div className="flex flex-col sm:flex-row gap-3 mb-6">
-              <Link to="/register">
+            <div className="flex flex-col sm:flex-row gap-3 mb-4">
+              <Link to={user ? "/scent-block" : "/register"}>
                 <Button size="lg" className="font-semibold px-8 py-5 text-base w-full sm:w-auto">
                   Join the Scent Block
                 </Button>
@@ -66,16 +67,22 @@ export default function Home() {
           {/* Auth panel for guests / CTA for logged-in users */}
           <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.5, delay: 0.15 }} className="flex justify-center md:justify-end">
             {user ? (
-              <div className="bg-card/60 backdrop-blur-md border border-border rounded-3xl p-8 shadow-2xl shadow-black/30 w-full max-w-sm text-center space-y-5">
-                <p className="text-4xl">🤙</p>
-                <h2 className="font-heading text-xl font-bold">Welcome back!</h2>
-                <p className="font-body text-sm text-muted-foreground">You're on the block. See who's nearby right now.</p>
-                <Link to="/scent-block">
-                  <Button size="lg" className="w-full font-semibold">Open the Scent Block →</Button>
-                </Link>
-                <Link to="/feed">
-                  <Button variant="outline" size="lg" className="w-full font-semibold">Check the Feed</Button>
-                </Link>
+              <div className="bg-card/60 backdrop-blur-md border border-border rounded-3xl p-5 shadow-2xl shadow-black/30 w-full max-w-sm">
+                <div className="flex items-center gap-3 mb-4">
+                  <span className="text-2xl">🤙</span>
+                  <div>
+                    <h2 className="font-heading text-lg font-bold leading-tight">Welcome back!</h2>
+                    <p className="font-body text-xs text-muted-foreground">You're on the block.</p>
+                  </div>
+                </div>
+                <div className="flex gap-2">
+                  <Link to="/scent-block" className="flex-1">
+                    <Button size="sm" className="w-full font-semibold">Open the Scent Block →</Button>
+                  </Link>
+                  <Link to="/feed" className="flex-1">
+                    <Button variant="outline" size="sm" className="w-full font-semibold">Check the Feed</Button>
+                  </Link>
+                </div>
               </div>
             ) : (
               <HeroAuth />
@@ -83,6 +90,9 @@ export default function Home() {
           </motion.div>
         </div>
       </section>
+
+      {/* ── Scent Block Preview ── */}
+      <ScentBlockPreview />
 
       {/* ── Scent Categories ── */}
       <section className="max-w-6xl mx-auto px-6 py-16 border-t border-border">
