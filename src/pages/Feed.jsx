@@ -7,6 +7,9 @@ import StatusCard from "@/components/feed/StatusCard";
 import EmptyState from "@/components/EmptyState";
 import { useBlockedUsers } from "@/hooks/useBlockedUsers";
 import { useAuth } from "@/lib/AuthContext";
+import { haversineDistance } from "@/lib/distance";
+
+const FEED_RADIUS_MILES = 25;
 
 export default function Feed() {
   const { user: me } = useAuth();
@@ -17,38 +20,73 @@ export default function Feed() {
   const navigate = useNavigate();
   const { isBlocked } = useBlockedUsers();
 
-  // Load profile data when user is available
-  useEffect(() => {
-    if (!me?.email) return;
-    base44.entities.ScentProfile.filter({ user_email: me.email }).then(p => setMyProfile(p[0] || null));
-  }, [me?.email]);
-
-  // Real-time posts via subscribe
+  // Real-time posts via subscribe (filtered to a 25-mile local radius)
   const [posts, setPosts] = useState([]);
 
   useEffect(() => {
     if (!me) return;
-    base44.entities.StatusPost.list("-created_date", 100).then(p => { setPosts(p); setLoadingFeed(false); });
+    let cancelled = false;
+    let unsub = () => {};
 
-    const unsub = base44.entities.StatusPost.subscribe((event) => {
-      if (event.type === "create") {
-        // Replace any optimistic temp entry first; otherwise prepend
-        setPosts(prev => {
-          const hasTemp = prev.some(p => p.id.startsWith("temp-"));
-          if (hasTemp) {
-            return prev.map(p => p.id.startsWith("temp-") ? event.data : p);
-          }
-          // Avoid duplicates from external creates
-          if (prev.some(p => p.id === event.data.id)) return prev;
-          return [event.data, ...prev];
-        });
-      } else if (event.type === "update") {
-        setPosts(prev => prev.map(p => p.id === event.id ? event.data : p));
-      } else if (event.type === "delete") {
-        setPosts(prev => prev.filter(p => p.id !== event.id));
-      }
-    });
-    return unsub;
+    (async () => {
+      // Load my profile + all profiles (for author locations) in parallel
+      const [mine, allProfiles] = await Promise.all([
+        base44.entities.ScentProfile.filter({ user_email: me.email }),
+        base44.entities.ScentProfile.list(),
+      ]);
+      if (cancelled) return;
+      const my = mine[0] || null;
+      setMyProfile(my);
+
+      // Build email → coordinates map from profiles that have a location.
+      // Coordinates are used ONLY to test the local radius — never shown.
+      const locMap = {};
+      allProfiles.forEach(p => {
+        if (p.location_lat != null && p.location_lng != null) {
+          locMap[p.user_email] = { lat: p.location_lat, lng: p.location_lng };
+        }
+      });
+      const myLoc = (my?.location_lat != null && my?.location_lng != null)
+        ? { lat: my.location_lat, lng: my.location_lng }
+        : (locMap[me.email] || null);
+
+      // A post is visible only if its author is within the local radius.
+      // Your own posts are always visible to you. If we can't confirm a
+      // location (none stored for viewer or author), the post is excluded.
+      const isLocal = (post) => {
+        if (!post || post.user_email === me.email) return true;
+        if (!myLoc) return false;
+        const author = locMap[post.user_email];
+        if (!author) return false;
+        return haversineDistance(myLoc.lat, myLoc.lng, author.lat, author.lng) <= FEED_RADIUS_MILES;
+      };
+
+      const raw = await base44.entities.StatusPost.list("-created_date", 100);
+      if (cancelled) return;
+      setPosts(raw.filter(isLocal));
+      setLoadingFeed(false);
+
+      unsub = base44.entities.StatusPost.subscribe((event) => {
+        if (event.type === "create") {
+          // Skip posts outside the local radius before they reach the UI
+          if (!isLocal(event.data)) return;
+          setPosts(prev => {
+            const hasTemp = prev.some(p => p.id.startsWith("temp-"));
+            if (hasTemp) {
+              return prev.map(p => p.id.startsWith("temp-") ? event.data : p);
+            }
+            if (prev.some(p => p.id === event.data.id)) return prev;
+            return [event.data, ...prev];
+          });
+        } else if (event.type === "update") {
+          setPosts(prev => prev.map(p => p.id === event.id ? event.data : p));
+        } else if (event.type === "delete") {
+          setPosts(prev => prev.filter(p => p.id !== event.id));
+        }
+      });
+    })();
+
+    return () => { cancelled = true; unsub(); };
   }, [me]);
 
   const [userPrefs, setUserPrefs] = useState(null);
