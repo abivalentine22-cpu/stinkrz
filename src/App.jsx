@@ -7,6 +7,7 @@ import PageNotFound from "./lib/PageNotFound";
 import { AuthProvider, useAuth } from "@/lib/AuthContext";
 import UserNotRegisteredError from "@/components/UserNotRegisteredError";
 import ProtectedRoute from "@/components/ProtectedRoute";
+import ErrorBoundary from "@/components/ErrorBoundary";
 import { usePushNotifications } from "@/hooks/usePushNotifications";
 import Layout from "@/components/Layout";
 
@@ -66,6 +67,7 @@ const AuthenticatedApp = () => {
   }
 
   return (
+    <ErrorBoundary>
     <Suspense fallback={<PageLoader />}>
       <Routes>
         {/* Public auth routes */}
@@ -74,16 +76,17 @@ const AuthenticatedApp = () => {
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/reset-password" element={<ResetPassword />} />
 
-        {/* Public pages */}
+        {/* One shared Layout for all app pages so navigating between the
+            public Scent Block and protected pages (e.g. Messages) doesn't
+            remount Layout and flash a full-screen spinner. */}
         <Route element={<Layout />}>
+          {/* Public pages */}
           <Route path="/scent-block" element={<ScentBlock />} />
           <Route path="/terms" element={<Terms />} />
           <Route path="/privacy" element={<Privacy />} />
-        </Route>
 
-        {/* Protected routes */}
-        <Route element={<ProtectedRoute unauthenticatedElement={<Navigate to="/sign-in" replace />} />}>
-          <Route element={<Layout />}>
+          {/* Protected routes */}
+          <Route element={<ProtectedRoute unauthenticatedElement={<Navigate to="/sign-in" replace />} />}>
             <Route path="/" element={<Home />} />
             <Route path="/messages" element={<Messages />} />
             <Route path="/feed" element={<Feed />} />
@@ -101,6 +104,7 @@ const AuthenticatedApp = () => {
         <Route path="*" element={<PageNotFound />} />
       </Routes>
     </Suspense>
+    </ErrorBoundary>
   );
 };
 

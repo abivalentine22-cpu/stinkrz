@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import { ArrowLeft, PenSquare, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { base44 } from "@/api/base44Client";
@@ -56,12 +56,16 @@ export default function Messages() {
     return map;
   }, [allProfiles]);
 
-  // Auto-open conversation from profile drawer OR from ?with=email deep link (notifications)
+  // Auto-open conversation from profile drawer OR from ?with=email deep link (notifications).
+  // A ref guards the navigation state so we only process it once per mount — this
+  // avoids re-opening on unrelated re-renders AND avoids mutating browser history
+  // outside React Router (which previously corrupted router state).
+  const openedFromNavRef = useRef(false);
   useEffect(() => {
     const profile = location.state?.openConversationWith;
-    if (profile) {
+    if (profile && !openedFromNavRef.current) {
+      openedFromNavRef.current = true;
       setActiveConversation({ partnerEmail: profile.user_email, partnerProfile: profile });
-      window.history.replaceState({}, "");
       return;
     }
     // Deep link: /messages?with=someone@email.com
@@ -70,7 +74,6 @@ export default function Messages() {
     if (withEmail && allProfiles.length > 0) {
       const p = allProfiles.find(x => x.user_email === withEmail);
       setActiveConversation({ partnerEmail: withEmail, partnerProfile: p || null });
-      window.history.replaceState({}, "", "/messages");
     }
   }, [location.state, allProfiles]);
 
