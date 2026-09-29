@@ -5,7 +5,7 @@ import ProfileDrawer from "@/components/scent/ProfileDrawer";
 import { base44 } from "@/api/base44Client";
 import { locationPatch } from "@/lib/location";
 import { useNavigate, useLocation } from "react-router-dom";
-import { Crosshair, Eye, Home, MessageCircle, User } from "lucide-react";
+import { Crosshair, Eye, Home, MessageCircle, Minus, Plus, User } from "lucide-react";
 import MapFilterPanel from "@/components/map/MapFilterPanel";
 import { Link } from "react-router-dom";
 import { useScentMatchNotifications } from "@/hooks/useScentMatchNotifications";
@@ -165,7 +165,6 @@ export default function ScentBlock() {
       fadeDuration: 100, // faster tile fade-in
     });
 
-    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), "bottom-right");
     mapRef.current = map;
 
     map.on("load", () => setMapReady(true));
@@ -430,25 +429,6 @@ export default function ScentBlock() {
 
   return (
     <div style={{ position: "relative", width: "100vw", height: "100vh", overflow: "hidden" }}>
-      <style>{`
-        .maplibregl-ctrl-bottom-right { bottom: 16px !important; right: 16px !important; }
-        .maplibregl-ctrl-group {
-          background: rgba(20,17,40,0.85) !important;
-          border: 1px solid rgba(255,255,255,0.1) !important;
-          border-radius: 50% !important;
-          overflow: hidden;
-          box-shadow: 0 2px 8px rgba(0,0,0,0.5) !important;
-        }
-        .maplibregl-ctrl-group button {
-          background: transparent !important;
-          width: 36px !important; height: 36px !important;
-        }
-        .maplibregl-ctrl-group button + button { border-top: 1px solid rgba(255,255,255,0.08) !important; }
-        .maplibregl-ctrl-zoom-in span, .maplibregl-ctrl-zoom-out span { color: #c4b5fd !important; }
-        .maplibregl-ctrl-compass { display: none !important; }
-        .maplibregl-ctrl-attrib { display: none !important; }
-      `}</style>
-
       {loading && (
         <div style={{
           position: "absolute", inset: 0, zIndex: 2000,
@@ -466,6 +446,7 @@ export default function ScentBlock() {
         {[
           { to: "/", icon: <Home size={14} />, title: "Home" },
           { to: "/messages", icon: <MessageCircle size={14} />, title: "Messages" },
+          { to: "/viewers", icon: <Eye size={14} />, title: "Who Viewed Me" },
           { to: "/profile", icon: <User size={14} />, title: "Profile" },
         ].map(({ to, icon, title }) => (
           <Link key={to} to={to} style={{
@@ -481,20 +462,53 @@ export default function ScentBlock() {
         <MapFilterPanel filters={mapFilters} onChange={setMapFilters} />
       </div>
 
-      <button
-        onClick={() => mapRef.current?.flyTo({ center: [youPos.lng, youPos.lat], zoom: 14, duration: 1000 })}
-        style={{
-          position: "absolute", bottom: "62px", right: "16px", zIndex: 1000,
-          width: "36px", height: "36px", borderRadius: "50%",
-          background: "rgba(20,17,40,0.85)", border: "1px solid rgba(255,255,255,0.1)",
-          boxShadow: "0 2px 8px rgba(0,0,0,0.5)",
-          display: "flex", alignItems: "center", justifyContent: "center",
-          cursor: "pointer", color: "#c4b5fd",
-        }}
-        title="Re-center"
-      >
-        <Crosshair size={14} />
-      </button>
+      <div style={{
+        position: "absolute",
+        bottom: "max(16px, env(safe-area-inset-bottom))",
+        right: "max(16px, env(safe-area-inset-right))",
+        zIndex: 1000,
+        display: "flex", flexDirection: "column", gap: "8px",
+      }}>
+        <button
+          onClick={() => mapRef.current?.flyTo({ center: [youPos.lng, youPos.lat], zoom: 14, duration: 1000 })}
+          style={{
+            width: "36px", height: "36px", borderRadius: "50%",
+            background: "rgba(20,17,40,0.85)", border: "1px solid rgba(255,255,255,0.1)",
+            boxShadow: "0 2px 8px rgba(0,0,0,0.5)",
+            display: "flex", alignItems: "center", justifyContent: "center",
+            cursor: "pointer", color: "#c4b5fd",
+          }}
+          title="Re-center"
+        >
+          <Crosshair size={14} />
+        </button>
+        <button
+          onClick={() => mapRef.current?.zoomIn()}
+          style={{
+            width: "36px", height: "36px", borderRadius: "50%",
+            background: "rgba(20,17,40,0.85)", border: "1px solid rgba(255,255,255,0.1)",
+            boxShadow: "0 2px 8px rgba(0,0,0,0.5)",
+            display: "flex", alignItems: "center", justifyContent: "center",
+            cursor: "pointer", color: "#c4b5fd",
+          }}
+          title="Zoom in"
+        >
+          <Plus size={14} />
+        </button>
+        <button
+          onClick={() => mapRef.current?.zoomOut()}
+          style={{
+            width: "36px", height: "36px", borderRadius: "50%",
+            background: "rgba(20,17,40,0.85)", border: "1px solid rgba(255,255,255,0.1)",
+            boxShadow: "0 2px 8px rgba(0,0,0,0.5)",
+            display: "flex", alignItems: "center", justifyContent: "center",
+            cursor: "pointer", color: "#c4b5fd",
+          }}
+          title="Zoom out"
+        >
+          <Minus size={14} />
+        </button>
+      </div>
 
       <button
         onClick={toggleTracking}
