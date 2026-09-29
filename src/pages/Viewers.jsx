@@ -1,4 +1,4 @@
-import React, { useMemo, useEffect } from "react";
+import React, { useMemo, useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { useAuth } from "@/lib/AuthContext";
@@ -9,11 +9,13 @@ import { formatDistanceToNow } from "date-fns";
 import { useFavorites } from "@/hooks/useFavorites";
 import { markViewersSeen } from "@/hooks/useNewViewersBadge";
 import EmptyState from "@/components/EmptyState";
+import ProfileDrawer from "@/components/scent/ProfileDrawer";
 
 export default function Viewers() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const { isFavorited, hasFavoritedMe, toggleFavorite } = useFavorites(user?.email);
+  const [selectedProfile, setSelectedProfile] = useState(null);
 
   // Opening the page marks all currently-known views as seen.
   useEffect(() => {
@@ -77,31 +79,38 @@ export default function Viewers() {
             return (
               <div key={view.viewer_email}
                 className="flex items-center gap-3 bg-card border border-border rounded-xl px-4 py-3">
-                {/* Avatar */}
-                <div className="w-11 h-11 rounded-full bg-muted overflow-hidden shrink-0 flex items-center justify-center border-2"
-                  style={{ borderColor: isMatch ? "#f87171" : "transparent" }}>
-                  {profile?.avatar_url
-                    ? <img src={profile.avatar_url} alt="" className="w-full h-full object-cover" />
-                    : <span className="text-xl">🤙</span>}
-                </div>
-
-                {/* Info */}
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
-                    <p className="font-body font-semibold text-sm truncate">
-                      {profile?.display_name || view.viewer_email}
-                    </p>
-                    {isMatch && (
-                      <span className="text-[10px] font-body font-semibold text-red-400 bg-red-400/10 border border-red-400/25 rounded-full px-2 py-0.5 shrink-0">
-                        💞 Match
-                      </span>
-                    )}
+                {/* Identity area — opens the full profile (same drawer as Scent Block) */}
+                <button
+                  type="button"
+                  onClick={() => setSelectedProfile(profile || { user_email: view.viewer_email, display_name: view.viewer_email })}
+                  className="flex items-center gap-3 flex-1 min-w-0 text-left rounded-lg -mx-1 px-1 py-1 hover:bg-muted/40 transition-colors"
+                >
+                  {/* Avatar */}
+                  <div className="w-11 h-11 rounded-full bg-muted overflow-hidden shrink-0 flex items-center justify-center border-2"
+                    style={{ borderColor: isMatch ? "#f87171" : "transparent" }}>
+                    {profile?.avatar_url
+                      ? <img src={profile.avatar_url} alt="" className="w-full h-full object-cover" />
+                      : <span className="text-xl">🤙</span>}
                   </div>
-                  <p className="font-body text-xs text-muted-foreground">
-                    {profile?.scent_category && `${profile.scent_category} · `}
-                    {formatDistanceToNow(new Date(view.created_date), { addSuffix: true })}
-                  </p>
-                </div>
+
+                  {/* Info */}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <p className="font-body font-semibold text-sm truncate">
+                        {profile?.display_name || view.viewer_email}
+                      </p>
+                      {isMatch && (
+                        <span className="text-[10px] font-body font-semibold text-red-400 bg-red-400/10 border border-red-400/25 rounded-full px-2 py-0.5 shrink-0">
+                          💞 Match
+                        </span>
+                      )}
+                    </div>
+                    <p className="font-body text-xs text-muted-foreground">
+                      {profile?.scent_category && `${profile.scent_category} · `}
+                      {formatDistanceToNow(new Date(view.created_date), { addSuffix: true })}
+                    </p>
+                  </div>
+                </button>
 
                 {/* Actions */}
                 <div className="flex items-center gap-2 shrink-0">
@@ -124,6 +133,20 @@ export default function Viewers() {
           })}
         </div>
       )}
+
+      <ProfileDrawer
+        profile={selectedProfile}
+        open={!!selectedProfile}
+        onClose={() => setSelectedProfile(null)}
+        onMessage={(profile) => {
+          setSelectedProfile(null);
+          navigate("/messages", { state: { openConversationWith: profile } });
+        }}
+        onReport={(profile) => {
+          setSelectedProfile(null);
+          navigate("/report", { state: { reportedName: profile.display_name, reportedEmail: profile.user_email } });
+        }}
+      />
     </div>
   );
 }
