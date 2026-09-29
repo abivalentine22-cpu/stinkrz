@@ -62,6 +62,7 @@ export default function Navbar() {
                 to={item.path}
                 className={`font-body text-sm transition-colors flex items-center gap-1.5 relative ${active ? "text-foreground font-semibold" : "text-muted-foreground hover:text-foreground"}`}
               >
+                {isViewers && <Eye className="w-3.5 h-3.5" />}
                 {item.label}
                 {isMessages && unreadMessages > 0 && (
                   <span className="ml-0.5 w-4 h-4 bg-primary text-primary-foreground text-[9px] rounded-full flex items-center justify-center font-semibold">
