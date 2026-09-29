@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { base44 } from "@/api/base44Client";
-import { useNavigate } from "react-router-dom";
+import { useFavorites } from "@/hooks/useFavorites";
 import { Zap, Eye } from "lucide-react";
 import PostComposer from "@/components/feed/PostComposer";
 import StatusCard from "@/components/feed/StatusCard";
@@ -17,8 +17,8 @@ export default function Feed() {
   const [profileViewers, setProfileViewers] = useState(0);
   const [reportedEmails, setReportedEmails] = useState([]);
   const [loadingFeed, setLoadingFeed] = useState(true);
-  const navigate = useNavigate();
   const { isBlocked } = useBlockedUsers();
+  const { sendWhiff, isFavorited } = useFavorites(me?.email);
 
   // Real-time posts via subscribe (filtered to a 25-mile local radius)
   const [posts, setPosts] = useState([]);
@@ -153,28 +153,6 @@ export default function Feed() {
     base44.entities.StatusPost.delete(id);
   };
 
-  const handleMessage = async (post) => {
-    // Trigger notification for post owner
-    await base44.functions.invoke('createStatusInteractionNotification', {
-      post_id: post.id,
-      interactor_email: me.email,
-      interactor_name: myProfile?.display_name || me.full_name,
-      interactor_avatar: myProfile?.avatar_url,
-      post_owner_email: post.user_email,
-    }).catch(() => {});
-    
-    navigate("/messages", {
-      state: {
-        openConversationWith: {
-          user_email: post.user_email,
-          display_name: post.display_name,
-          avatar_url: post.avatar_url,
-          scent_category: post.scent_category,
-        },
-      },
-    });
-  };
-
   if (loadingFeed) {
     return (
       <div className="max-w-xl mx-auto px-4 py-6 space-y-4 animate-pulse">
@@ -235,7 +213,8 @@ export default function Feed() {
                   post={post}
                   currentUserEmail={me?.email}
                   onDelete={handleDelete}
-                  onMessage={handleMessage}
+                  onWhiff={() => sendWhiff(post.user_email)}
+                  whiffed={isFavorited(post.user_email)}
                 />
               ))}
             </div>
@@ -253,7 +232,8 @@ export default function Feed() {
                   post={post}
                   currentUserEmail={me?.email}
                   onDelete={handleDelete}
-                  onMessage={handleMessage}
+                  onWhiff={() => sendWhiff(post.user_email)}
+                  whiffed={isFavorited(post.user_email)}
                   isRecommended={true}
                 />
               ))}
@@ -272,7 +252,8 @@ export default function Feed() {
                   post={post}
                   currentUserEmail={me?.email}
                   onDelete={handleDelete}
-                  onMessage={handleMessage}
+                  onWhiff={() => sendWhiff(post.user_email)}
+                  whiffed={isFavorited(post.user_email)}
                 />
               ))}
             </div>

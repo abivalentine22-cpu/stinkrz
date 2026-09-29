@@ -1,6 +1,6 @@
 import React from "react";
 import { formatDistanceToNow } from "date-fns";
-import { Clock, MessageCircle, Trash2 } from "lucide-react";
+import { Clock, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 
@@ -12,7 +12,7 @@ const SCENT_COLORS = {
   Neutral: "#94a3b8",
 };
 
-export default function StatusCard({ post, currentUserEmail, onDelete, onMessage, isRecommended }) {
+export default function StatusCard({ post, currentUserEmail, onDelete, onWhiff, whiffed, isRecommended }) {
   const navigate = useNavigate();
   const isOwn = post.user_email === currentUserEmail;
   const timeLeft = post.expires_at
@@ -78,11 +78,11 @@ export default function StatusCard({ post, currentUserEmail, onDelete, onMessage
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={() => onMessage(post)}
-                  className="h-7 px-2.5 text-xs font-body gap-1 text-accent hover:text-accent"
+                  onClick={() => onWhiff(post)}
+                  disabled={whiffed}
+                  className="h-7 px-2.5 text-xs font-body gap-1 text-accent hover:text-accent disabled:opacity-60"
                 >
-                  <MessageCircle className="w-3 h-3" />
-                  Whiff
+                  {whiffed ? "Whiffed ✓" : "👃 Whiff"}
                 </Button>
               )}
             </div>
