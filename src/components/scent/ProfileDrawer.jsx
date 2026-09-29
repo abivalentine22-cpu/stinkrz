@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, MapPin, Droplets, ShowerHead, MessageCircle, Wifi, WifiOff, Ban, Heart, ChevronLeft, ChevronRight, ShieldAlert } from "lucide-react";
+import { X, MapPin, Droplets, ShowerHead, MessageCircle, Wifi, WifiOff, Ban, ChevronLeft, ChevronRight, ShieldAlert } from "lucide-react";
 import HangLooseLogo from "@/components/HangLooseLogo";
 import { Button } from "@/components/ui/button";
 import { format } from "date-fns";
@@ -28,7 +28,7 @@ export default function ProfileDrawer({ profile, open, onClose, onMessage, onRep
   const intensityDots = Array.from({ length: 5 }, (_, i) => i < (profile?.scent_intensity || 0));
   const { isBlocked, blockUser, unblockUser } = useBlockedUsers();
   const { user } = useAuth();
-  const { isFavorited, hasFavoritedMe, toggleFavorite } = useFavorites(user?.email);
+  const { isFavorited, hasFavoritedMe, sendWhiff } = useFavorites(user?.email);
   const [confirmBlock, setConfirmBlock] = useState(false);
   const [galleryIndex, setGalleryIndex] = useState(0);
 
@@ -189,8 +189,8 @@ export default function ProfileDrawer({ profile, open, onClose, onMessage, onRep
                     {profile.display_name}{profile.age ? `, ${profile.age}` : ""}
                   </h2>
                   {theyFavoritedMe && (
-                    <span style={{ fontSize: "11px", color: "#f87171", background: "rgba(248,113,113,0.1)", border: "1px solid rgba(248,113,113,0.25)", borderRadius: "9999px", padding: "2px 8px" }}>
-                      ❤️ Interested
+                    <span style={{ fontSize: "11px", color: "#a78bfa", background: "rgba(167,139,250,0.1)", border: "1px solid rgba(167,139,250,0.25)", borderRadius: "9999px", padding: "2px 8px" }}>
+                      👃 Whiffed you
                     </span>
                   )}
                   {profile.is_online ? (
@@ -374,26 +374,22 @@ export default function ProfileDrawer({ profile, open, onClose, onMessage, onRep
                 {!blocked && (
                   <div style={{ display: "flex", gap: "8px" }}>
                     <Button
+                      onClick={() => sendWhiff(profile.user_email)}
+                      disabled={favorited}
+                      className="flex-1 gap-2 font-body font-semibold"
+                      style={{ height: "44px", fontSize: "15px" }}
+                    >
+                      {favorited ? "Whiff Sent ✓" : "👃 Send a Whiff"}
+                    </Button>
+                    <Button
+                      variant="outline"
                       onClick={() => onMessage?.(profile)}
                       className="flex-1 gap-2 font-body font-semibold"
                       style={{ height: "44px", fontSize: "15px" }}
                     >
                       <MessageCircle size={17} />
-                      Send a Whiff
+                      Message
                     </Button>
-                    <button
-                      onClick={() => toggleFavorite(profile.user_email)}
-                      style={{
-                        width: "44px", height: "44px", borderRadius: "9999px", border: "none",
-                        background: favorited ? "rgba(248,113,113,0.2)" : "rgba(255,255,255,0.08)",
-                        display: "flex", alignItems: "center", justifyContent: "center",
-                        cursor: "pointer", transition: "all 0.2s",
-                        flexShrink: 0,
-                      }}
-                      title={favorited ? "Remove favorite" : "Tap / Favorite"}
-                    >
-                      <Heart size={18} color={favorited ? "#f87171" : "#94a3b8"} fill={favorited ? "#f87171" : "none"} />
-                    </button>
                   </div>
                 )}
 
