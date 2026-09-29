@@ -6,6 +6,7 @@ import HangLooseLogo from "./HangLooseLogo";
 import { useAuth } from "@/lib/AuthContext";
 import NotificationCenter from "@/components/notifications/NotificationCenter";
 import { base44 } from "@/api/base44Client";
+import { useNewViewersBadge } from "@/hooks/useNewViewersBadge";
 
 const NAV_ITEMS = [
   { label: "Map", path: "/scent-block", icon: Map },
@@ -22,6 +23,7 @@ export default function Navbar() {
   const [unreadMessages, setUnreadMessages] = useState(0);
   const location = useLocation();
   const { user } = useAuth();
+  const hasNewViews = useNewViewersBadge(user?.email);
 
   // Track unread message count in real-time
   useEffect(() => {
@@ -53,6 +55,7 @@ export default function Navbar() {
           {NAV_ITEMS.map((item) => {
             const active = location.pathname === item.path;
             const isMessages = item.path === "/messages";
+            const isViewers = item.path === "/viewers";
             return (
               <Link
                 key={item.path}
@@ -64,6 +67,9 @@ export default function Navbar() {
                   <span className="ml-0.5 w-4 h-4 bg-primary text-primary-foreground text-[9px] rounded-full flex items-center justify-center font-semibold">
                     {unreadMessages > 9 ? "9+" : unreadMessages}
                   </span>
+                )}
+                {isViewers && hasNewViews && (
+                  <span className="absolute -top-1 right-0 w-2 h-2 bg-accent rounded-full ring-2 ring-background" />
                 )}
               </Link>
             );
@@ -111,11 +117,12 @@ export default function Navbar() {
             const Icon = item.icon;
             const active = location.pathname === item.path;
             const isMessages = item.path === "/messages";
+            const isViewers = item.path === "/viewers";
             return (
               <Link key={item.path} to={item.path} onClick={() => setMobileOpen(false)}>
                 <Button
                   variant={active ? "default" : "ghost"}
-                  className={`w-full justify-start gap-3 font-body ${active ? "" : "text-muted-foreground"}`}
+                  className={`relative w-full justify-start gap-3 font-body ${active ? "" : "text-muted-foreground"}`}
                 >
                   <Icon className="w-4 h-4" />
                   {item.label}
@@ -123,6 +130,9 @@ export default function Navbar() {
                     <span className="ml-auto w-4 h-4 bg-primary text-primary-foreground text-[9px] rounded-full flex items-center justify-center font-semibold">
                       {unreadMessages > 9 ? "9+" : unreadMessages}
                     </span>
+                  )}
+                  {isViewers && hasNewViews && (
+                    <span className="absolute top-2.5 right-3 w-2 h-2 bg-accent rounded-full" />
                   )}
                 </Button>
               </Link>

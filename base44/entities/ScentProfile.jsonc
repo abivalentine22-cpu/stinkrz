@@ -161,6 +161,11 @@
       "type": "string",
       "format": "date-time"
     },
+    "last_viewers_check": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When the user last opened the Who Viewed Me page; views newer than this are 'new'"
+    },
     "onboarding_complete": {
       "type": "boolean",
       "default": false

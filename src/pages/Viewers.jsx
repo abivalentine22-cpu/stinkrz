@@ -1,4 +1,4 @@
-import React, { useMemo } from "react";
+import React, { useMemo, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { useAuth } from "@/lib/AuthContext";
@@ -7,12 +7,18 @@ import { MessageCircle, Eye } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { formatDistanceToNow } from "date-fns";
 import { useFavorites } from "@/hooks/useFavorites";
+import { markViewersSeen } from "@/hooks/useNewViewersBadge";
 import EmptyState from "@/components/EmptyState";
 
 export default function Viewers() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const { isFavorited, hasFavoritedMe, toggleFavorite } = useFavorites(user?.email);
+
+  // Opening the page marks all currently-known views as seen.
+  useEffect(() => {
+    if (user?.email) markViewersSeen(user.email);
+  }, [user?.email]);
 
   const { data: views = [], isLoading } = useQuery({
     queryKey: ["profile-views", user?.email],
