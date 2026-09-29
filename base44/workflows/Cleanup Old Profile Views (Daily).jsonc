@@ -1,6 +1,5 @@
 {
   "name": "Cleanup Old Profile Views (Daily)",
-  "description": "Deletes ProfileView records older than 14 days to prevent the write-heavy viewers table from bloating",
   "trigger": {
     "condition": null,
     "config": {
@@ -10,7 +9,7 @@
       "cron_expression": null,
       "one_time_date": null,
       "timezone": "UTC",
-      "interval_value": 30,
+      "interval_value": 1,
       "interval_unit": "days",
       "interval_anchor": "2026-07-12T11:00:00",
       "ends_type": "never",
@@ -38,6 +37,7 @@
       }
     ]
   },
+  "description": "Deletes ProfileView records older than 14 days to prevent the write-heavy viewers table from bloating",
   "x-base44-migrated-from-automation": {
     "legacy_payload_function": "cleanupOldProfileViews"
   }
