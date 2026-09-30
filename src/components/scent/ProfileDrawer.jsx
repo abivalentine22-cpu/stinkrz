@@ -8,6 +8,7 @@ import { useBlockedUsers } from "@/hooks/useBlockedUsers";
 import { useFavorites } from "@/hooks/useFavorites";
 import { base44 } from "@/api/base44Client";
 import { useAuth } from "@/lib/AuthContext";
+import { haversineDistance } from "@/lib/distance";
 
 const SCENT_COLORS = {
   Fresh: "#34d399",
@@ -80,6 +81,24 @@ export default function ProfileDrawer({ profile, open, onClose, onMessage, onRep
     if (mins < 1440) return `Last seen ${Math.round(mins / 60)}h ago`;
     return `Last seen ${Math.round(mins / 1440)}d ago`;
   }, [profile]);
+
+  // Approximate distance to the viewed profile (reuses the shared haversine
+  // helper from the Scent Block / Live Feed location system). Shows whole
+  // miles, "Less than 1 mile away" for very close users, or nothing when
+  // either user's location is unavailable.
+  const distanceText = useMemo(() => {
+    if (!myProfile || !profile) return null;
+    const myLat = myProfile.location_lat;
+    const myLng = myProfile.location_lng;
+    const theirLat = profile.location_lat;
+    const theirLng = profile.location_lng;
+    if (typeof myLat !== "number" || typeof myLng !== "number" ||
+        typeof theirLat !== "number" || typeof theirLng !== "number") return null;
+    const miles = haversineDistance(myLat, myLng, theirLat, theirLng);
+    if (!isFinite(miles) || miles < 0) return null;
+    if (miles < 1) return "Less than 1 mile away";
+    return `${Math.round(miles)} miles away`;
+  }, [myProfile, profile]);
 
   const handleBlock = () => {
     if (!confirmBlock) { setConfirmBlock(true); return; }
@@ -203,10 +222,12 @@ export default function ProfileDrawer({ profile, open, onClose, onMessage, onRep
                     </span>
                   )}
                 </div>
-                <div style={{ display: "flex", alignItems: "center", gap: "6px", color: "#64748b", fontSize: "13px" }}>
-                  <MapPin size={12} color="#a78bfa" />
-                  {profile.distance} miles away
-                </div>
+                {distanceText && (
+                  <div style={{ display: "flex", alignItems: "center", gap: "6px", color: "#64748b", fontSize: "13px" }}>
+                    <MapPin size={12} color="#a78bfa" />
+                    {distanceText}
+                  </div>
+                )}
               </div>
 
               {/* Vibe badges — pinned to top */}
