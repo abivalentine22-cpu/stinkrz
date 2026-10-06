@@ -23,7 +23,13 @@ Deno.serve(async (req) => {
     for (const p of profiles) profileMap[p.user_email] = p;
 
     let sent = 0;
-    for (const [email, msgs] of Object.entries(byReceiver)) {
+    for (const [email, pendingMessages] of Object.entries(byReceiver)) {
+      const blocks = await base44.asServiceRole.entities.BlockedUser.filter({
+        $or: [{ blocker_email: email }, { blocked_email: email }],
+      }, undefined, 500);
+      const hidden = new Set(blocks.map(b => b.blocker_email === email ? b.blocked_email : b.blocker_email));
+      const msgs = pendingMessages.filter(m => !hidden.has(m.sender_email));
+      if (!msgs.length) continue;
       const profile = profileMap[email];
       const lastActive = profile?.last_active ? new Date(profile.last_active) : null;
       const isActive = lastActive && (Date.now() - lastActive.getTime()) < 15 * 60 * 1000;

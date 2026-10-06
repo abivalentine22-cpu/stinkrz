@@ -31,16 +31,17 @@ export default function Navbar() {
     base44.entities.ChatMessage.filter({ receiver_email: user.email, read: false })
       .then(msgs => setUnreadMessages(msgs.length));
 
-    const unsub = base44.entities.ChatMessage.subscribe((event) => {
-      if (event.type === "create" && event.data.receiver_email === user.email && !event.data.read) {
-        setUnreadMessages(prev => prev + 1);
-      } else if (event.type === "update" && event.data.receiver_email === user.email) {
-        // Re-fetch count on any update
+    let timer;
+    let cancelled = false;
+    const refreshCount = () => {
+      clearTimeout(timer);
+      timer = setTimeout(() => {
         base44.entities.ChatMessage.filter({ receiver_email: user.email, read: false })
-          .then(msgs => setUnreadMessages(msgs.length));
-      }
-    });
-    return unsub;
+          .then(msgs => { if (!cancelled) setUnreadMessages(msgs.length); }).catch(() => {});
+      }, 50);
+    };
+    const unsub = base44.entities.ChatMessage.subscribe(refreshCount);
+    return () => { cancelled = true; clearTimeout(timer); unsub(); };
   }, [user?.email]);
 
   return (

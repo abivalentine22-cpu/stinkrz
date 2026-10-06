@@ -111,7 +111,7 @@ export default function Messages() {
 
   // Mark messages as read when conversation opens or new messages arrive in active convo
   useEffect(() => {
-    if (!activeConversation || !me?.email || localStorage.getItem("stinkrz_send_read_receipts") === "false") return;
+    if (!activeConversation || !me?.email || !profileByEmail[me.email] || profileByEmail[me.email].send_read_receipts === false) return;
     const unread = allMessages.filter(
       m => m.receiver_email === me.email && m.sender_email === activeConversation.partnerEmail && !m.read
     );
@@ -120,7 +120,7 @@ export default function Messages() {
       unread.forEach(m => base44.entities.ChatMessage.update(m.id, { read: true }).catch(() => {}));
     }, 300);
     return () => clearTimeout(timer);
-  }, [activeConversation?.partnerEmail, allMessages]);
+  }, [activeConversation?.partnerEmail, allMessages, profileByEmail, me?.email]);
 
   const handleVibeCheck = () => {
     const vibes = [
