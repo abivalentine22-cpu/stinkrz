@@ -17,12 +17,12 @@ export function snapToFuzzy(lat, lng) {
 // Always includes is_online + last_active so presence stays fresh.
 export function locationPatch(lat, lng, profile) {
   const patch = {
-    is_online: true,
-    last_active: new Date().toISOString(),
+    is_online: profile?.show_online_status !== false,
+    last_active: profile?.show_online_status === false ? null : new Date().toISOString(),
   };
 
   if (profile && !profile.invisible_mode) {
-    const coords = profile.fuzzy_location ? snapToFuzzy(lat, lng) : { lat, lng };
+    const coords = profile.fuzzy_location !== false ? snapToFuzzy(lat, lng) : { lat, lng };
     patch.location_lat = coords.lat;
     patch.location_lng = coords.lng;
   }

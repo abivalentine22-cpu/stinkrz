@@ -34,7 +34,7 @@ export default function Settings() {
   });
 
   const [selected, setSelected] = useState([]);
-  const [fuzzyLocation, setFuzzyLocation] = useState(false);
+  const [fuzzyLocation, setFuzzyLocation] = useState(true);
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [showOnlineStatus, setShowOnlineStatus] = useState(true);
   const [sendReadReceipts, setSendReadReceipts] = useState(true);
@@ -54,7 +54,7 @@ export default function Settings() {
     }
     setSoundEnabled(localStorage.getItem("stinkrz_sound") !== "false");
     setShowOnlineStatus(localStorage.getItem("stinkrz_show_online") !== "false");
-    setFuzzyLocation(localStorage.getItem("stinkrz_fuzzy_location") === "true");
+    setFuzzyLocation(localStorage.getItem("stinkrz_fuzzy_location") !== "false");
     setSendReadReceipts(localStorage.getItem("stinkrz_send_read_receipts") !== "false");
     setHideReadReceipts(localStorage.getItem("stinkrz_hide_read_receipts") === "true");
     setTravelMode(localStorage.getItem("stinkrz_travel_mode") || "neither");
@@ -63,6 +63,9 @@ export default function Settings() {
     base44.entities.ScentProfile.filter({ user_email: user.email }).then(p => {
       if (p[0]) {
         setMyProfile(p[0]);
+        setFuzzyLocation(p[0].fuzzy_location !== false);
+        setShowOnlineStatus(p[0].show_online_status !== false);
+        setSendReadReceipts(p[0].send_read_receipts !== false);
         setInvisibleMode(p[0].invisible_mode || false);
         if (p[0].travel_mode) setTravelMode(p[0].travel_mode);
       }
@@ -72,13 +75,20 @@ export default function Settings() {
     });
   }, [prefs, user?.email]);
 
-  const toggleInvisibleMode = async () => {
-    const next = !invisibleMode;
-    setInvisibleMode(next);
-    if (myProfile) {
-      await base44.entities.ScentProfile.update(myProfile.id, { invisible_mode: next });
+  const toggleProfileSetting = async (key, value, setter, property) => {
+    if (!myProfile) return;
+    try {
+      const saved = await base44.entities.ScentProfile.update(myProfile.id, { [property]: !value });
+      setMyProfile(saved);
+      setter(!value);
+      localStorage.setItem(key, String(!value));
+      queryClient.invalidateQueries({ queryKey: ["my-profile"] });
+      queryClient.invalidateQueries({ queryKey: ["all-profiles"] });
+    } catch {
+      toast({ title: "Setting wasn't saved", description: "Please try again.", variant: "destructive" });
     }
   };
+  const toggleInvisibleMode = () => toggleProfileSetting("stinkrz_invisible", invisibleMode, setInvisibleMode, "invisible_mode");
 
   const saveMutation = useMutation({
     mutationFn: async () => {
@@ -157,13 +167,10 @@ export default function Settings() {
           <div className="flex items-center justify-between bg-muted/50 rounded-xl p-4 border border-border">
             <div className="flex-1">
               <p className="font-body text-sm font-semibold">Approximate Location</p>
-              <p className="font-body text-xs text-muted-foreground">Show location within ~½ mile</p>
+              <p className="font-body text-xs text-muted-foreground">Store location on an approximate 1 km grid. Other users always see a general area.</p>
             </div>
             <button
-              onClick={async () => {
-                handleToggle("stinkrz_fuzzy_location", fuzzyLocation, setFuzzyLocation);
-                if (myProfile) await base44.entities.ScentProfile.update(myProfile.id, { fuzzy_location: !fuzzyLocation });
-              }}
+              onClick={() => toggleProfileSetting("stinkrz_fuzzy_location", fuzzyLocation, setFuzzyLocation, "fuzzy_location")}
               className={`w-11 h-6 rounded-full transition-colors shrink-0 relative ${fuzzyLocation ? "bg-primary" : "bg-muted-foreground/30"}`}
             >
               <span className={`absolute top-0.5 w-5 h-5 rounded-full bg-white transition-all ${fuzzyLocation ? "left-[22px]" : "left-0.5"}`} />
@@ -177,7 +184,7 @@ export default function Settings() {
               <p className="font-body text-xs text-muted-foreground">Let others see when you're active</p>
             </div>
             <button
-              onClick={() => handleToggle("stinkrz_show_online", showOnlineStatus, setShowOnlineStatus)}
+              onClick={() => toggleProfileSetting("stinkrz_show_online", showOnlineStatus, setShowOnlineStatus, "show_online_status")}
               className={`w-11 h-6 rounded-full transition-colors shrink-0 relative ${showOnlineStatus ? "bg-primary" : "bg-muted-foreground/30"}`}
             >
               <span className={`absolute top-0.5 w-5 h-5 rounded-full bg-white transition-all ${showOnlineStatus ? "left-[22px]" : "left-0.5"}`} />
@@ -248,7 +255,7 @@ export default function Settings() {
               <p className="font-body text-xs text-muted-foreground">Let others know you've read their messages</p>
             </div>
             <button
-              onClick={() => handleToggle("stinkrz_send_read_receipts", sendReadReceipts, setSendReadReceipts)}
+              onClick={() => toggleProfileSetting("stinkrz_send_read_receipts", sendReadReceipts, setSendReadReceipts, "send_read_receipts")}
               className={`w-11 h-6 rounded-full transition-colors shrink-0 relative ${sendReadReceipts ? "bg-primary" : "bg-muted-foreground/30"}`}
             >
               <span className={`absolute top-0.5 w-5 h-5 rounded-full bg-white transition-all ${sendReadReceipts ? "left-[22px]" : "left-0.5"}`} />
@@ -308,7 +315,7 @@ export default function Settings() {
           Block Settings
         </h3>
         <div className="bg-muted/50 rounded-xl p-4 border border-border">
-          <p className="font-body text-xs text-muted-foreground mb-3">Users you've blocked won't appear on the map or in your feed.</p>
+          <p className="font-body text-xs text-muted-foreground mb-3">Blocking prevents either person from viewing profiles or sending messages, Whiffs and reactions to the other.</p>
           {blockedUsers.length === 0 ? (
             <p className="font-body text-sm text-muted-foreground italic">No blocked users yet</p>
           ) : (

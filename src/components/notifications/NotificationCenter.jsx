@@ -16,7 +16,7 @@ export default function NotificationCenter({ userEmail }) {
 
     const unsub = base44.entities.Notification.subscribe((event) => {
       if (event.type === "create" && event.data.user_email === userEmail) {
-        setNotifications(prev => [event.data, ...prev].slice(0, 50));
+        setNotifications(prev => [event.data, ...prev.filter(n => n.id !== event.id)].sort((a,b) => b.created_date.localeCompare(a.created_date)).slice(0, 50));
       } else if (event.type === "update") {
         setNotifications(prev => prev.map(n => n.id === event.id ? event.data : n));
       } else if (event.type === "delete") {

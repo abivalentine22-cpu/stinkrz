@@ -23,19 +23,11 @@ const SCENT_RING = {
 };
 
 function processProfile(p) {
-  if (!p.location_lat || !p.location_lng) return null;
+  if (!Number.isFinite(p.location_lat) || !Number.isFinite(p.location_lng)) return null;
   if (p.invisible_mode) return null;
-  if (p.last_active) {
-    const minsSince = (new Date() - new Date(p.last_active)) / (1000 * 60);
-    if (minsSince > ACTIVITY_TIMEOUT_MINS) return null;
-  }
-  if (p.fuzzy_location) {
-    const fuzz = 0.005;
-    return {
-      ...p,
-      location_lat: p.location_lat + (Math.random() - 0.5) * fuzz * 2,
-      location_lng: p.location_lng + (Math.random() - 0.5) * fuzz * 2,
-    };
+  if (localStorage.getItem("stinkrz_hide_inactive") === "true") {
+    const minsSince = p.last_active ? (Date.now() - Date.parse(p.last_active)) / 60000 : Infinity;
+    if (!p.is_online || minsSince > ACTIVITY_TIMEOUT_MINS) return null;
   }
   return p;
 }
@@ -80,7 +72,10 @@ function createPinEl(profile, isYou = false) {
     img.decoding = "async";
     circle.appendChild(img);
   } else {
-    circle.innerHTML = `<span style="font-size:16px;">${isYou ? "🤙" : initial}</span>`;
+    const text = document.createElement("span");
+    text.style.fontSize = "16px";
+    text.textContent = isYou ? "🤙" : initial;
+    circle.appendChild(text);
   }
 
   if (profile.is_online && !isYou) {
@@ -239,8 +234,8 @@ export default function ScentBlock() {
     if (!myProfile) return;
     const heartbeat = setInterval(() => {
       base44.entities.ScentProfile.update(myProfile.id, {
-        is_online: true,
-        last_active: new Date().toISOString(),
+        is_online: myProfileRef.current?.show_online_status !== false,
+        last_active: myProfileRef.current?.show_online_status === false ? null : new Date().toISOString(),
       });
     }, 30 * 1000);
     return () => clearInterval(heartbeat);

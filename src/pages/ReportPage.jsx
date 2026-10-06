@@ -98,6 +98,7 @@ export default function ReportPage() {
               <SelectItem value="Inappropriate content">Inappropriate content</SelectItem>
               <SelectItem value="Spam">Spam</SelectItem>
               <SelectItem value="Threatening behavior">Threatening behavior</SelectItem>
+              <SelectItem value="Underage user">Underage user (under 18)</SelectItem>
               <SelectItem value="Other">Other</SelectItem>
             </SelectContent>
           </Select>

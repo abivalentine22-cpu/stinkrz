@@ -98,7 +98,7 @@ export default function Register() {
                   className="mt-0.5 accent-primary"
                 />
                 <span className="font-body text-xs text-muted-foreground leading-relaxed">
-                  I agree to the{" "}
+                  I confirm I am 18 or older and agree to the{" "}
                   <Link to="/terms" target="_blank" className="text-primary hover:underline">Terms of Service</Link>
                   {" "}and{" "}
                   <Link to="/privacy" target="_blank" className="text-primary hover:underline">Privacy Policy</Link>

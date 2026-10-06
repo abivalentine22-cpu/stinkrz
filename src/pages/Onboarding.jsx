@@ -24,6 +24,7 @@ export default function Onboarding() {
   const { user } = useAuth();
   const [step, setStep] = useState(0);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
   // Redirect if already onboarded
   useEffect(() => {
@@ -77,11 +78,15 @@ export default function Onboarding() {
   };
 
   const handleFinish = async () => {
-    setLoading(true);
+    if (!Number.isInteger(Number(profile.age)) || Number(profile.age) < 18 || Number(profile.age) > 120) {
+      setError("Stinkrz is for adults 18 or older. Please enter your age."); setStep(0); return;
+    }
+    setLoading(true); setError("");
+    try {
     await base44.entities.ScentProfile.create({
       user_email: user.email,
       display_name: profile.display_name || user?.full_name || "Anonymous",
-      age: parseInt(profile.age) || 25,
+      age: Number(profile.age),
       bio: profile.bio,
       scent_category: profile.scent_category || "Neutral",
       scent_intensity: profile.scent_intensity,
@@ -92,10 +97,13 @@ export default function Onboarding() {
       shower_frequency: profile.shower_frequency || "Classified",
       looking_for: profile.looking_for || undefined,
       scent_preferences: profile.scent_preferences,
+      fuzzy_location: true,
       is_online: true,
       onboarding_complete: true,
     });
     navigate("/scent-block");
+    } catch { setError("Your profile could not be saved. Please try again."); }
+    finally { setLoading(false); }
   };
 
   const steps = [
@@ -112,7 +120,7 @@ export default function Onboarding() {
       </div>
       <div className="space-y-2">
         <Label className="font-body text-sm">Age</Label>
-        <Input type="number" value={profile.age} onChange={(e) => updateProfile("age", e.target.value)} placeholder="Your age" className="font-body bg-muted border-0" />
+        <Input type="number" min="18" max="120" value={profile.age} onChange={(e) => updateProfile("age", e.target.value)} placeholder="Your age" className="font-body bg-muted border-0" />
       </div>
       <div className="space-y-2">
         <Label className="font-body text-sm">Bio</Label>
@@ -348,6 +356,8 @@ export default function Onboarding() {
           <h1 className="font-heading text-2xl font-bold">Welcome to Stinkrz 🤙</h1>
           <p className="font-body text-sm text-muted-foreground mt-1">A quick vibe check and you're in — takes about a minute.</p>
         </div>
+        <p className="font-body text-xs text-muted-foreground mb-4">Stinkrz is for adults 18 or older. By joining, you agree to our 18+ rule. Age is self-reported, not verified.</p>
+        {error && <p role="alert" className="text-sm text-destructive mb-4">{error}</p>}
         {/* Progress */}
         <div className="flex gap-1 mb-8">
           {steps.map((_, i) => (

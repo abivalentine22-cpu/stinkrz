@@ -9,7 +9,7 @@ const SECTIONS = [
   },
   {
     title: "2. Eligibility",
-    content: `You must be at least 18 years old to use Stinkrz. By creating an account, you confirm that you are 18 or older and that all information you provide is accurate and truthful.`,
+    content: `You must be at least 18 years old to use Stinkrz. By creating an account, you confirm that you are 18 or older and that all information you provide is accurate and truthful. Age is self-reported; Stinkrz does not verify users’ ages. Suspected underage accounts can be reported using “Underage user” and may be removed for violating this rule.`,
   },
   {
     title: "3. User Accounts",
@@ -29,7 +29,7 @@ const SECTIONS = [
   },
   {
     title: "7. Location & Visibility",
-    content: `Stinkrz uses your location to show nearby users on the Scent Block map. Location sharing is optional but required for core App functionality. You can enable "Approximate Location" mode in your profile to share only a general area (~½ mile radius) rather than precise coordinates. You can also enable "Invisible Mode" to hide yourself from the map entirely while still browsing other users. Your approximate online status and last-active time may be shown to other users.`,
+    content: `Stinkrz uses your location to show nearby users on the Scent Block map. Location sharing is optional but required for core App functionality. Approximate Location is enabled by default for new profiles and stores coordinates on an approximate 1 km grid. Turning it off permits more precise storage, but other users still receive only coarse coordinates. You can also enable "Invisible Mode" to hide yourself from the map entirely while still browsing other users. Your approximate online status and last-active time may be shown to other users.`,
   },
   {
     title: "8. Disclaimers",
@@ -61,7 +61,7 @@ export default function Terms() {
       </Link>
 
       <h1 className="font-heading text-3xl font-bold mb-2">Terms of Service</h1>
-      <p className="font-body text-sm text-muted-foreground mb-10">Last updated: August 2026</p>
+      <p className="font-body text-sm text-muted-foreground mb-10">Last updated: October 2026</p>
 
       <p className="font-body text-sm text-muted-foreground leading-relaxed mb-8">
         Welcome to Stinkrz. Please read these Terms of Service carefully before using our platform. These terms govern your access to and use of the Stinkrz application and services.

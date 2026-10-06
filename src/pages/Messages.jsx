@@ -31,7 +31,7 @@ export default function Messages() {
       if (event.type === "create") {
         const msg = event.data;
         if (msg.sender_email === me.email || msg.receiver_email === me.email) {
-          setAllMessages(prev => [msg, ...prev].slice(0, 50));
+          setAllMessages(prev => [msg, ...prev.filter(m => m.id !== msg.id)].sort((a,b) => b.created_date.localeCompare(a.created_date)).slice(0, 50));
         }
       } else if (event.type === "update") {
         setAllMessages(prev => prev.map(m => m.id === event.id ? event.data : m));
@@ -111,13 +111,13 @@ export default function Messages() {
 
   // Mark messages as read when conversation opens or new messages arrive in active convo
   useEffect(() => {
-    if (!activeConversation || !me?.email) return;
+    if (!activeConversation || !me?.email || localStorage.getItem("stinkrz_send_read_receipts") === "false") return;
     const unread = allMessages.filter(
       m => m.receiver_email === me.email && m.sender_email === activeConversation.partnerEmail && !m.read
     );
     if (unread.length === 0) return;
     const timer = setTimeout(() => {
-      unread.forEach(m => base44.entities.ChatMessage.update(m.id, { read: true }));
+      unread.forEach(m => base44.entities.ChatMessage.update(m.id, { read: true }).catch(() => {}));
     }, 300);
     return () => clearTimeout(timer);
   }, [activeConversation?.partnerEmail, allMessages]);

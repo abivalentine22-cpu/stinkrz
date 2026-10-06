@@ -41,26 +41,20 @@ export function useChat({ me, conversation, onMessageSent, playSend, broadcastTy
     playSend();
 
     setSending(true);
-    const msg = await base44.entities.ChatMessage.create({
-      sender_email: me.email,
-      receiver_email: conversation.partnerEmail,
-      content,
-      is_sticker: isSticker,
-      media_url: mediaUrl,
-      media_type: mediaType,
-      read: false,
-    });
-    setOptimisticMsgs(prev => prev.filter(m => m.id !== optimisticId));
-    setSending(false);
-
-    base44.functions.invoke('createMessageNotification', {
-      message_id: msg.id,
-      sender_email: me.email,
-      sender_name: me.full_name,
-      receiver_email: conversation.partnerEmail,
-    }).catch(() => {});
-
-    onMessageSent?.();
+    try {
+      const msg = await base44.entities.ChatMessage.create({
+        sender_email: me.email, receiver_email: conversation.partnerEmail,
+        content, is_sticker: isSticker, media_url: mediaUrl, media_type: mediaType, read: false,
+      });
+      base44.functions.invoke('createMessageNotification', { message_id: msg.id }).catch(() => {});
+      onMessageSent?.();
+    } catch (error) {
+      setInput(content);
+      toast({ title: "Message wasn't sent", description: error?.response?.data?.error || "This conversation may be unavailable. Please try again.", variant: "destructive" });
+    } finally {
+      setOptimisticMsgs(prev => prev.filter(m => m.id !== optimisticId));
+      setSending(false);
+    }
   };
 
   const compressImage = (file) =>

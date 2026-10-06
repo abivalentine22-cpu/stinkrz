@@ -145,7 +145,7 @@ export default function HeroAuth() {
             <label className="flex items-start gap-2 cursor-pointer pt-1">
               <input type="checkbox" checked={agreedToTerms} onChange={e => setAgreedToTerms(e.target.checked)} className="mt-0.5 accent-primary" />
               <span className="font-body text-xs text-muted-foreground leading-relaxed">
-                I agree to the{" "}
+                I confirm I am 18 or older and agree to the{" "}
                 <Link to="/terms" target="_blank" className="text-primary hover:underline">Terms</Link>
                 {" "}and{" "}
                 <Link to="/privacy" target="_blank" className="text-primary hover:underline">Privacy Policy</Link>

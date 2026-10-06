@@ -29,8 +29,8 @@ export function usePresence({ userEmail, profile, pathname }) {
     const beat = () =>
       base44.entities.ScentProfile
         .update(profile.id, {
-          is_online: true,
-          last_active: new Date().toISOString(),
+          is_online: profileRef.current?.show_online_status !== false,
+          last_active: profileRef.current?.show_online_status === false ? null : new Date().toISOString(),
         })
         .catch(() => {});
 

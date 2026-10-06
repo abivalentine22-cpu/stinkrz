@@ -13,7 +13,7 @@ const SECTIONS = [
   },
   {
     title: "3. Location Data & Visibility",
-    content: `Location data is central to Stinkrz. Your coordinates are stored and shared with other users so they can see you on the Scent Block map. You may enable "Approximate Location" mode in your profile to share only a general area (~½ mile radius) rather than your precise coordinates. You can also enable "Invisible Mode" to hide yourself from the map entirely while still browsing other users. Your online status and last-active time may be shown to other users. You can stop sharing your location by disabling tracking in the App.`,
+    content: `Location data is central to Stinkrz. Approximate Location is enabled by default for new profiles and stores coordinates on an approximate 1 km grid. Turning it off permits more precise storage. Other users receive only coarse coordinates for the Scent Block map, including for profiles previously stored with precise GPS. You can also enable "Invisible Mode" to hide yourself from the map entirely while still browsing other users. Your online status and last-active time may be shown to other users when Show Online Status is enabled. Turning it off suppresses both. You can stop sharing your location by disabling tracking in the App.`,
   },
   {
     title: "4. Sharing Your Information",
@@ -25,7 +25,7 @@ const SECTIONS = [
   },
   {
     title: "6. Data Retention & Account Deletion",
-    content: `We retain your profile data for as long as your account is active. Messages, media, and conversation history are stored to allow you to revisit past chats. Status posts automatically expire after a few hours. We retain records of blocked users and reports for as long as needed for safety and moderation. If you delete your account from Settings, we will remove your personal data within 30 days, except where retention is required by law. Blocking a user removes them from your map and feed immediately.`,
+    content: `We retain your profile data for as long as your account is active. Messages, media, and conversation history are stored to allow you to revisit past chats. Status posts automatically expire after a few hours. We retain records of blocked users and reports for as long as needed for safety and moderation. If you delete your account from Settings, we will remove your personal data within 30 days, except where retention is required by law. Blocking prevents either person from accessing the other’s profile or exchanging messages, Whiffs, views and reactions. The app refreshes displayed data after a block.`,
   },
   {
     title: "7. Security",
@@ -33,7 +33,7 @@ const SECTIONS = [
   },
   {
     title: "8. Children's Privacy",
-    content: `Stinkrz is not intended for users under 18 years of age. We do not knowingly collect personal data from minors. If we become aware that a minor has created an account, we will terminate it and delete associated data.`,
+    content: `Stinkrz is not intended for users under 18 years of age. We do not knowingly collect personal data from minors. Age is self-reported and is not verified by Stinkrz. Suspected underage users can be reported using “Underage user.” Confirmed underage accounts violate our platform rule and will be removed.`,
   },
   {
     title: "9. Your Rights",
@@ -57,7 +57,7 @@ export default function Privacy() {
       </Link>
 
       <h1 className="font-heading text-3xl font-bold mb-2">Privacy Policy</h1>
-      <p className="font-body text-sm text-muted-foreground mb-10">Last updated: August 2026</p>
+      <p className="font-body text-sm text-muted-foreground mb-10">Last updated: October 2026</p>
 
       <p className="font-body text-sm text-muted-foreground leading-relaxed mb-8">
         At Stinkrz, your privacy matters. This Privacy Policy explains what data we collect, how we use it, and the choices you have. By using Stinkrz, you agree to the practices described here.
