@@ -1,6 +1,6 @@
 import React from "react";
 import { motion } from "framer-motion";
-import { Shield, AlertTriangle, Users, Lock, Eye } from "lucide-react";
+import { Shield, AlertTriangle, Users, Lock, Eye, Heart } from "lucide-react";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
@@ -97,6 +97,21 @@ export default function Help() {
             </AccordionItem>
           ))}
         </Accordion>
+      </div>
+
+      {/* Support Stinkrz CTA */}
+      <div className="bg-primary/5 border border-primary/25 rounded-2xl p-6 text-center mb-6">
+        <Heart className="w-8 h-8 text-primary mx-auto mb-3" />
+        <h3 className="font-heading font-semibold text-lg mb-2">Support Stinkrz</h3>
+        <p className="font-body text-sm text-muted-foreground mb-4">
+          Stinkrz is free, but costs about $150/month to keep online. Chip in voluntarily to help cover costs — no premium perks, no dating advantages.
+        </p>
+        <Link to="/support">
+          <Button className="font-body font-semibold gap-2">
+            <Heart className="w-4 h-4" />
+            Support Stinkrz
+          </Button>
+        </Link>
       </div>
 
       {/* Report CTA */}
