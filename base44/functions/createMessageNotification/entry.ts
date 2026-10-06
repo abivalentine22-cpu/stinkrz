@@ -1,44 +1,32 @@
-import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
+import { createClientFromRequest } from 'npm:@base44/sdk@0.8.52';
 
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
-    const { message_id, sender_email, sender_name, sender_avatar, receiver_email } = await req.json();
-
-    if (!receiver_email || !sender_email) {
-      return Response.json({ error: 'Missing required fields' }, { status: 400 });
-    }
-
-    // Look up the sender's avatar from their ScentProfile if not provided
-    let avatar = sender_avatar || null;
-    if (!avatar) {
-      const senderProfiles = await base44.asServiceRole.entities.ScentProfile.filter({ user_email: sender_email });
-      avatar = senderProfiles[0]?.avatar_url || null;
-    }
-
-    // Create notification for receiver
-    await base44.asServiceRole.entities.Notification.create({
-      user_email: receiver_email,
-      type: 'new_message',
-      actor_email: sender_email,
-      actor_name: sender_name || 'Someone',
-      actor_avatar: avatar,
-      message_id,
-      title: `New message from ${sender_name || 'a user'}`,
-      description: 'Tap to view',
-      read: false,
+    const me = await base44.auth.me();
+    if (!me?.email) return Response.json({ error: 'Unauthorized' }, { status: 401 });
+    const { message_id } = await req.json();
+    if (!message_id || typeof message_id !== 'string') return Response.json({ error: 'Missing message' }, { status: 400 });
+    const entities = base44.asServiceRole.entities;
+    const message = (await entities.ChatMessage.filter({ id: message_id }, undefined, 1))[0];
+    if (!message || message.sender_email !== me.email) return Response.json({ error: 'Forbidden' }, { status: 403 });
+    const blocks = await entities.BlockedUser.filter({ $or: [
+      { blocker_email: me.email, blocked_email: message.receiver_email },
+      { blocker_email: message.receiver_email, blocked_email: me.email },
+    ] }, undefined, 1);
+    if (blocks.length) return Response.json({ error: 'Interaction unavailable' }, { status: 403 });
+    const existing = await entities.Notification.filter({ message_id, type: 'new_message', user_email: message.receiver_email }, undefined, 1);
+    if (existing.length) return Response.json({ success: true });
+    const profile = (await entities.ScentProfile.filter({ user_email: me.email }, undefined, 1))[0];
+    const name = profile?.display_name || 'Someone';
+    const notification = await entities.Notification.create({
+      user_email: message.receiver_email, type: 'new_message', actor_email: me.email,
+      actor_name: name, actor_avatar: profile?.avatar_url || null, message_id,
+      title: `New message from ${name}`, description: 'Tap to view your messages', read: false,
     });
-
-    // Send a background push notification (best-effort, fire-and-forget)
-    base44.functions.invoke('sendPushNotification', {
-      user_email: receiver_email,
-      title: `New message from ${sender_name || 'a user'}`,
-      body: 'Tap to view your messages',
-      data: { type: 'new_message', message_id, partner_email: sender_email, url: '/messages' },
-    }).catch(() => {});
-
+    await base44.functions.invoke('sendPushNotification', { notification_id: notification.id }).catch(() => {});
     return Response.json({ success: true });
-  } catch (error) {
-    return Response.json({ error: error.message }, { status: 500 });
+  } catch {
+    return Response.json({ error: 'Notification failed' }, { status: 500 });
   }
 });
