@@ -31,7 +31,7 @@ export function useMessageReactions(messages, myEmail) {
       if (event.type === "create") {
         setReactions(prev => ({
           ...prev,
-          [d.message_id]: [...(prev[d.message_id] || []), d],
+          [d.message_id]: [...(prev[d.message_id] || []).filter(r => r.id !== d.id), d],
         }));
       } else if (event.type === "delete") {
         setReactions(prev => {

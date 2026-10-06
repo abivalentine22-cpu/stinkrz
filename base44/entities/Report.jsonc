@@ -19,7 +19,8 @@
         "Inappropriate content",
         "Spam",
         "Threatening behavior",
-        "Other"
+        "Other",
+        "Underage user"
       ]
     },
     "details": {

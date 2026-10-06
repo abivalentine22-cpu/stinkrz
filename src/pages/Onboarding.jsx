@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { base44 } from "@/api/base44Client";
 import { VIBE_BADGE_CATEGORIES, FETISH_OPTIONS } from "@/lib/demoData";
 import SexKinkTagPicker from "@/components/profile/SexKinkTagPicker";
-import { ArrowRight, ArrowLeft, Check, Sparkles } from "lucide-react";
+import { ArrowRight, ArrowLeft, Sparkles } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/lib/AuthContext";
 

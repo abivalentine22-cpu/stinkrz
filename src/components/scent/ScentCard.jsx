@@ -2,7 +2,6 @@ import React from "react";
 import { Badge } from "@/components/ui/badge";
 import { Droplets } from "lucide-react";
 import { motion } from "framer-motion";
-import UserAvatar from "@/components/UserAvatar";
 import HangLooseLogo from "@/components/HangLooseLogo";
 
 const SCENT_COLORS = {

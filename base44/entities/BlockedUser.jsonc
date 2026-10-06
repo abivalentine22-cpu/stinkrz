@@ -17,16 +17,24 @@
   ],
   "rls": {
     "read": {
-      "data.blocker_email": "{{user.email}}"
+      "user_condition": {
+        "role": "admin"
+      }
     },
     "create": {
-      "data.blocker_email": "{{user.email}}"
+      "user_condition": {
+        "role": "admin"
+      }
     },
     "update": {
-      "data.blocker_email": "{{user.email}}"
+      "user_condition": {
+        "role": "admin"
+      }
     },
     "delete": {
-      "data.blocker_email": "{{user.email}}"
+      "user_condition": {
+        "role": "admin"
+      }
     }
   }
 }

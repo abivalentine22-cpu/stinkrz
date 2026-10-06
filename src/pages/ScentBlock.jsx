@@ -4,7 +4,7 @@ import "maplibre-gl/dist/maplibre-gl.css";
 import ProfileDrawer from "@/components/scent/ProfileDrawer";
 import { base44 } from "@/api/base44Client";
 import { locationPatch } from "@/lib/location";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { Crosshair, Eye, Home, MessageCircle, Minus, Plus, User } from "lucide-react";
 import MapFilterPanel from "@/components/map/MapFilterPanel";
 import { Link } from "react-router-dom";
@@ -376,7 +376,7 @@ export default function ScentBlock() {
     youMarkerRef.current = new maplibregl.Marker({ element: el, anchor: "bottom" })
       .setLngLat(lngLat)
       .addTo(map);
-  }, [myProfile?.avatar_url]); // eslint-disable-line
+  }, [myProfile?.avatar_url]);  
 
   // Sync profile markers — show/hide for filter changes, add/remove for data changes
   useEffect(() => {

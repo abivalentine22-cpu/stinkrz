@@ -1,6 +1,6 @@
 import React from "react";
 import { motion } from "framer-motion";
-import { Shield, AlertTriangle, MessageCircle, Users, Lock, Eye, ChevronDown } from "lucide-react";
+import { Shield, AlertTriangle, Users, Lock, Eye } from "lucide-react";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";

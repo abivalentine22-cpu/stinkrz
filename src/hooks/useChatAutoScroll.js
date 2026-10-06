@@ -47,7 +47,7 @@ export function useChatAutoScroll({ messages, myEmail, onReceiveSound, conversat
       }
     }
     prevMsgCountRef.current = messages.length;
-  }, [messages]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [messages]);  
 
   // Reset scroll state on conversation switch
   useEffect(() => {

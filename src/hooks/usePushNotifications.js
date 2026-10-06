@@ -53,7 +53,7 @@ export function usePushNotifications(userEmail) {
         }
       } catch (e) {
         // Push is best-effort; never break the app over it.
-        // eslint-disable-next-line no-console
+         
         console.warn("Push setup skipped:", e?.message);
       }
     }

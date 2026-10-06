@@ -38,6 +38,10 @@
     "read": {
       "type": "boolean",
       "default": false
+    },
+    "push_attempted": {
+      "type": "boolean",
+      "default": false
     }
   },
   "required": [
@@ -48,16 +52,24 @@
   ],
   "rls": {
     "read": {
-      "data.user_email": "{{user.email}}"
+      "user_condition": {
+        "role": "admin"
+      }
     },
     "create": {
-      "data.user_email": "{{user.email}}"
+      "user_condition": {
+        "role": "admin"
+      }
     },
     "update": {
-      "data.user_email": "{{user.email}}"
+      "user_condition": {
+        "role": "admin"
+      }
     },
     "delete": {
-      "data.user_email": "{{user.email}}"
+      "user_condition": {
+        "role": "admin"
+      }
     }
   }
 }

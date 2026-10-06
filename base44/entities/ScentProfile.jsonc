@@ -10,7 +10,9 @@
       "type": "string"
     },
     "age": {
-      "type": "number"
+      "type": "number",
+      "minimum": 18,
+      "maximum": 120
     },
     "bio": {
       "type": "string"
@@ -138,15 +140,21 @@
       "description": "What scent categories this user is into"
     },
     "location_lat": {
-      "type": "number"
+      "type": [
+        "number",
+        "null"
+      ]
     },
     "location_lng": {
-      "type": "number"
+      "type": [
+        "number",
+        "null"
+      ]
     },
     "fuzzy_location": {
       "type": "boolean",
-      "default": false,
-      "description": "If true, show approximate location"
+      "default": true,
+      "description": "Stores coarse coordinates by default; exact coordinates are never returned to other users."
     },
     "invisible_mode": {
       "type": "boolean",
@@ -158,7 +166,10 @@
       "default": false
     },
     "last_active": {
-      "type": "string",
+      "type": [
+        "string",
+        "null"
+      ],
       "format": "date-time"
     },
     "last_viewers_check": {
@@ -169,6 +180,14 @@
     "onboarding_complete": {
       "type": "boolean",
       "default": false
+    },
+    "show_online_status": {
+      "type": "boolean",
+      "default": true
+    },
+    "send_read_receipts": {
+      "type": "boolean",
+      "default": true
     }
   },
   "required": [
@@ -177,34 +196,24 @@
   ],
   "rls": {
     "read": {
-      "$or": [
-        {
-          "data.invisible_mode": {
-            "$ne": true
-          }
-        },
-        {
-          "data.user_email": "{{user.email}}"
-        }
-      ]
+      "user_condition": {
+        "role": "admin"
+      }
     },
     "create": {
-      "data.user_email": "{{user.email}}"
+      "user_condition": {
+        "role": "admin"
+      }
     },
     "update": {
-      "data.user_email": "{{user.email}}"
+      "user_condition": {
+        "role": "admin"
+      }
     },
     "delete": {
-      "$or": [
-        {
-          "data.user_email": "{{user.email}}"
-        },
-        {
-          "user_condition": {
-            "role": "admin"
-          }
-        }
-      ]
+      "user_condition": {
+        "role": "admin"
+      }
     }
   }
 }
