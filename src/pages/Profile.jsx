@@ -10,7 +10,7 @@ import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { VIBE_BADGE_CATEGORIES, FETISH_OPTIONS } from "@/lib/demoData";
 import SexKinkTagPicker from "@/components/profile/SexKinkTagPicker";
-import { Camera, Save, LogOut, Droplets, Shield, Plus, Trash2, X, ChevronLeft, ChevronRight } from "lucide-react";
+import { Camera, Save, LogOut, Settings, Droplets, Shield, Plus, Trash2, X, ChevronLeft, ChevronRight } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import { useAuth } from "@/lib/AuthContext";
 
@@ -253,10 +253,15 @@ export default function Profile() {
     <div className="max-w-lg mx-auto px-4 py-8">
       <div className="flex items-center justify-between mb-6">
         <h1 className="font-heading text-2xl font-bold">Your Profile</h1>
+        <div className="flex items-center gap-1">
+        <Button variant="ghost" size="sm" className="gap-1 font-body" onClick={() => navigate("/settings")}>
+          <Settings className="w-4 h-4" /> Settings
+        </Button>
         <Button variant="ghost" size="sm" className="gap-1 text-muted-foreground font-body" onClick={() => base44.auth.logout("/")}>
           <LogOut className="w-4 h-4" />
           Log out
         </Button>
+        </div>
       </div>
 
       {/* Avatar */}

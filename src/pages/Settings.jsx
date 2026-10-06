@@ -389,8 +389,14 @@ export default function Settings() {
                 disabled={deleting}
                 onClick={async () => {
                   setDeleting(true);
-                  await base44.functions.invoke("deleteAccount", {});
-                  base44.auth.logout("/");
+                  try {
+                    const response = await base44.functions.invoke("deleteAccount", {});
+                    if (response.data?.error) throw new Error(response.data.error);
+                    base44.auth.logout("/");
+                  } catch {
+                    setDeleting(false);
+                    toast({ title: "Account deletion failed", description: "Your request did not complete. Please try again or contact us through Help.", variant: "destructive" });
+                  }
                 }}
               >
                 {deleting ? "Deleting…" : "Yes, Delete Everything"}

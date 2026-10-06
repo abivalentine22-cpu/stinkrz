@@ -34,6 +34,7 @@ const SECTIONS = [
 ];
 
 const FAQS = [
+  { q: "How do I delete my account?", a: "Open Settings from the menu or your Profile, then scroll to Delete My Account and confirm. If deletion fails, submit a report with the details so we can help." },
   { q: "What are Scent Categories?", a: "Your scent category (Fresh, Musky, Ripe, Earthy, Neutral) is a fun way to describe your vibe. It's self-reported and totally optional — think of it as a personality type, but for your nose." },
   { q: "How does the proximity grid work?", a: "The Scent Block shows you nearby users sorted by distance. The closer they are, the higher they appear. It uses your approximate location — never your exact address." },
   { q: "What are Vibe Badges?", a: "Vibe badges are fun tags that describe your lifestyle and personality. Pick ones that resonate — like 'Morning Shower Gang' or '3-in-1 Enthusiast'. They help others get a quick read on your vibe." },
@@ -50,6 +51,11 @@ export default function Help() {
         <p className="font-body text-muted-foreground mb-8">Everything you need to navigate Stinkrz safely and have a great time.</p>
       </motion.div>
 
+      <div className="bg-card border border-border rounded-2xl p-5 mb-6">
+        <h2 className="font-heading font-semibold mb-2">Account settings & deletion</h2>
+        <p className="font-body text-sm text-muted-foreground mb-3">Privacy controls and Delete My Account are in Settings.</p>
+        <Button asChild variant="outline"><Link to="/settings">Open Settings</Link></Button>
+      </div>
       {/* Safety sections */}
       <div className="space-y-4 mb-12">
         {SECTIONS.map((section, i) => {

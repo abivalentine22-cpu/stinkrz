@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { Map, MessageCircle, User, Zap, Menu, X, HelpCircle, Eye } from "lucide-react";
+import { Map, MessageCircle, User, Zap, Menu, X, HelpCircle, Eye, Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import HangLooseLogo from "./HangLooseLogo";
 import { useAuth } from "@/lib/AuthContext";
@@ -14,6 +14,7 @@ const NAV_ITEMS = [
   { label: "Messages", path: "/messages", icon: MessageCircle },
   { label: "Who Viewed Me", path: "/viewers", icon: Eye },
   { label: "Profile", path: "/profile", icon: User },
+  { label: "Settings", path: "/settings", icon: Settings },
   { label: "Help", path: "/help", icon: HelpCircle },
 ];
 
