@@ -158,3 +158,48 @@ test('source rules deny direct user access to each protected entity',async()=>{
   for(const op of ['create','read','update','delete']) assert.deepEqual(schema.rls[op],{user_condition:{role:'admin'}});
  }
 });
+
+test('ordinary whiffs, views, typing and own notifications work through the gateway',async()=>{
+ const f=fixture();
+ for(const [entity,data] of [['Favorite',{to_email:'bob@example.com'}],['ProfileView',{viewed_email:'bob@example.com'}],['TypingIndicator',{conversation_partner:'bob@example.com'}]])
+  assert.equal((await f.invoke({entity,action:'create',data})).status,200);
+ f.database.Notification.push({id:'own-notification',user_email:'alice@example.com',actor_email:'bob@example.com',read:false});
+ assert.equal((await f.invoke({entity:'Notification',action:'list',query:{user_email:'alice@example.com'}})).body.result.length,1);
+ assert.equal((await f.invoke({entity:'Notification',action:'update',id:'own-notification',data:{read:true}})).status,200);
+});
+test('new profiles default to coarse storage and blocked lists remain private',async()=>{
+ const f=fixture(block());
+ const created=await f.invoke({entity:'ScentProfile',action:'create',data:{display_name:'Alice',age:25,location_lat:45.123456,location_lng:-123.123456}});
+ assert.equal(created.status,200);assert.equal(created.body.result.fuzzy_location,true);assert.equal(created.body.result.location_lat,45.12);
+ assert.equal((await f.invoke({entity:'BlockedUser',action:'list',query:{blocker_email:'bob@example.com'}})).body.result.length,0);
+});
+
+const { secureClient } = await import('../src/api/secureClient.js');
+test('frontend routes protected reads and writes through the gateway with no raw fallback',async()=>{
+ const calls=[];
+ const raw=new Proxy({}, {get(){throw new Error('Raw access must not happen');}});
+ const client=secureClient({entities:raw,functions:{async invoke(name,payload){calls.push({name,payload});return {data:{result:payload.action==='list'?[]:{id:'new'}}};}}});
+ assert.deepEqual(await client.entities.ScentProfile.filter({user_email:'alice@example.com'}),[]);
+ assert.equal((await client.entities.ChatMessage.create({content:'Hello',receiver_email:'bob@example.com'})).id,'new');
+ assert.ok(calls.every(call=>call.name==='secureEntities'));
+ assert.equal(calls[0].payload.entity,'ScentProfile');
+});
+test('frontend subscription drops an in-flight snapshot after account/session change',async()=>{
+ const oldDocument=globalThis.document;
+ globalThis.document={visibilityState:'visible',addEventListener(){},removeEventListener(){}};
+ let resolveOld;
+ let callCount=0;
+ const client=secureClient({entities:{},functions:{async invoke(){
+  callCount++;
+  if(callCount===1) return new Promise(resolve=>{resolveOld=resolve;});
+  return {data:{result:[{id:'new-account-record'}]}};
+ }}});
+ const firstEvents=[];const newEvents=[];
+ const unsubscribeFirst=client.entities.ChatMessage.subscribe(e=>firstEvents.push(e));
+ unsubscribeFirst();
+ const unsubscribeNew=client.entities.ChatMessage.subscribe(e=>newEvents.push(e));
+ resolveOld({data:{result:[{id:'old-account-private-record'}]}});
+ await new Promise(resolve=>setTimeout(resolve,10));
+ unsubscribeNew();globalThis.document=oldDocument;
+ assert.ok(newEvents.length>0);assert.ok(newEvents.every(e=>e.id==='new-account-record'));
+});
