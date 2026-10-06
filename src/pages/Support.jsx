@@ -143,10 +143,9 @@ export default function Support() {
         </ul>
       </div>
 
-      {/* Separate from Stinkrz Unleashed */}
       <div className="bg-muted/30 border border-border rounded-2xl p-4 mb-6">
         <p className="font-body text-xs text-muted-foreground leading-relaxed text-center">
-          Support Stinkrz is a community tip jar for operating costs only. It's completely separate from Stinkrz Unleashed or any other offering.
+          Support Stinkrz is a community tip jar for operating costs only.
         </p>
       </div>
 
