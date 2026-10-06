@@ -20,12 +20,15 @@ export function secureClient(client) {
     let running = false;
     let pending = false;
     let timer = null;
+    let generation = 0;
     const refresh = async () => {
       if (!listeners.size) return;
       if (running) { pending = true; return; }
       running = true;
+      const requestGeneration = generation;
       try {
         const rows = await call(entity, 'list', { limit: 1000 });
+        if (requestGeneration !== generation || !listeners.size) return;
         const next = new Map(rows.map(row => [row.id, row]));
         const emit = (event) => listeners.forEach(fn => fn(event));
         for (const [id, row] of next) {
@@ -48,6 +51,7 @@ export function secureClient(client) {
     const channel = {
       refresh,
       subscribe(callback) {
+        if (!listeners.size) generation++;
         listeners.add(callback);
         // New listeners receive the approved snapshot, including existing typing.
         for (const [id,row] of snapshot) callback({ type: 'create', id, data: row });
@@ -60,6 +64,7 @@ export function secureClient(client) {
         return () => {
           listeners.delete(callback);
           if (!listeners.size) {
+            generation++;
             clearInterval(timer); timer = null; snapshot = new Map();
             document.removeEventListener('visibilitychange', refresh);
           }
