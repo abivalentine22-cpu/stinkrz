@@ -15,6 +15,7 @@ export default function Register() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [agreedToTerms, setAgreedToTerms] = useState(false);
+  const [refCode] = useState(() => new URLSearchParams(window.location.search).get("ref"));
 
   const handleRegister = async (e) => {
     e.preventDefault();
@@ -41,6 +42,9 @@ export default function Register() {
     try {
       const res = await base44.auth.verifyOtp({ email, otpCode });
       base44.auth.setToken(res.access_token);
+      if (refCode) {
+        await base44.functions.invoke("trackReferral", { ref: refCode, referred_email: email }).catch(() => {});
+      }
       window.location.href = "/onboarding";
     } catch (err) {
       setError(err.message || "Invalid verification code");

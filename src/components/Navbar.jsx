@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { Map, MessageCircle, User, Zap, Menu, X, HelpCircle, Eye, Settings, Heart } from "lucide-react";
+import { Map, MessageCircle, User, Zap, Menu, X, HelpCircle, Eye, Settings, Heart, UserPlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import HangLooseLogo from "./HangLooseLogo";
 import { useAuth } from "@/lib/AuthContext";
@@ -17,6 +17,7 @@ const NAV_ITEMS = [
   { label: "Settings", path: "/settings", icon: Settings },
   { label: "Help", path: "/help", icon: HelpCircle },
   { label: "Support Stinkrz", path: "/support", icon: Heart },
+  { label: "Refer Friends", path: "/refer", icon: UserPlus },
 ];
 
 export default function Navbar() {

@@ -33,6 +33,7 @@ const Viewers = lazy(() => import("@/pages/Viewers"));
 const Matches = lazy(() => import("@/pages/Matches"));
 const Onboarding = lazy(() => import("@/pages/Onboarding"));
 const Support = lazy(() => import("@/pages/Support"));
+const ReferFriends = lazy(() => import("@/pages/ReferFriends"));
 
 const PageLoader = () => (
   <div className="fixed inset-0 flex items-center justify-center bg-background">
@@ -100,6 +101,7 @@ const AuthenticatedApp = () => {
             <Route path="/matches" element={<Matches />} />
             <Route path="/onboarding" element={<Onboarding />} />
             <Route path="/support" element={<Support />} />
+            <Route path="/refer" element={<ReferFriends />} />
           </Route>
         </Route>
 
