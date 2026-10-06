@@ -136,10 +136,10 @@ export default function Support() {
           What supporting means
         </h3>
         <ul className="font-body text-sm text-muted-foreground space-y-2 leading-relaxed">
-          <li className="flex gap-2"><span className="text-accent">✓</span> Helps cover server, map, and messaging costs so Stinkrz stays free for everyone.</li>
-          <li className="flex gap-2"><span className="text-accent">✓</span> Keeps the app ad-free and independent.</li>
-          <li className="flex gap-2"><span className="text-muted-foreground">✗</span> Contributions are <span className="text-foreground font-semibold">voluntary</span> — you never have to pay to use Stinkrz.</li>
-          <li className="flex gap-2"><span className="text-muted-foreground">✗</span> Supporting does <span className="text-foreground font-semibold">not</span> unlock premium access, boost your profile, or give any dating advantage.</li>
+          <li className="flex gap-2.5"><span className="text-accent shrink-0 leading-6">✓</span><span>Helps cover server, map, and messaging costs so Stinkrz stays free for everyone.</span></li>
+          <li className="flex gap-2.5"><span className="text-accent shrink-0 leading-6">✓</span><span>Keeps the app ad-free and independent.</span></li>
+          <li className="flex gap-2.5"><span className="text-muted-foreground shrink-0 leading-6">✗</span><span>Contributions are <span className="text-foreground font-semibold">voluntary</span> — you never have to pay to use Stinkrz.</span></li>
+          <li className="flex gap-2.5"><span className="text-muted-foreground shrink-0 leading-6">✗</span><span>Supporting does <span className="text-foreground font-semibold">not</span> unlock premium access, boost your profile, or give any dating advantage.</span></li>
         </ul>
       </div>
 
