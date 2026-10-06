@@ -144,7 +144,7 @@ test('blocked and fabricated message/Whiff/status notifications are denied',asyn
  assert.equal((await f.invoke({from_email:'alice@example.com',to_email:'bob@example.com'},whiffNotification)).status,403);
  assert.equal((await f.invoke({post_id:'p1'},statusNotification)).status,403);
  assert.equal(f.writes.length,0);
- const g=fixture();g.database.Favorite=[];
+ const g=fixture();g.database.Favorite.splice(0);
  assert.equal((await g.invoke({from_email:'alice@example.com',to_email:'bob@example.com'},whiffNotification)).status,403);
 });
 test('generic arbitrary push targets and other actors notifications are rejected',async()=>{
