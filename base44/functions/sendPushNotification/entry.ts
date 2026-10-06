@@ -69,15 +69,27 @@ async function getAccessToken(clientEmail, privateKeyPem) {
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
-    const authenticated = await base44.auth.isAuthenticated();
-    if (!authenticated) {
-      return Response.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    const { user_email, title, body, data } = await req.json();
-    if (!user_email || !title) {
-      return Response.json({ error: 'Missing required fields' }, { status: 400 });
-    }
+    const me = await base44.auth.me();
+    if (!me?.email) return Response.json({ error: 'Unauthorized' }, { status: 401 });
+    const { notification_id } = await req.json();
+    if (typeof notification_id !== 'string') return Response.json({ error: 'Missing notification' }, { status: 400 });
+    const entities = base44.asServiceRole.entities;
+    const notification = (await entities.Notification.filter({ id: notification_id }, undefined, 1))[0];
+    if (!notification || notification.actor_email !== me.email) return Response.json({ error: 'Forbidden' }, { status: 403 });
+    const user_email = notification.user_email;
+    const blocks = await entities.BlockedUser.filter({ $or: [
+      { blocker_email: me.email, blocked_email: user_email }, { blocker_email: user_email, blocked_email: me.email },
+    ] }, undefined, 1);
+    if (blocks.length) return Response.json({ error: 'Interaction unavailable' }, { status: 403 });
+    if (notification.push_attempted) return Response.json({ success: true, sent: 0 });
+    const title = notification.title;
+    const body = notification.description || 'Tap to view';
+    const data = {
+      type: notification.type,
+      message_id: notification.message_id || '',
+      partner_email: notification.actor_email,
+      url: notification.type === 'new_message' ? '/messages' : '/matches',
+    };
 
     const saRaw = Deno.env.get('FIREBASE_SERVICE_ACCOUNT_JSON');
     if (!saRaw) {
@@ -89,6 +101,8 @@ Deno.serve(async (req) => {
     if (!tokens.length) {
       return Response.json({ success: true, sent: 0, reason: 'no_tokens' });
     }
+
+    await entities.Notification.update(notification.id, { push_attempted: true });
 
     let accessToken;
     try {

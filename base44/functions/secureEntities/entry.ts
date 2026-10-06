@@ -91,7 +91,7 @@ export async function handleRequest(req, makeClient = createClientFromRequest) {
     if (action === 'list' || action === 'get') {
       if (!query || typeof query !== 'object' || Array.isArray(query)) fail('Invalid query', 400);
       for (const [key, value] of Object.entries(query)) {
-        if (!['id', 'created_date', ...FIELDS[entity]].includes(key) || !['string','boolean','number'].includes(typeof value)) fail('Invalid query', 400);
+        if (!['id', 'created_date', ...(entity === 'Notification' ? ['user_email','actor_email','type','message_id','read'] : FIELDS[entity])].includes(key) || !['string','boolean','number'].includes(typeof value)) fail('Invalid query', 400);
       }
       if (typeof sort !== 'string' || !['id','created_date','updated_date',...FIELDS[entity]].includes(sort.replace(/^-/, ''))) fail('Invalid sort', 400);
       const rows = await readRows(entities, entity, me.email, action === 'get' ? { id } : query);
