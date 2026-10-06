@@ -39,11 +39,11 @@ export const SEXUAL_HEALTH_OPTIONS = [
 
 export const FETISH_OPTIONS = [
   "ABDL", "Armpit Worship", "BDSM", "Gags", "Body Hair", "Body Sweat", "Bondage",
-  "Butt Plugs", "Chastity", "Choking", "Daddy", "Dominant", "Double Penetration",
-  "Edge Play", "Edging", "Exhibitionism", "Feet", "Fisting", "Furry", "Group Play",
+  "Butt Plugs", "Chastity", "Choking", "Cuck", "Daddy", "Dominant", "Double Penetration",
+  "Edge Play", "Edging", "Exhibitionism", "Farts", "Feet", "Fisting", "Furry", "Group Play",
   "Hairy Body", "Handler", "Hole Stretching", "Impact Play", "Sloppy Kissing",
   "Latex", "Leather", "Massage", "Worn Underwear", "Oral", "Pet Play", "Photo & Video",
   "Praise", "Public Play", "Puppy Play", "Rimming", "Roleplay", "Rope", "Rubber",
-  "Sensory Play", "Servicing", "Sneakers", "Socks", "Spanking", "Spit", "Submissive",
+  "Scat", "Sensory Play", "Servicing", "Sneakers", "Socks", "Spanking", "Spit", "Submissive",
   "Switch", "Taking Orders", "Throat Training", "Uniforms", "Voyeurism", "Wax Play", "Water Sports", "Wrestling",
 ];
