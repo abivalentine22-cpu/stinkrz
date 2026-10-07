@@ -17,8 +17,7 @@ export function useBlockedUsers() {
       if (event.type === "create") {
         setBlockedEmails(prev => [...new Set([...prev, event.data.blocked_email])]);
       } else if (event.type === "delete") {
-        base44.entities.BlockedUser.filter({ blocker_email: user.email })
-          .then(rows => setBlockedEmails(rows.map(r => r.blocked_email)));
+        setBlockedEmails(prev => prev.filter(e => e !== event.data.blocked_email));
       }
     });
     return unsub;

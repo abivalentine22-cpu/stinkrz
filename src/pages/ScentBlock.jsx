@@ -244,16 +244,8 @@ export default function ScentBlock() {
     if (myProfile && userPos) saveLocation(userPos.lat, userPos.lng);
   }, [myProfile?.id]);
 
-  useEffect(() => {
-    if (!myProfile) return;
-    const heartbeat = setInterval(() => {
-      base44.entities.ScentProfile.update(myProfile.id, {
-        is_online: myProfileRef.current?.show_online_status !== false,
-        last_active: myProfileRef.current?.show_online_status === false ? null : new Date().toISOString(),
-      });
-    }, 30 * 1000);
-    return () => clearInterval(heartbeat);
-  }, [myProfile?.id]);
+  // Presence heartbeat is handled app-wide by usePresence in Layout — no
+  // duplicate heartbeat here (was causing 2x the gateway calls on the map page).
 
   // Geolocation
   useEffect(() => {

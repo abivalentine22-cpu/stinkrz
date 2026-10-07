@@ -28,23 +28,25 @@ export default function Navbar() {
   const { user } = useAuth();
   const hasNewViews = useNewViewersBadge(user?.email);
 
-  // Track unread message count in real-time
+  // Track unread message count from subscribe events — no extra gateway calls.
+  // The secureClient subscribe channel emits create/update/delete events for
+  // all messages involving this user, including the initial snapshot.
   useEffect(() => {
     if (!user?.email) return;
-    base44.entities.ChatMessage.filter({ receiver_email: user.email, read: false })
-      .then(msgs => setUnreadMessages(msgs.length));
-
-    let timer;
-    let cancelled = false;
-    const refreshCount = () => {
-      clearTimeout(timer);
-      timer = setTimeout(() => {
-        base44.entities.ChatMessage.filter({ receiver_email: user.email, read: false })
-          .then(msgs => { if (!cancelled) setUnreadMessages(msgs.length); }).catch(() => {});
-      }, 50);
-    };
-    const unsub = base44.entities.ChatMessage.subscribe(refreshCount);
-    return () => { cancelled = true; clearTimeout(timer); unsub(); };
+    let msgs = [];
+    const recompute = () =>
+      setUnreadMessages(msgs.filter(m => m.receiver_email === user.email && !m.read).length);
+    const unsub = base44.entities.ChatMessage.subscribe((event) => {
+      if (event.type === "create") {
+        msgs = [event.data, ...msgs.filter(m => m.id !== event.id)];
+      } else if (event.type === "update") {
+        msgs = msgs.map(m => m.id === event.id ? event.data : m);
+      } else if (event.type === "delete") {
+        msgs = msgs.filter(m => m.id !== event.id);
+      }
+      recompute();
+    });
+    return unsub;
   }, [user?.email]);
 
   return (

@@ -8,11 +8,10 @@ export default function NotificationCenter({ userEmail }) {
   const [open, setOpen] = useState(false);
   const [notifications, setNotifications] = useState([]);
 
-  // Initial load + real-time subscribe
+  // Real-time subscribe — the secureClient channel's initial refresh provides
+    // the full snapshot, so no separate fetch is needed on mount.
   useEffect(() => {
     if (!userEmail) return;
-    base44.entities.Notification.filter({ user_email: userEmail }, "-created_date", 50)
-      .then(setNotifications);
 
     const unsub = base44.entities.Notification.subscribe((event) => {
       if (event.type === "create" && event.data.user_email === userEmail) {
