@@ -98,6 +98,7 @@ export default function ScentBlock() {
   const [tracking, setTracking] = useState(false);
   const [geoError, setGeoError] = useState(null);
   const [profiles, setProfiles] = useState([]);
+  const [totalUsers, setTotalUsers] = useState(null);
   const [myProfile, setMyProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [profileError, setProfileError] = useState(null);
@@ -126,6 +127,16 @@ export default function ScentBlock() {
       setReportedEmails(reports.map(r => r.reported_user_email));
       setReportError(null);
     }).catch(() => setReportError("Reported profiles could not be checked. Please refresh."));
+  }, [user?.email]);
+
+  useEffect(() => {
+    if (!user?.email) return;
+    let cancelled = false;
+    setTotalUsers(null);
+    base44.functions.invoke("communityStats", {}).then(({ data }) => {
+      if (!cancelled && Number.isInteger(data?.totalUsers)) setTotalUsers(data.totalUsers);
+    }).catch(() => {});
+    return () => { cancelled = true; };
   }, [user?.email]);
 
   // Keep myProfileRef in sync
@@ -524,7 +535,7 @@ export default function ScentBlock() {
           background: "rgba(20,17,40,0.85)", border: "1px solid rgba(255,255,255,0.1)",
           borderRadius: "9999px", padding: "7px 14px",
           fontSize: "12px", color: tracking ? "#c4b5fd" : "#94a3b8",
-          display: "flex", alignItems: "center", gap: "6px",
+          display: "flex", alignItems: "center", flexWrap: "wrap", maxWidth: "calc(100vw - 76px)", gap: "6px",
           boxShadow: "0 2px 8px rgba(0,0,0,0.4)",
           cursor: "pointer", fontFamily: "var(--font-body)",
         }}
@@ -534,9 +545,10 @@ export default function ScentBlock() {
         {hasOwnerMapView(user) && <span> · Admin view: includes inactive members</span>}
         {onlineCount > 0 && (
           <span style={{ color: "#4ade80", display: "flex", alignItems: "center", gap: "3px" }}>
-            · <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: "#4ade80", display: "inline-block" }} /> {onlineCount}
+            · <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: "#4ade80", display: "inline-block" }} /> {onlineCount} online
           </span>
         )}
+        {totalUsers !== null && <span> · {totalUsers.toLocaleString()} total users</span>}
       </button>
 
       {/* Empty state for brand new users with no profile/location */}
