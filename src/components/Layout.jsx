@@ -19,15 +19,22 @@ export default function Layout() {
   useEffect(() => {
     if (!user?.email) { setProfileChecked(true); return; }
     base44.entities.ScentProfile.filter({ user_email: user.email })
-      .then(p => {
+      .then(async p => {
         const profile = p[0] || null;
         setMyProfile(profile);
         setProfileChecked(true);
-        // Redirect to onboarding if user has no profile and isn't already on an exempt path
+        // Redirect to onboarding if user has no profile and isn't already on an exempt path.
+        // But first verify auth — an expired token causes the secure gateway to return
+        // an empty list, which would incorrectly send the user back to onboarding
+        // ("forced to make their account again") instead of to login.
         if (!profile && !NO_GATE_PATHS.includes(pathname)) {
-          navigate("/onboarding", { replace: true });
+          try {
+            await base44.auth.me();
+            navigate("/onboarding", { replace: true });
+          } catch {
+            base44.auth.redirectToLogin(window.location.href);
+          }
         }
-        // (no redirect from home — authenticated users can view the landing page)
       })
       .catch(() => {
         // Never leave the app stuck on a blank screen if the profile check fails

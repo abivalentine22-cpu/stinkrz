@@ -31,7 +31,7 @@ export default function Onboarding() {
     if (!user) return;
     base44.entities.ScentProfile.filter({ user_email: user.email }).then(profiles => {
       if (profiles[0]?.onboarding_complete) navigate("/scent-block", { replace: true });
-    });
+    }).catch(() => {});
   }, [user]);
   const [profile, setProfile] = useState({
     display_name: "",
@@ -81,32 +81,61 @@ export default function Onboarding() {
     if (!Number.isInteger(Number(profile.age)) || Number(profile.age) < 18 || Number(profile.age) > 120) {
       setError("Stinkrz is for adults 18 or older. Please enter your age."); setStep(0); return;
     }
+    if (!user?.email) { setError("Please log in to continue."); return; }
     setLoading(true); setError("");
     try {
-    const ref = new URLSearchParams(window.location.search).get("ref");
-    if (ref) await base44.functions.invoke("trackReferral", { ref }).catch(() => {});
-    await base44.entities.ScentProfile.create({
-      user_email: user.email,
-      display_name: profile.display_name || user?.full_name || "Anonymous",
-      age: Number(profile.age),
-      bio: profile.bio,
-      scent_category: profile.scent_category || "Neutral",
-      scent_intensity: profile.scent_intensity,
-      vibe_badges: profile.vibe_badges,
-      fetishes: profile.fetishes,
-      sex_kink_tags: profile.sex_kink_tags,
-      sexual_health: profile.sexual_health,
-      shower_frequency: profile.shower_frequency || "Classified",
-      looking_for: profile.looking_for || undefined,
-      scent_preferences: profile.scent_preferences,
-      fuzzy_location: true,
-      is_online: true,
-      onboarding_complete: true,
-    });
-    await base44.functions.invoke("trackReferral", { action: "complete" }).catch(() => {});
-    navigate("/scent-block");
-    } catch { setError("Your profile could not be saved. Please try again."); }
-    finally { setLoading(false); }
+      // If the user already has a profile (e.g. from a previous incomplete visit),
+      // update it instead of creating a duplicate — or just navigate if already complete.
+      const existing = await base44.entities.ScentProfile.filter({ user_email: user.email });
+      if (existing[0]?.onboarding_complete) {
+        navigate("/scent-block");
+        return;
+      }
+      const ref = new URLSearchParams(window.location.search).get("ref");
+      if (ref) await base44.functions.invoke("trackReferral", { ref }).catch(() => {});
+      if (existing[0]) {
+        await base44.entities.ScentProfile.update(existing[0].id, {
+          display_name: profile.display_name || user?.full_name || "Anonymous",
+          age: Number(profile.age),
+          bio: profile.bio,
+          scent_category: profile.scent_category || "Neutral",
+          scent_intensity: profile.scent_intensity,
+          vibe_badges: profile.vibe_badges,
+          fetishes: profile.fetishes,
+          sex_kink_tags: profile.sex_kink_tags,
+          sexual_health: profile.sexual_health,
+          shower_frequency: profile.shower_frequency || "Classified",
+          looking_for: profile.looking_for || undefined,
+          scent_preferences: profile.scent_preferences,
+          onboarding_complete: true,
+        });
+      } else {
+        await base44.entities.ScentProfile.create({
+          user_email: user.email,
+          display_name: profile.display_name || user?.full_name || "Anonymous",
+          age: Number(profile.age),
+          bio: profile.bio,
+          scent_category: profile.scent_category || "Neutral",
+          scent_intensity: profile.scent_intensity,
+          vibe_badges: profile.vibe_badges,
+          fetishes: profile.fetishes,
+          sex_kink_tags: profile.sex_kink_tags,
+          sexual_health: profile.sexual_health,
+          shower_frequency: profile.shower_frequency || "Classified",
+          looking_for: profile.looking_for || undefined,
+          scent_preferences: profile.scent_preferences,
+          fuzzy_location: true,
+          is_online: true,
+          onboarding_complete: true,
+        });
+      }
+      await base44.functions.invoke("trackReferral", { action: "complete" }).catch(() => {});
+      navigate("/scent-block");
+    } catch (err) {
+      setError(err?.message || "Your profile could not be saved. Please try again.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   const steps = [
