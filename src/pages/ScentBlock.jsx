@@ -109,6 +109,7 @@ export default function ScentBlock() {
   const [profiles, setProfiles] = useState([]);
   const [myProfile, setMyProfile] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [profileError, setProfileError] = useState(null);
   const [mapReady, setMapReady] = useState(false);
   const [enableLocDismissed, setEnableLocDismissed] = useState(false);
   const [earlyHintDismissed, setEarlyHintDismissed] = useState(false);
@@ -176,16 +177,22 @@ export default function ScentBlock() {
     if (!user?.email) return;
 
     async function initialLoad() {
+      try {
       const all = await base44.entities.ScentProfile.list();
       const mine = all.find(p => p.user_email === user.email);
       setMyProfile(mine || null);
-      if (mine?.location_lat && mine?.location_lng) {
+      if (Number.isFinite(mine?.location_lat) && Number.isFinite(mine?.location_lng)) {
         setUserPos({ lat: mine.location_lat, lng: mine.location_lng });
       }
       setProfiles(
         all.filter(p => p.user_email !== user.email).map(processProfile).filter(Boolean)
       );
-      setLoading(false);
+      setProfileError(null);
+      } catch {
+        setProfileError("Profiles could not be loaded. Refresh to try again.");
+      } finally {
+        setLoading(false);
+      }
     }
     initialLoad();
 
@@ -207,10 +214,13 @@ export default function ScentBlock() {
 
     // Lighter periodic refresh — only to catch missed events (every 60s, not 30s)
     const interval = setInterval(async () => {
+      try {
       const all = await base44.entities.ScentProfile.list();
       setProfiles(
         all.filter(p => p.user_email !== user.email).map(processProfile).filter(Boolean)
       );
+      setProfileError(null);
+      } catch { setProfileError("Profiles could not be refreshed. Refresh to try again."); }
     }, 60000);
 
     return () => { unsub(); clearInterval(interval); };
@@ -435,6 +445,12 @@ export default function ScentBlock() {
       )}
 
       <div ref={mapContainerRef} style={{ width: "100%", height: "100%" }} />
+      {profileError && (
+        <div role="alert" style={{ position: "absolute", top: "64px", left: "14px", right: "14px", zIndex: 1100, background: "#251b2f", color: "#fecaca", padding: "12px", borderRadius: "12px", fontSize: "13px" }}>
+          {profileError}{" "}
+          <button onClick={() => window.location.reload()} style={{ textDecoration: "underline" }}>Retry</button>
+        </div>
+      )}
 
       {/* Top nav bar */}
       <div style={{ position: "absolute", top: "14px", left: "14px", right: "14px", zIndex: 1000, display: "flex", alignItems: "center", gap: "8px" }}>
@@ -563,7 +579,7 @@ export default function ScentBlock() {
       )}
 
       {/* Empty hint: user is on the map but nobody nearby yet */}
-      {!loading && userPos && filtered.length === 0 && !earlyHintDismissed && (
+      {!loading && !profileError && userPos && filtered.length === 0 && !earlyHintDismissed && (
         <div style={{
           position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)",
           zIndex: 800, background: "rgba(20,17,40,0.92)", border: "1px solid rgba(255,255,255,0.08)",
