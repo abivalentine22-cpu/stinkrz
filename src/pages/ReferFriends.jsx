@@ -1,22 +1,23 @@
 import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { UserPlus, Copy, Check, Share2, ArrowLeft, Info, Sparkles, Users } from "lucide-react";
+import { UserPlus, Copy, Check, Share2, ArrowLeft, Sparkles, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import { useAuth } from "@/lib/AuthContext";
 
 const MILESTONES = [
-  { count: 1, label: "First Whiff", emoji: "👃", perk: "A welcome badge on your profile" },
-  { count: 5, label: "Connector", emoji: "🤝", perk: "Early access to new features" },
-  { count: 10, label: "Block Legend", emoji: "👑", perk: "A founder-level profile badge" },
-  { count: 25, label: "Scent Hustler", emoji: "🔥", perk: "Permanent legend status on the block" },
+  { count: 1, label: "First Whiff", emoji: "👃", perk: "Your first community milestone" },
+  { count: 5, label: "Connector", emoji: "🤝", perk: "Five friends welcomed to the block" },
+  { count: 10, label: "Block Legend", emoji: "👑", perk: "Ten friends welcomed to the block" },
+  { count: 25, label: "Scent Hustler", emoji: "🔥", perk: "Twenty-five friends welcomed to the block" },
 ];
 
 export default function ReferFriends() {
   const { user } = useAuth();
   const [profile, setProfile] = useState(null);
-  const [referrals, setReferrals] = useState([]);
+  const [inviteCount, setInviteCount] = useState(0);
+  const [error, setError] = useState("");
   const [copied, setCopied] = useState(false);
   const [loading, setLoading] = useState(true);
 
@@ -24,21 +25,25 @@ export default function ReferFriends() {
     if (!user?.email) return;
     let cancelled = false;
     (async () => {
-      const [profiles, refs] = await Promise.all([
+      try {
+      const [profiles, stats] = await Promise.all([
         base44.entities.ScentProfile.filter({ user_email: user.email }, undefined, 1),
-        base44.entities.Referral.filter({ referrer_email: user.email }),
+        base44.functions.invoke("trackReferral", { action: "stats" }),
       ]);
       if (cancelled) return;
       setProfile(profiles[0] || null);
-      setReferrals(refs);
-      setLoading(false);
+      setInviteCount(stats.data.completed);
+      } catch {
+        if (!cancelled) setError("Your referral count could not be loaded. Please refresh to try again.");
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
     })();
     return () => { cancelled = true; };
   }, [user?.email]);
 
   const referralCode = profile?.id;
   const shareLink = referralCode ? `${window.location.origin}/register?ref=${referralCode}` : "";
-  const inviteCount = referrals.length;
 
   const handleCopy = async () => {
     if (!shareLink) return;
@@ -65,7 +70,7 @@ export default function ReferFriends() {
     } catch {}
   };
 
-  const earnedMilestone = (m) => inviteCount >= m.count;
+  const earnedMilestone = (m) => !loading && !error && inviteCount >= m.count;
 
   return (
     <div className="max-w-2xl mx-auto px-4 py-8">
@@ -76,13 +81,9 @@ export default function ReferFriends() {
         <h1 className="font-heading text-2xl font-bold">Refer Friends</h1>
       </div>
 
-      {/* Preview banner */}
-      <div className="flex items-start gap-3 bg-accent/10 border border-accent/25 rounded-2xl p-4 mb-6">
-        <Info className="w-4 h-4 text-accent shrink-0 mt-0.5" />
-        <p className="font-body text-xs text-accent-foreground/80 leading-relaxed">
-          <span className="font-semibold">Preview.</span> This page is a preview and isn't published yet. Your share link works, but referral counts and badges only update once this feature goes live.
-        </p>
-      </div>
+      {error && (
+        <p role="alert" className="font-body text-sm text-destructive mb-6">{error}</p>
+      )}
 
       {/* Hero */}
       <motion.div
@@ -95,7 +96,7 @@ export default function ReferFriends() {
         </div>
         <h2 className="font-heading text-2xl font-bold mb-2">Bring friends to the block</h2>
         <p className="font-body text-sm text-muted-foreground leading-relaxed max-w-md mx-auto">
-          Stinkrz is better with people you know. Share your link — when a friend joins and finishes their profile, you both get closer to unlocking badges and perks.
+          Stinkrz is better with people you know. Share your link — when a friend joins and finishes their profile, your referral count grows and you earn community milestones.
         </p>
       </motion.div>
 
@@ -104,7 +105,7 @@ export default function ReferFriends() {
         <div className="flex items-center justify-between">
           <div>
             <div className="font-body text-xs text-muted-foreground uppercase tracking-wide mb-1">Friends joined</div>
-            <div className="font-heading text-4xl font-bold">{inviteCount}</div>
+            <div className="font-heading text-4xl font-bold">{loading ? "…" : error ? "—" : inviteCount}</div>
           </div>
           <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
             <Users className="w-6 h-6 text-primary" />
@@ -165,9 +166,9 @@ export default function ReferFriends() {
       <div className="bg-card border border-border rounded-2xl p-6 mb-6">
         <h3 className="font-heading font-semibold mb-1 flex items-center gap-2">
           <Sparkles className="w-4 h-4 text-primary" />
-          Milestones & perks
+          Community milestones
         </h3>
-        <p className="font-body text-xs text-muted-foreground mb-4">Badges and perks are recognition only — they never affect who sees you or your dating chances.</p>
+        <p className="font-body text-xs text-muted-foreground mb-4">Milestones are recognition only — they never affect who sees you or your dating chances.</p>
 
         <div className="space-y-3">
           {MILESTONES.map((m) => {
@@ -219,13 +220,13 @@ export default function ReferFriends() {
         <ol className="font-body text-sm text-muted-foreground space-y-2 leading-relaxed list-decimal list-inside">
           <li>Copy your invite link or hit Share to send it to a friend.</li>
           <li>They sign up and finish their scent profile.</li>
-          <li>Your invite count goes up and you unlock badges as you hit milestones.</li>
+          <li>Your invite count goes up and you earn milestones on this page.</li>
         </ol>
       </div>
 
       <div className="bg-muted/30 border border-border rounded-2xl p-4 mb-6">
         <p className="font-body text-xs text-muted-foreground leading-relaxed text-center">
-          Referrals are about growing the community — not pay-to-win. Badges are recognition only and don't boost your profile or change who sees you.
+          Referrals are about growing the community — not pay-to-win. Milestones are recognition only and don't boost your profile or change who sees you.
         </p>
       </div>
 
