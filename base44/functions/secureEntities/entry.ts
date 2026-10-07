@@ -80,20 +80,25 @@ async function readRows(entities, entity, email, query) {
   }).map(row => entity === 'ScentProfile' ? sanitizeProfile(row, email) : row);
 }
 export async function handleRequest(req, makeClient = createClientFromRequest) {
+  let step = 'init';
   try {
     const client = makeClient(req);
+    step = 'auth';
     let me;
     try { me = await client.auth.me(); } catch { return Response.json({ error: 'Unauthorized' }, { status: 401 }); }
     if (!me?.email) return Response.json({ error: 'Unauthorized' }, { status: 401 });
     const { entity, action, id, data = {}, query = {}, sort = '-created_date', limit = 1000, skip = 0 } = await req.json();
     if (!Object.hasOwn(FIELDS, entity)) fail('Unsupported entity', 400);
+    step = 'asServiceRole';
     const entities = client.asServiceRole.entities;
+    step = 'dispatch';
     if (action === 'list' || action === 'get') {
       if (!query || typeof query !== 'object' || Array.isArray(query)) fail('Invalid query', 400);
       for (const [key, value] of Object.entries(query)) {
         if (!['id', 'created_date', ...(entity === 'Notification' ? ['user_email','actor_email','type','message_id','read'] : FIELDS[entity])].includes(key) || !['string','boolean','number'].includes(typeof value)) fail('Invalid query', 400);
       }
       if (typeof sort !== 'string' || !['id','created_date','updated_date',...FIELDS[entity]].includes(sort.replace(/^-/, ''))) fail('Invalid sort', 400);
+      step = 'readRows';
       const rows = await readRows(entities, entity, me.email, action === 'get' ? { id } : query);
       const descending = sort.startsWith('-');
       const key = sort.replace(/^-/, '');
@@ -181,7 +186,7 @@ export async function handleRequest(req, makeClient = createClientFromRequest) {
     const result = action === 'create' ? await entities[entity].create(patch) : await entities[entity].update(id, patch);
     return Response.json({ result });
   } catch (error) {
-    return Response.json({ error: error instanceof Rejection ? error.message : 'Request failed' }, { status: error.status || 500 });
+    return Response.json({ error: (error instanceof Rejection ? error.message : (error?.message || 'Request failed')) + ' [step: ' + step + ']' }, { status: error.status || 500 });
   }
 }
 Deno.serve(handleRequest);
