@@ -218,3 +218,10 @@ test('frontend subscription drops an in-flight snapshot after account/session ch
  unsubscribeNew();globalThis.document=oldDocument;
  assert.ok(newEvents.length>0);assert.ok(newEvents.every(e=>e.id==='new-account-record'));
 });
+
+test('expired profile sessions reject rather than claiming the profile is missing', async () => {
+ const { secureClient } = await import('../src/api/secureClient.js');
+ const expired = Object.assign(new Error('Unauthorized'), { response: { status: 401 } });
+ const client = secureClient({ entities: {}, functions: { invoke: async () => { throw expired; } } });
+ await assert.rejects(client.entities.ScentProfile.filter({user_email:'alice@example.com'}), error => error === expired);
+});
