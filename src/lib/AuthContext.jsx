@@ -19,6 +19,15 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   const checkAppState = async () => {
+    // Safety timeout: if the initial load doesn't resolve in 15s (slow network,
+    // server hang, low battery), unblock the loading screen so the user isn't
+    // stuck on an infinite spinner with no way to recover.
+    const timeoutId = setTimeout(() => {
+      setIsLoadingPublicSettings(false);
+      setIsLoadingAuth(false);
+      setAuthError({ type: 'timeout', message: 'Loading is taking too long. Check your connection and try again.' });
+    }, 15000);
+
     try {
       setIsLoadingPublicSettings(true);
       setAuthError(null);
@@ -47,7 +56,9 @@ export const AuthProvider = ({ children }) => {
           setAuthChecked(true);
         }
         setIsLoadingPublicSettings(false);
+        clearTimeout(timeoutId);
       } catch (appError) {
+        clearTimeout(timeoutId);
         console.error('App state check failed:', appError);
         
         // Handle app-level errors
@@ -79,6 +90,7 @@ export const AuthProvider = ({ children }) => {
         setIsLoadingAuth(false);
       }
     } catch (error) {
+      clearTimeout(timeoutId);
       console.error('Unexpected error:', error);
       setAuthError({
         type: 'unknown',

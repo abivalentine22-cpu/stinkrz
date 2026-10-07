@@ -18,6 +18,9 @@ export default function Layout() {
 
   useEffect(() => {
     if (!user?.email) { setProfileChecked(true); return; }
+    // Safety timeout: if the profile check hangs (slow network), don't leave
+    // the user stuck on the Layout spinner forever — render the page after 10s.
+    const timeoutId = setTimeout(() => setProfileChecked(true), 10000);
     base44.entities.ScentProfile.filter({ user_email: user.email })
       .then(async p => {
         const profile = p[0] || null;
@@ -39,7 +42,8 @@ export default function Layout() {
       .catch(() => {
         // Never leave the app stuck on a blank screen if the profile check fails
         setProfileChecked(true);
-      });
+      })
+      .finally(() => clearTimeout(timeoutId));
   }, [user?.email, pathname, navigate]);
 
   // App-wide presence: keep the user "online" + location fresh on every page,

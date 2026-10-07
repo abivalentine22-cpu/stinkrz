@@ -9,6 +9,7 @@ import UserNotRegisteredError from "@/components/UserNotRegisteredError";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import { usePushNotifications } from "@/hooks/usePushNotifications";
+import { Button } from "@/components/ui/button";
 import Layout from "@/components/Layout";
 
 // Eagerly loaded (lightweight / auth pages)
@@ -65,6 +66,21 @@ const AuthenticatedApp = () => {
     } else if (authError.type === "auth_required") {
       navigateToLogin();
       return null;
+    } else if (authError.type === "timeout") {
+      return (
+        <div className="fixed inset-0 flex items-center justify-center bg-background px-4">
+          <div className="text-center max-w-sm space-y-4">
+            <span className="text-5xl block mb-2">🤙</span>
+            <h2 className="font-heading text-xl font-bold">Taking a while...</h2>
+            <p className="font-body text-sm text-muted-foreground">
+              The app is having trouble loading. Check your connection and try again.
+            </p>
+            <Button onClick={() => window.location.reload()} className="font-body font-semibold">
+              Retry
+            </Button>
+          </div>
+        </div>
+      );
     }
   }
 
