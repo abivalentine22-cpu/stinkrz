@@ -35,6 +35,9 @@ export default function Profile() {
     queryKey: ["my-profile", user?.email],
     queryFn: () => base44.entities.ScentProfile.filter({ user_email: user?.email }),
     enabled: !!user?.email,
+    retry: 3,
+    retryDelay: 1500,
+    staleTime: 30000,
   });
 
   const myProfile = profiles[0];
