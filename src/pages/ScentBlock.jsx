@@ -176,29 +176,42 @@ export default function ScentBlock() {
   useEffect(() => {
     if (!user?.email) return;
 
+    let cancelled = false;
+
     async function initialLoad() {
-      try {
-      const all = await base44.entities.ScentProfile.list();
-      const mine = all.find(p => p.user_email === user.email);
-      setMyProfile(mine || null);
-      if (Number.isFinite(mine?.location_lat) && Number.isFinite(mine?.location_lng)) {
-        setUserPos({ lat: mine.location_lat, lng: mine.location_lng });
+      // Retry through transient rate-limit (429) errors so the user isn't
+      // stuck on a blank map when the gateway is briefly overloaded.
+      for (let attempt = 0; attempt < 3; attempt++) {
+        try {
+          const all = await base44.entities.ScentProfile.list();
+          if (cancelled) return;
+          const mine = all.find(p => p.user_email === user.email);
+          setMyProfile(mine || null);
+          if (Number.isFinite(mine?.location_lat) && Number.isFinite(mine?.location_lng)) {
+            setUserPos({ lat: mine.location_lat, lng: mine.location_lng });
+          }
+          setProfiles(
+            all.filter(p => p.user_email !== user.email).map(processProfile).filter(Boolean)
+          );
+          setProfileError(null);
+          return;
+        } catch {
+          if (attempt < 2) await new Promise(r => setTimeout(r, 1500));
+        }
       }
-      setProfiles(
-        all.filter(p => p.user_email !== user.email).map(processProfile).filter(Boolean)
-      );
-      setProfileError(null);
-      } catch {
-        setProfileError("Profiles could not be loaded. Refresh to try again.");
-      } finally {
-        setLoading(false);
-      }
+      if (!cancelled) setProfileError("Profiles could not be loaded. Refresh to try again.");
     }
-    initialLoad();
+
+    initialLoad().finally(() => { if (!cancelled) setLoading(false); });
 
     const unsub = base44.entities.ScentProfile.subscribe((event) => {
       if (event.data?.user_email === user.email) {
-        if (event.type === "update") setMyProfile(event.data);
+        if (event.type === "create" || event.type === "update") {
+          setMyProfile(event.data);
+          if (Number.isFinite(event.data?.location_lat) && Number.isFinite(event.data?.location_lng)) {
+            setUserPos({ lat: event.data.location_lat, lng: event.data.location_lng });
+          }
+        }
         return;
       }
       if (event.type === "create" || event.type === "update") {
@@ -212,18 +225,7 @@ export default function ScentBlock() {
       }
     });
 
-    // Lighter periodic refresh — only to catch missed events (every 60s, not 30s)
-    const interval = setInterval(async () => {
-      try {
-      const all = await base44.entities.ScentProfile.list();
-      setProfiles(
-        all.filter(p => p.user_email !== user.email).map(processProfile).filter(Boolean)
-      );
-      setProfileError(null);
-      } catch { setProfileError("Profiles could not be refreshed. Refresh to try again."); }
-    }, 60000);
-
-    return () => { unsub(); clearInterval(interval); };
+    return () => { cancelled = true; unsub(); };
   }, [user?.email]);
 
   // saveLocation uses ref — never re-creates, no stale closure
