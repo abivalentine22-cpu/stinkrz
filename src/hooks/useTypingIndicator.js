@@ -11,6 +11,9 @@ export function useTypingIndicator(myEmail, partnerEmail) {
   const myIndicatorRef = useRef(null); // current TypingIndicator record for "me"
   const broadcastTimeoutRef = useRef(null);
   const partnerTimeoutRef = useRef(null);
+  const lastBroadcastRef = useRef(0);
+  const broadcastInFlightRef = useRef(false);
+  const generationRef = useRef(0);
 
   // Subscribe to partner's typing indicator
   useEffect(() => {
@@ -42,41 +45,44 @@ export function useTypingIndicator(myEmail, partnerEmail) {
     };
   }, [myEmail, partnerEmail]);
 
-  // Broadcast "I'm typing" — debounced, auto-clears after 3s idle
+  // Send at most once every 2s, with only one request in flight. Previously
+  // every keystroke sent a write and refresh, competing with message delivery.
   const broadcastTyping = useCallback(async () => {
     if (!myEmail || !partnerEmail) return;
     clearTimeout(broadcastTimeoutRef.current);
-
-    // Create or refresh the indicator
-    if (!myIndicatorRef.current) {
-      try {
-        const record = await base44.entities.TypingIndicator.create({
-          user_email: myEmail,
-          conversation_partner: partnerEmail,
-          expires_at: new Date(Date.now() + 4000).toISOString(),
-        });
-        myIndicatorRef.current = record;
-      } catch (_) {}
-    } else {
-      try {
-        await base44.entities.TypingIndicator.update(myIndicatorRef.current.id, {
-          expires_at: new Date(Date.now() + 4000).toISOString(),
-        });
-      } catch (_) {}
-    }
-
-    // Stop broadcasting after 3s of no typing
-    broadcastTimeoutRef.current = setTimeout(async () => {
-      if (myIndicatorRef.current) {
-        try { await base44.entities.TypingIndicator.delete(myIndicatorRef.current.id); } catch (_) {}
-        myIndicatorRef.current = null;
-      }
+    broadcastTimeoutRef.current = setTimeout(() => {
+      generationRef.current++;
+      broadcastInFlightRef.current = false;
+      lastBroadcastRef.current = 0;
+      const record = myIndicatorRef.current;
+      myIndicatorRef.current = null;
+      if (record) base44.entities.TypingIndicator.delete(record.id).catch(() => {});
     }, 3000);
+
+    if (broadcastInFlightRef.current || Date.now() - lastBroadcastRef.current < 2000) return;
+    broadcastInFlightRef.current = true;
+    lastBroadcastRef.current = Date.now();
+    const generation = generationRef.current;
+    try {
+      const patch = { expires_at: new Date(Date.now() + 4000).toISOString() };
+      const record = myIndicatorRef.current
+        ? await base44.entities.TypingIndicator.update(myIndicatorRef.current.id, patch)
+        : await base44.entities.TypingIndicator.create({ user_email: myEmail, conversation_partner: partnerEmail, ...patch });
+      if (generation === generationRef.current) myIndicatorRef.current = record;
+      else await base44.entities.TypingIndicator.delete(record.id).catch(() => {});
+    } catch (_) {
+      if (generation === generationRef.current) myIndicatorRef.current = null;
+    } finally {
+      if (generation === generationRef.current) broadcastInFlightRef.current = false;
+    }
   }, [myEmail, partnerEmail]);
 
   // Cleanup on unmount / conversation change
   useEffect(() => {
     return () => {
+      generationRef.current++;
+      broadcastInFlightRef.current = false;
+      lastBroadcastRef.current = 0;
       clearTimeout(broadcastTimeoutRef.current);
       if (myIndicatorRef.current) {
         base44.entities.TypingIndicator.delete(myIndicatorRef.current.id).catch(() => {});

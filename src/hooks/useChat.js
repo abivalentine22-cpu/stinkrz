@@ -18,52 +18,54 @@ export function useChat({ me, conversation, onMessageSent, playSend, broadcastTy
   const [uploading, setUploading] = useState(false);
   const [optimisticMsgs, setOptimisticMsgs] = useState([]);
   const fileInputRef = useRef(null);
+  const sendingRef = useRef(false);
+  const partnerEmailRef = useRef(conversation?.partnerEmail);
+  partnerEmailRef.current = conversation?.partnerEmail;
 
   const sendMessage = async (content, isSticker = false, mediaUrl = null, mediaType = null) => {
-    if (!content?.trim() || !me || !conversation) return;
+    const recipient = conversation?.partnerEmail;
+    if (!content?.trim() || !me?.email || !recipient || sendingRef.current) return;
+    sendingRef.current = true;
+    setSending(true);
 
-    const optimisticId = `opt-${Date.now()}`;
-    const optimistic = {
-      id: optimisticId,
-      sender_email: me.email,
-      receiver_email: conversation.partnerEmail,
-      content,
-      is_sticker: isSticker,
-      media_url: mediaUrl,
-      media_type: mediaType,
-      read: false,
-      created_date: new Date().toISOString(),
-      _optimistic: true,
+    const optimisticId = `opt-${crypto.randomUUID()}`;
+    const payload = {
+      sender_email: me.email, receiver_email: recipient,
+      content, is_sticker: isSticker, read: false,
+      ...(mediaUrl ? { media_url: mediaUrl, media_type: mediaType } : {}),
     };
-    setOptimisticMsgs(prev => [...prev, optimistic]);
-    setInput("");
+    setOptimisticMsgs(prev => [...prev, {
+      ...payload, id: optimisticId,
+      created_date: new Date().toISOString(), _optimistic: true,
+    }]);
+    if (!isSticker && !mediaUrl) setInput("");
     setStickersOpen(false);
     playSend();
 
-    setSending(true);
     try {
-      // Retry through transient rate-limit (429) errors so messages don't
-      // silently fail when the gateway is briefly overloaded.
       let msg;
       for (let attempt = 0; attempt < 3; attempt++) {
         try {
-          msg = await base44.entities.ChatMessage.create({
-            sender_email: me.email, receiver_email: conversation.partnerEmail,
-            content, is_sticker: isSticker, media_url: mediaUrl, media_type: mediaType, read: false,
-          });
+          msg = await base44.entities.ChatMessage.create(payload);
           break;
         } catch (error) {
-          if (attempt < 2) { await new Promise(r => setTimeout(r, 1500)); continue; }
-          throw error;
+          const status = error?.response?.status ?? error?.status;
+          if (status !== 429 || attempt === 2) throw error;
+          await new Promise(resolve => setTimeout(resolve, 1500 * 2 ** attempt));
         }
       }
+      // Insert the saved message before removing its pending bubble, without
+      // waiting for the next gateway refresh to show that it was sent.
+      onMessageSent?.(msg);
       base44.functions.invoke('createMessageNotification', { message_id: msg.id }).catch(() => {});
-      onMessageSent?.();
     } catch (error) {
-      setInput(content);
-      toast({ title: "Message wasn't sent", description: error?.response?.data?.error || "This conversation may be unavailable. Please try again.", variant: "destructive" });
+      if (!isSticker && !mediaUrl && partnerEmailRef.current === recipient) {
+        setInput(draft => draft || content);
+      }
+      toast({ title: "Message wasn't sent", description: error?.response?.data?.error || error?.message || "Please try again.", variant: "destructive" });
     } finally {
       setOptimisticMsgs(prev => prev.filter(m => m.id !== optimisticId));
+      sendingRef.current = false;
       setSending(false);
     }
   };

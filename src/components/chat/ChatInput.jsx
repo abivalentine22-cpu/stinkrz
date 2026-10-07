@@ -34,10 +34,13 @@ export default function ChatInput({
         </Button>
       </div>
 
-      <div className="flex items-center gap-2 px-3 py-3">
+      <form className="flex items-center gap-2 px-3 py-3" onSubmit={(event) => {
+        event.preventDefault();
+        if (input.trim() && !sending) onSend();
+      }}>
         <Popover open={stickersOpen} onOpenChange={setStickersOpen}>
           <PopoverTrigger asChild>
-            <Button variant="ghost" size="icon" className="shrink-0">
+            <Button type="button" variant="ghost" size="icon" className="shrink-0" disabled={sending}>
               <Smile className="w-5 h-5 text-muted-foreground" />
             </Button>
           </PopoverTrigger>
@@ -45,7 +48,7 @@ export default function ChatInput({
             <p className="font-heading text-xs font-semibold mb-2 text-muted-foreground">Scent Stickers</p>
             <div className="grid grid-cols-4 gap-2">
               {SCENT_STICKERS.map((sticker) => (
-                <button key={sticker.id} onClick={() => onSendSticker(sticker)}
+                <button type="button" key={sticker.id} disabled={sending} onClick={() => onSendSticker(sticker)}
                   className="flex flex-col items-center gap-1 p-2 rounded-lg hover:bg-muted transition-colors">
                   <span className="text-2xl">{sticker.emoji}</span>
                   <span className="text-[9px] font-body text-muted-foreground">{sticker.label}</span>
@@ -56,8 +59,9 @@ export default function ChatInput({
         </Popover>
 
         <button
+          type="button"
           onClick={() => fileInputRef.current?.click()}
-          disabled={uploading}
+          disabled={uploading || sending}
           className="p-2 rounded-lg hover:bg-muted transition-colors text-muted-foreground shrink-0"
           title="Upload image or video"
         >
@@ -75,14 +79,13 @@ export default function ChatInput({
         <Input
           value={input}
           onChange={onInputChange}
-          onKeyDown={(e) => e.key === "Enter" && onSend()}
           placeholder="Send a whiff..."
           className="flex-1 font-body bg-muted border-0 focus-visible:ring-1"
         />
-        <Button size="icon" onClick={onSend} disabled={!input.trim() || sending}>
-          <Send className="w-4 h-4" />
+        <Button type="submit" size="icon" disabled={!input.trim() || sending} aria-label={sending ? "Sending message" : "Send message"}>
+          {sending ? <Loader className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
         </Button>
-      </div>
+      </form>
     </div>
   );
 }

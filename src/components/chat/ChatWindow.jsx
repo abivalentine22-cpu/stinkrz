@@ -38,8 +38,9 @@ export default function ChatWindow({ me, conversation, messages, onVibeCheck, on
     handleMediaUpload,
   } = useChat({ me, conversation, onMessageSent, playSend, broadcastTyping });
 
+  const displayMessages = [...messages, ...optimisticMsgs];
   const { scrollRef, showScrollDown, scrollToBottom } = useChatAutoScroll({
-    messages,
+    messages: displayMessages,
     myEmail: me?.email,
     onReceiveSound: playReceive,
     conversationKey: conversation?.partnerEmail,
@@ -73,11 +74,6 @@ export default function ChatWindow({ me, conversation, messages, onVibeCheck, on
 
   const profile = conversation?.partnerProfile;
 
-  const displayMessages = [
-    ...messages,
-    ...optimisticMsgs.filter(o => !messages.some(m => m.content === o.content && m.sender_email === o.sender_email)),
-  ];
-
   if (!conversation) {
     return (
       <div className="flex-1 flex items-center justify-center text-center p-8">
@@ -104,7 +100,7 @@ export default function ChatWindow({ me, conversation, messages, onVibeCheck, on
 
       {/* Messages */}
       <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-4 space-y-3">
-        {messages.length === 0 && (
+        {displayMessages.length === 0 && (
           <ChatEmptyState partnerName={partnerName} onSendMessage={sendMessage} />
         )}
 

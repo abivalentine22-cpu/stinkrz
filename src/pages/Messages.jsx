@@ -29,7 +29,8 @@ export default function Messages() {
       for (let attempt = 0; attempt < 3; attempt++) {
         try {
           const msgs = await base44.entities.ChatMessage.list("-created_date", 50);
-          setAllMessages(msgs);
+          setAllMessages(prev => [...prev, ...msgs.filter(msg => !prev.some(saved => saved.id === msg.id))]
+            .sort((a, b) => b.created_date.localeCompare(a.created_date)).slice(0, 50));
           return;
         } catch {
           if (attempt < 2) await new Promise(r => setTimeout(r, 1500));
@@ -229,7 +230,8 @@ export default function Messages() {
             conversation={activeConversation}
             messages={activeMessages}
             onVibeCheck={handleVibeCheck}
-            onMessageSent={() => {}}
+            onMessageSent={msg => setAllMessages(prev => [msg, ...prev.filter(saved => saved.id !== msg.id)]
+              .sort((a, b) => b.created_date.localeCompare(a.created_date)).slice(0, 50))}
           />
         </div>
       </div>
