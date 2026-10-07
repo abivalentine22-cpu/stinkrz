@@ -25,7 +25,9 @@ const SCENT_RING = {
 function processProfile(p) {
   if (!Number.isFinite(p.location_lat) || !Number.isFinite(p.location_lng)) return null;
   if (p.invisible_mode) return null;
-  if (localStorage.getItem("stinkrz_hide_inactive") === "true") {
+  // Users who hide their online status still appear on the map (just no green
+  // dot); everyone else must have been active recently to appear.
+  if (p.show_online_status !== false) {
     const minsSince = p.last_active ? (Date.now() - Date.parse(p.last_active)) / 60000 : Infinity;
     if (!p.is_online || minsSince > ACTIVITY_TIMEOUT_MINS) return null;
   }

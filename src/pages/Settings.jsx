@@ -41,7 +41,6 @@ export default function Settings() {
   const [hideReadReceipts, setHideReadReceipts] = useState(false);
   const [travelMode, setTravelMode] = useState("neither");
   const [invisibleMode, setInvisibleMode] = useState(false);
-  const [hideInactive, setHideInactive] = useState(false);
   const [myProfile, setMyProfile] = useState(null);
   const [blockedUsers, setBlockedUsers] = useState([]);
   const [deleteConfirm, setDeleteConfirm] = useState(false);
@@ -58,7 +57,6 @@ export default function Settings() {
     setSendReadReceipts(localStorage.getItem("stinkrz_send_read_receipts") !== "false");
     setHideReadReceipts(localStorage.getItem("stinkrz_hide_read_receipts") === "true");
     setTravelMode(localStorage.getItem("stinkrz_travel_mode") || "neither");
-    setHideInactive(localStorage.getItem("stinkrz_hide_inactive") === "true");
     // Load invisible mode from profile
     base44.entities.ScentProfile.filter({ user_email: user.email }).then(p => {
       if (p[0]) {
@@ -205,19 +203,6 @@ export default function Settings() {
             </button>
           </div>
 
-          {/* Hide Inactive Users */}
-          <div className="flex items-center justify-between bg-muted/50 rounded-xl p-4 border border-border">
-            <div className="flex-1">
-              <p className="font-body text-sm font-semibold">Hide Inactive Users</p>
-              <p className="font-body text-xs text-muted-foreground">Don't show offline profiles on map</p>
-            </div>
-            <button
-              onClick={() => handleToggle("stinkrz_hide_inactive", hideInactive, setHideInactive)}
-              className={`w-11 h-6 rounded-full transition-colors shrink-0 relative ${hideInactive ? "bg-primary" : "bg-muted-foreground/30"}`}
-            >
-              <span className={`absolute top-0.5 w-5 h-5 rounded-full bg-white transition-all ${hideInactive ? "left-[22px]" : "left-0.5"}`} />
-            </button>
-          </div>
         </div>
       </div>
 
