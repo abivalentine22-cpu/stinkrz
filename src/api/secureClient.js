@@ -4,13 +4,9 @@ const SECURED = new Set(['ScentProfile','ChatMessage','Favorite','ProfileView','
 export function secureClient(client) {
   const channels = new Map();
   const call = async (entity, action, params = {}) => {
-    try {
-      const response = await client.functions.invoke('secureEntities', { entity, action, ...params });
-      if (response.data?.error) throw new Error(response.data.error);
-      return response.data.result;
-    } catch (error) {
-      throw error;
-    }
+    const response = await client.functions.invoke('secureEntities', { entity, action, ...params });
+    if (response.data?.error) throw new Error(response.data.error);
+    return response.data.result;
   };
   const channelFor = (entity) => {
     if (channels.has(entity)) return channels.get(entity);
