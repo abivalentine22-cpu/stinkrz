@@ -42,10 +42,21 @@ export function useChat({ me, conversation, onMessageSent, playSend, broadcastTy
 
     setSending(true);
     try {
-      const msg = await base44.entities.ChatMessage.create({
-        sender_email: me.email, receiver_email: conversation.partnerEmail,
-        content, is_sticker: isSticker, media_url: mediaUrl, media_type: mediaType, read: false,
-      });
+      // Retry through transient rate-limit (429) errors so messages don't
+      // silently fail when the gateway is briefly overloaded.
+      let msg;
+      for (let attempt = 0; attempt < 3; attempt++) {
+        try {
+          msg = await base44.entities.ChatMessage.create({
+            sender_email: me.email, receiver_email: conversation.partnerEmail,
+            content, is_sticker: isSticker, media_url: mediaUrl, media_type: mediaType, read: false,
+          });
+          break;
+        } catch (error) {
+          if (attempt < 2) { await new Promise(r => setTimeout(r, 1500)); continue; }
+          throw error;
+        }
+      }
       base44.functions.invoke('createMessageNotification', { message_id: msg.id }).catch(() => {});
       onMessageSent?.();
     } catch (error) {
