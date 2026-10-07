@@ -83,6 +83,8 @@ export default function Onboarding() {
     }
     setLoading(true); setError("");
     try {
+    const ref = new URLSearchParams(window.location.search).get("ref");
+    if (ref) await base44.functions.invoke("trackReferral", { ref }).catch(() => {});
     await base44.entities.ScentProfile.create({
       user_email: user.email,
       display_name: profile.display_name || user?.full_name || "Anonymous",
@@ -101,6 +103,7 @@ export default function Onboarding() {
       is_online: true,
       onboarding_complete: true,
     });
+    await base44.functions.invoke("trackReferral", { action: "complete" }).catch(() => {});
     navigate("/scent-block");
     } catch { setError("Your profile could not be saved. Please try again."); }
     finally { setLoading(false); }
