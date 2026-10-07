@@ -184,4 +184,5 @@ export async function handleRequest(req, makeClient = createClientFromRequest) {
     return Response.json({ error: error instanceof Rejection ? error.message : 'Request failed' }, { status: error.status || 500 });
   }
 }
-Deno.serve(handleRequest);
+// Deno passes connection info as its second argument; keep it out of the test client factory.
+Deno.serve((req) => handleRequest(req));
