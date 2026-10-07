@@ -31,7 +31,7 @@ export default function Profile() {
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [uploadingGallery, setUploadingGallery] = useState(false);
 
-  const { data: profiles = [] } = useQuery({
+  const { data: profiles = [], isPending: profileLoading, isError: profileLoadFailed, refetch: reloadProfile } = useQuery({
     queryKey: ["my-profile", user?.email],
     queryFn: () => base44.entities.ScentProfile.filter({ user_email: user?.email }),
     enabled: !!user?.email,
@@ -81,6 +81,7 @@ export default function Profile() {
 
   const saveMutation = useMutation({
     mutationFn: async (data) => {
+      if (!user?.email || profileLoading || profileLoadFailed) throw new Error("Your profile must load successfully before saving. Please refresh or sign in again.");
       if (myProfile) {
         return base44.entities.ScentProfile.update(myProfile.id, data);
       } else {
@@ -97,9 +98,13 @@ export default function Profile() {
   });
 
   const handleSave = () => {
+    if (!Number.isInteger(Number(form.age)) || Number(form.age) < 18 || Number(form.age) > 120) {
+      toast({ title: "Enter your age", description: "Stinkrz is for adults 18 or older.", variant: "destructive" });
+      return;
+    }
     saveMutation.mutate({
       display_name: form.display_name,
-      age: parseInt(form.age) || undefined,
+      age: Number(form.age),
       bio: form.bio,
       scent_category: form.scent_category,
       scent_intensity: form.scent_intensity,
@@ -266,6 +271,14 @@ export default function Profile() {
         </Button>
         </div>
       </div>
+
+      {profileLoadFailed && (
+        <div role="alert" className="mb-5 rounded-xl border border-destructive/30 p-4 text-sm">
+          Your profile could not be loaded. Please retry or sign in again before saving.{" "}
+          <button onClick={() => reloadProfile()} className="underline">Retry</button>
+        </div>
+      )}
+      {profileLoading && <p role="status" className="mb-5 text-sm text-muted-foreground">Loading your profile…</p>}
 
       {/* Avatar */}
       <div className="flex justify-center mb-6">
@@ -574,7 +587,7 @@ export default function Profile() {
           );
         })()}
 
-        <Button onClick={handleSave} disabled={saveMutation.isPending} className="w-full gap-2 font-body font-semibold">
+        <Button onClick={handleSave} disabled={saveMutation.isPending || profileLoading || profileLoadFailed || !user?.email} className="w-full gap-2 font-body font-semibold">
           <Save className="w-4 h-4" />
           {saveMutation.isPending ? "Saving..." : "Save Profile"}
         </Button>
