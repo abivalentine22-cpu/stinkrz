@@ -12,7 +12,7 @@ import { useScentMatchNotifications } from "@/hooks/useScentMatchNotifications";
 import { useBlockedUsers } from "@/hooks/useBlockedUsers";
 import { useAuth } from "@/lib/AuthContext";
 
-const ACTIVITY_TIMEOUT_MINS = 45;
+import { visibleMapProfile, hasOwnerMapView } from "@/lib/mapVisibility";
 
 const SCENT_RING = {
   Fresh: "#34d399",
@@ -22,17 +22,6 @@ const SCENT_RING = {
   Neutral: "#94a3b8",
 };
 
-function processProfile(p) {
-  if (!Number.isFinite(p.location_lat) || !Number.isFinite(p.location_lng)) return null;
-  if (p.invisible_mode) return null;
-  // Users who hide their online status still appear on the map (just no green
-  // dot); everyone else must have been active recently to appear.
-  if (p.show_online_status !== false) {
-    const minsSince = p.last_active ? (Date.now() - Date.parse(p.last_active)) / 60000 : Infinity;
-    if (!p.is_online || minsSince > ACTIVITY_TIMEOUT_MINS) return null;
-  }
-  return p;
-}
 
 function calcDistance(lat, lng, youLat, youLng) {
   const R = 3958.8;
@@ -197,7 +186,7 @@ export default function ScentBlock() {
             setUserPos({ lat: mine.location_lat, lng: mine.location_lng });
           }
           setProfiles(
-            all.filter(p => p.user_email !== user.email).map(processProfile).filter(Boolean)
+            all.filter(p => p.user_email !== user.email).map(p => visibleMapProfile(p, user)).filter(Boolean)
           );
           setProfileError(null);
           return;
@@ -221,7 +210,7 @@ export default function ScentBlock() {
         return;
       }
       if (event.type === "create" || event.type === "update") {
-        const processed = processProfile(event.data);
+        const processed = visibleMapProfile(event.data, user);
         setProfiles(prev => {
           const without = prev.filter(p => p.id !== event.id);
           return processed ? [...without, processed] : without;
@@ -232,7 +221,7 @@ export default function ScentBlock() {
     });
 
     return () => { cancelled = true; unsub(); };
-  }, [user?.email]);
+  }, [user?.email, user?.id, user?.role]);
 
   // saveLocation uses ref — never re-creates, no stale closure
   const saveLocation = useCallback(async (lat, lng) => {
@@ -539,6 +528,7 @@ export default function ScentBlock() {
       >
         <Eye size={13} color={tracking ? "#c4b5fd" : "#94a3b8"} />
         {filtered.length} nearby
+        {hasOwnerMapView(user) && <span> · Admin view: includes inactive members</span>}
         {onlineCount > 0 && (
           <span style={{ color: "#4ade80", display: "flex", alignItems: "center", gap: "3px" }}>
             · <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: "#4ade80", display: "inline-block" }} /> {onlineCount}
