@@ -24,8 +24,18 @@ export default function Messages() {
 
   useEffect(() => {
     if (!me?.email) return;
-    // Initial load
-    base44.entities.ChatMessage.list("-created_date", 50).then(setAllMessages);
+    // Initial load (with retry for transient 429s)
+    (async () => {
+      for (let attempt = 0; attempt < 3; attempt++) {
+        try {
+          const msgs = await base44.entities.ChatMessage.list("-created_date", 50);
+          setAllMessages(msgs);
+          return;
+        } catch {
+          if (attempt < 2) await new Promise(r => setTimeout(r, 1500));
+        }
+      }
+    })();
     // Real-time subscription
     const unsub = base44.entities.ChatMessage.subscribe((event) => {
       if (event.type === "create") {

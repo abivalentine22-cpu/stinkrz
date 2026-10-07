@@ -55,7 +55,7 @@ export function secureClient(client) {
         // New listeners receive the approved snapshot, including existing typing.
         for (const [id,row] of snapshot) callback({ type: 'create', id, data: row });
         if (!timer) {
-          const delay = entity === 'TypingIndicator' ? 2000 : entity === 'ScentProfile' ? 15000 : 10000;
+          const delay = entity === 'TypingIndicator' ? 5000 : entity === 'ScentProfile' ? 15000 : 10000;
           timer = setInterval(() => { if (document.visibilityState === 'visible') void refresh(); }, delay);
           document.addEventListener('visibilitychange', refresh);
         }
