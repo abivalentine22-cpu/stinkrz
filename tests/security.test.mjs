@@ -7,12 +7,14 @@ async function loadHandler(path) {
   let source = await readFile(path, 'utf8');
   source = source.replace(/^import .*createClientFromRequest.*;\n/, 'const createClientFromRequest = req => globalThis.testClient;\n');
   source = source.replace('Deno.serve(handleRequest);', '');
+  source = source.replace('Deno.serve((req) => handleRequest(req));', 'export const runtimeGateway = (req) => handleRequest(req);');
   source = source.replace('Deno.serve(async (req) => {', 'export const capturedHandler = async (req) => {');
   if (source.includes('capturedHandler')) source = source.replace(/\}\);\s*$/, '};');
   const { code } = await transform(source, { loader: 'ts', format: 'esm' });
   return import('data:text/javascript;base64,' + Buffer.from(code).toString('base64'));
 }
-const gateway = (await loadHandler('base44/functions/secureEntities/entry.ts')).handleRequest;
+const gatewayModule = await loadHandler('base44/functions/secureEntities/entry.ts');
+const gateway = gatewayModule.handleRequest;
 const messageNotification = (await loadHandler('base44/functions/createMessageNotification/entry.ts')).capturedHandler;
 const whiffNotification = (await loadHandler('base44/functions/sendWhiffNotification/entry.ts')).default;
 const statusNotification = (await loadHandler('base44/functions/createStatusInteractionNotification/entry.ts')).capturedHandler;
@@ -63,6 +65,19 @@ function fixture(blocks = [], me = 'alice@example.com') {
   return {database,writes,invoke};
 }
 const block = (reverse=false) => [{id:'b1',blocker_email:reverse?'bob@example.com':'alice@example.com',blocked_email:reverse?'alice@example.com':'bob@example.com'}];
+
+test('production Deno handler ignores connection info and supports profile reads and saves', async () => {
+ const f = fixture();
+ globalThis.testClient = { auth: { me: async () => ({email:'alice@example.com'}) }, asServiceRole: { entities: {} } };
+ // Use the same fixture client through invoke, but pass Deno's second argument rather than a factory.
+ const runtime = (req) => gatewayModule.runtimeGateway(req, {remoteAddr:{transport:'tcp',hostname:'127.0.0.1',port:443}});
+ const read = await f.invoke({entity:'ScentProfile',action:'list'}, runtime);
+ assert.equal(read.status,200);
+ assert.ok(read.body.result.some(p=>p.id==='pa'));
+ const save = await f.invoke({entity:'ScentProfile',action:'update',id:'pa',data:{bio:'Updated bio'}},runtime);
+ assert.equal(save.status,200);
+ assert.equal(f.database.ScentProfile[0].bio,'Updated bio');
+});
 
 test('unauthenticated reads and writes are denied', async()=> {
  const f=fixture([],null);
