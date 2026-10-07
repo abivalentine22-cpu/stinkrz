@@ -17,33 +17,36 @@ export default function Layout() {
   const [profileChecked, setProfileChecked] = useState(false);
 
   useEffect(() => {
+    let cancelled = false;
+    setMyProfile(null);
     if (!user?.email) { setProfileChecked(true); return; }
+    setProfileChecked(false);
     // Safety timeout: if the profile check hangs (slow network), don't leave
     // the user stuck on the Layout spinner forever — render the page after 10s.
-    const timeoutId = setTimeout(() => setProfileChecked(true), 10000);
+    const timeoutId = setTimeout(() => { if (!cancelled) setProfileChecked(true); }, 10000);
     base44.entities.ScentProfile.filter({ user_email: user.email })
       .then(async p => {
+        if (cancelled) return;
         const profile = p[0] || null;
         setMyProfile(profile);
         setProfileChecked(true);
         // Redirect to onboarding if user has no profile and isn't already on an exempt path.
-        // But first verify auth — an expired token causes the secure gateway to return
-        // an empty list, which would incorrectly send the user back to onboarding
-        // ("forced to make their account again") instead of to login.
+        // Confirm auth before treating an empty successful result as a missing profile.
         if (!profile && !NO_GATE_PATHS.includes(pathname)) {
           try {
             await base44.auth.me();
-            navigate("/onboarding", { replace: true });
+            if (!cancelled) navigate("/onboarding", { replace: true });
           } catch {
-            base44.auth.redirectToLogin(window.location.href);
+            if (!cancelled) base44.auth.redirectToLogin(window.location.href);
           }
         }
       })
       .catch(() => {
         // Never leave the app stuck on a blank screen if the profile check fails
-        setProfileChecked(true);
+        if (!cancelled) setProfileChecked(true);
       })
       .finally(() => clearTimeout(timeoutId));
+    return () => { cancelled = true; clearTimeout(timeoutId); };
   }, [user?.email, pathname, navigate]);
 
   // App-wide presence: keep the user "online" + location fresh on every page,
