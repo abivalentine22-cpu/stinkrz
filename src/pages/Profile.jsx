@@ -87,6 +87,9 @@ export default function Profile() {
         return base44.entities.ScentProfile.create({ ...data, user_email: user.email, onboarding_complete: true });
       }
     },
+    onError: (error) => {
+      toast({ title: "Profile could not be saved", description: error?.response?.data?.error || error?.message || "Please try again.", variant: "destructive" });
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["my-profile"] });
       toast({ title: "Profile saved!", description: "Your scent profile has been updated." });
