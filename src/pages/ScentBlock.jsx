@@ -108,6 +108,7 @@ export default function ScentBlock() {
   const [reportedEmails, setReportedEmails] = useState([]);
 
   const mapContainerRef = useRef(null);
+  const mapMovedByUserRef = useRef(false);
   const mapRef = useRef(null);
   const markersRef = useRef({});
   const youMarkerRef = useRef(null);
@@ -157,6 +158,10 @@ export default function ScentBlock() {
     mapRef.current = map;
 
     map.on("load", () => setMapReady(true));
+    map.on("dragstart", () => { mapMovedByUserRef.current = true; });
+    map.on("movestart", (event) => {
+      if (event.originalEvent) mapMovedByUserRef.current = true;
+    });
 
     return () => {
       map.remove();
@@ -257,7 +262,7 @@ export default function ScentBlock() {
         if (d.latitude && d.longitude) {
           const pos = { lat: d.latitude, lng: d.longitude };
           setUserPos(pos);
-          if (mapRef.current) {
+          if (mapRef.current && !mapMovedByUserRef.current) {
             mapRef.current.setCenter([pos.lng, pos.lat]);
           }
         }
@@ -273,7 +278,7 @@ export default function ScentBlock() {
         setUserPos({ lat, lng });
         localStorage.setItem("stinkrz_last_pos", JSON.stringify({ lat, lng }));
         saveLocation(lat, lng);
-        if (mapRef.current) {
+        if (mapRef.current && !mapMovedByUserRef.current) {
           mapRef.current.flyTo({ center: [lng, lat], zoom: 14, duration: 1200 });
         }
       },
@@ -292,9 +297,7 @@ export default function ScentBlock() {
         const { latitude: lat, longitude: lng } = pos.coords;
         setUserPos({ lat, lng });
         saveLocation(lat, lng);
-        if (mapRef.current) {
-          mapRef.current.easeTo({ center: [lng, lat], duration: 600 });
-        }
+        // GPS updates move the location marker, never the map camera.
       },
       () => setGeoError("Location access denied"),
       { enableHighAccuracy: true }
