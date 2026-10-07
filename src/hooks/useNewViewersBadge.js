@@ -1,6 +1,14 @@
 import { useState, useEffect, useRef } from "react";
 import { base44 } from "@/api/base44Client";
 
+// Local event — when markViewersSeen() runs, it notifies all active badge
+// hooks to clear. This replaces the old ScentProfile.subscribe() watcher,
+// which kept the entire ScentProfile channel polling every 15s app-wide.
+const viewersSeenListeners = new Set();
+function notifyViewersSeen() {
+  viewersSeenListeners.forEach((fn) => fn());
+}
+
 // Returns true when there are profile views newer than the user's last
 // "Who Viewed Me" check. Self-clears when the /viewers page marks seen.
 export function useNewViewersBadge(userEmail) {
@@ -51,18 +59,17 @@ export function useNewViewersBadge(userEmail) {
       }
     });
 
-    // Live: the /viewers page (or first-time init) updated last_viewers_check → clear.
-    const unsubProfile = base44.entities.ScentProfile.subscribe((event) => {
-      if (event.type === "update" && event.data?.user_email === userEmail && event.data.last_viewers_check) {
-        lastCheckRef.current = new Date(event.data.last_viewers_check);
-        setHasNewViews(false);
-      }
-    });
+    // Local event: the /viewers page marked views seen → clear.
+    const onSeen = () => {
+      lastCheckRef.current = new Date();
+      setHasNewViews(false);
+    };
+    viewersSeenListeners.add(onSeen);
 
     return () => {
       cancelled = true;
       unsubViews?.();
-      unsubProfile?.();
+      viewersSeenListeners.delete(onSeen);
     };
   }, [userEmail]);
 
@@ -70,7 +77,7 @@ export function useNewViewersBadge(userEmail) {
 }
 
 // Call when the /viewers page opens — stamps the last-check time to now so
-// all currently-known views are considered seen.
+// all currently-known views are considered seen, and notifies the badge.
 export async function markViewersSeen(userEmail) {
   const profiles = await base44.entities.ScentProfile.filter({ user_email: userEmail });
   const myProfile = profiles[0];
@@ -78,4 +85,5 @@ export async function markViewersSeen(userEmail) {
   await base44.entities.ScentProfile.update(myProfile.id, {
     last_viewers_check: new Date().toISOString(),
   });
+  notifyViewersSeen();
 }
