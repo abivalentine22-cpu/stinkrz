@@ -12,7 +12,7 @@ import { useScentMatchNotifications } from "@/hooks/useScentMatchNotifications";
 import { useBlockedUsers } from "@/hooks/useBlockedUsers";
 import { useAuth } from "@/lib/AuthContext";
 
-const ACTIVITY_TIMEOUT_MINS = 15;
+const ACTIVITY_TIMEOUT_MINS = 45;
 
 const SCENT_RING = {
   Fresh: "#34d399",
