@@ -133,7 +133,7 @@ export default function ScentBlock() {
     if (!user?.email) return;
     base44.entities.Report.filter({ reporter_email: user.email }).then(reports => {
       setReportedEmails(reports.map(r => r.reported_user_email));
-    });
+    }).catch(() => setProfileError("Reported profiles could not be checked. Please refresh."));
   }, [user?.email]);
 
   // Keep myProfileRef in sync
@@ -169,6 +169,8 @@ export default function ScentBlock() {
 
     return () => {
       map.remove();
+      markersRef.current = {};
+      youMarkerRef.current = null;
       mapRef.current = null;
       setMapReady(false);
     };
@@ -234,10 +236,14 @@ export default function ScentBlock() {
   const saveLocation = useCallback(async (lat, lng) => {
     const profile = myProfileRef.current;
     if (!profile) return;
-    await base44.entities.ScentProfile.update(
-      profile.id,
-      locationPatch(lat, lng, profile)
-    );
+    try {
+      await base44.entities.ScentProfile.update(
+        profile.id,
+        locationPatch(lat, lng, profile)
+      );
+    } catch {
+      setGeoError("Your location could not be saved. Please try again.");
+    }
   }, []); // stable — no deps needed
 
   useEffect(() => {
