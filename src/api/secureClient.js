@@ -9,7 +9,6 @@ export function secureClient(client) {
       if (response.data?.error) throw new Error(response.data.error);
       return response.data.result;
     } catch (error) {
-      if (action === 'list' && error?.response?.status === 401) return [];
       throw error;
     }
   };
