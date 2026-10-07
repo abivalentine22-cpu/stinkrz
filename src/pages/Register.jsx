@@ -54,7 +54,7 @@ export default function Register() {
   };
 
   const handleGoogle = () => {
-    base44.auth.loginWithProvider("google", "/onboarding");
+    base44.auth.loginWithProvider("google", refCode ? `/onboarding?ref=${encodeURIComponent(refCode)}` : "/onboarding");
   };
 
   const handleResend = async () => {
