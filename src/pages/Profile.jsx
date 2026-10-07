@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -41,6 +41,7 @@ export default function Profile() {
   });
 
   const myProfile = profiles[0];
+  const hydratedProfileId = useRef(null);
 
   const [form, setForm] = useState({
     display_name: "",
@@ -61,7 +62,9 @@ export default function Profile() {
   });
 
   useEffect(() => {
-    if (myProfile) {
+    // Refreshes for photos or presence must not overwrite unsaved form edits.
+    if (myProfile && hydratedProfileId.current !== myProfile.id) {
+      hydratedProfileId.current = myProfile.id;
       setForm({
         display_name: myProfile.display_name || "",
         age: myProfile.age?.toString() || "",
