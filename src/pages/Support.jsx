@@ -1,26 +1,15 @@
-import React, { useState } from "react";
+import React from "react";
 import { motion } from "framer-motion";
 import { Heart, Sparkles, ArrowLeft, Info, Gift } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 
 const MONTHLY_GOAL = 150;
-const RAISED_SO_FAR = 0; // preview — no processor configured yet
-const PRESET_AMOUNTS = [5, 10, 25];
+const RAISED_SO_FAR = 0; // Preview only; real totals require verified payment events.
+const SUPPORT_TEST_LINK = "https://buy.stripe.com/test_28E7sN5G9chodwBeiS0RG00";
 
 export default function Support() {
-  const [selectedAmount, setSelectedAmount] = useState(10);
-  const [customAmount, setCustomAmount] = useState("");
-  const [submitted, setSubmitted] = useState(false);
-
   const progressPct = Math.min(100, Math.round((RAISED_SO_FAR / MONTHLY_GOAL) * 100));
-
-  const activeAmount = customAmount ? parseFloat(customAmount) : selectedAmount;
-
-  const handleSupport = () => {
-    // Non-transactional placeholder — no payment processor is configured yet.
-    setSubmitted(true);
-  };
 
   return (
     <div className="max-w-2xl mx-auto px-4 py-8">
@@ -35,7 +24,7 @@ export default function Support() {
       <div className="flex items-start gap-3 bg-accent/10 border border-accent/25 rounded-2xl p-4 mb-6">
         <Info className="w-4 h-4 text-accent shrink-0 mt-0.5" />
         <p className="font-body text-xs text-accent-foreground/80 leading-relaxed">
-          <span className="font-semibold">Preview.</span> This page is a preview and isn't published yet. Support buttons are placeholders until payment processing is configured — no charges are made.
+          <span className="font-semibold">Test mode.</span> Checkout opens in the Stripe sandbox. No real money is collected. Use test payment details only.
         </p>
       </div>
 
@@ -59,7 +48,7 @@ export default function Support() {
         <div className="flex items-center justify-between mb-3">
           <h3 className="font-heading font-semibold flex items-center gap-2">
             <Sparkles className="w-4 h-4 text-primary" />
-            This month's goal
+            Monthly goal · preview
           </h3>
           <span className="font-body text-sm text-muted-foreground">
             <span className="text-foreground font-semibold">${RAISED_SO_FAR}</span> of ${MONTHLY_GOAL}
@@ -74,7 +63,7 @@ export default function Support() {
           />
         </div>
         <p className="font-body text-xs text-muted-foreground mt-3">
-          {progressPct}% of this month's operating costs covered. Every contribution helps keep the block online.
+          Goal preview only — this meter is not connected to payments yet. Test payments do not count toward the goal.
         </p>
       </div>
 
