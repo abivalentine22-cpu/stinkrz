@@ -6,7 +6,7 @@ import { Link } from "react-router-dom";
 
 const MONTHLY_GOAL = 150;
 const RAISED_SO_FAR = 0; // Preview only; real totals require verified payment events.
-const SUPPORT_TEST_LINK = "https://buy.stripe.com/test_28E7sN5G9chodwBeiS0RG00";
+const SUPPORT_LINK = "https://buy.stripe.com/aFa7sMdjY7Cddfue6qbwk00";
 
 export default function Support() {
   const progressPct = Math.min(100, Math.round((RAISED_SO_FAR / MONTHLY_GOAL) * 100));
@@ -20,11 +20,11 @@ export default function Support() {
         <h1 className="font-heading text-2xl font-bold">Support Stinkrz</h1>
       </div>
 
-      {/* Preview banner */}
+      {/* Contribution information */}
       <div className="flex items-start gap-3 bg-accent/10 border border-accent/25 rounded-2xl p-4 mb-6">
         <Info className="w-4 h-4 text-accent shrink-0 mt-0.5" />
         <p className="font-body text-xs text-accent-foreground/80 leading-relaxed">
-          <span className="font-semibold">Test mode.</span> Checkout opens in the Stripe sandbox. No real money is collected. Use test payment details only.
+          <span className="font-semibold">Voluntary support.</span> Continue to Stripe to choose your amount and complete a real contribution.
         </p>
       </div>
 
@@ -63,7 +63,7 @@ export default function Support() {
           />
         </div>
         <p className="font-body text-xs text-muted-foreground mt-3">
-          Goal preview only — this meter is not connected to payments yet. Test payments do not count toward the goal.
+          Goal preview only — contribution totals are not connected yet, so this meter does not show payments received.
         </p>
       </div>
 
@@ -76,9 +76,9 @@ export default function Support() {
           $5, $10, $25, or any amount you choose. Enter your contribution amount on Stripe.
         </p>
         <Button asChild className="w-full mt-5 gap-2 font-body font-semibold h-12 text-base">
-          <a href={SUPPORT_TEST_LINK}>
+          <a href={SUPPORT_LINK}>
             <Heart className="w-5 h-5" />
-            Try test checkout
+            Support Stinkrz
           </a>
         </Button>
 
