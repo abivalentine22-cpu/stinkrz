@@ -73,6 +73,8 @@ export function secureClient(client) {
         return () => {
           listeners.delete(callback);
           if (!listeners.size) {
+            // Do not reuse pending reads when the old screen/session is torn down.
+            inFlightReads.clear();
             generation++;
             clearInterval(timer); timer = null; snapshot = new Map();
             document.removeEventListener('visibilitychange', refresh);
