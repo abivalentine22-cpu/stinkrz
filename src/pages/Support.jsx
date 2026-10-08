@@ -72,50 +72,16 @@ export default function Support() {
         <h3 className="font-heading font-semibold mb-1">Choose a contribution</h3>
         <p className="font-body text-xs text-muted-foreground mb-4">Voluntary — give what feels right.</p>
 
-        <div className="grid grid-cols-3 gap-3 mb-4">
-          {PRESET_AMOUNTS.map((amt) => (
-            <button
-              key={amt}
-              onClick={() => { setSelectedAmount(amt); setCustomAmount(""); }}
-              className={`rounded-2xl py-4 font-heading font-bold text-lg transition-all border ${
-                !customAmount && selectedAmount === amt
-                  ? "bg-primary text-primary-foreground border-primary shadow-lg shadow-primary/20"
-                  : "bg-muted/40 text-foreground border-border hover:border-primary/40"
-              }`}
-            >
-              ${amt}
-            </button>
-          ))}
-        </div>
-
-        <div className="relative">
-          <span className="absolute left-4 top-1/2 -translate-y-1/2 font-body text-sm text-muted-foreground">$</span>
-          <input
-            type="number"
-            min="1"
-            step="1"
-            inputMode="decimal"
-            placeholder="Custom amount"
-            value={customAmount}
-            onChange={(e) => setCustomAmount(e.target.value)}
-            className="w-full rounded-full bg-muted/40 border border-border pl-8 pr-4 py-3 font-body text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary"
-          />
-        </div>
-
-        <Button
-          onClick={handleSupport}
-          disabled={!activeAmount || activeAmount <= 0}
-          className="w-full mt-5 gap-2 font-body font-semibold h-12 text-base"
-        >
-          <Heart className="w-5 h-5" />
-          Support Stinkrz {activeAmount > 0 ? `· $${activeAmount}` : ""}
+        <p className="font-body text-sm text-muted-foreground mb-4">
+          $5, $10, $25, or any amount you choose. Enter your contribution amount on Stripe.
+        </p>
+        <Button asChild className="w-full mt-5 gap-2 font-body font-semibold h-12 text-base">
+          <a href={SUPPORT_TEST_LINK}>
+            <Heart className="w-5 h-5" />
+            Try test checkout
+          </a>
         </Button>
 
-        {submitted && (
-          <p className="font-body text-xs text-center text-accent mt-3">
-            Thanks for the love! This is a preview — no payment was taken. Check back once support is live.
-          </p>
-        )}
       </div>
 
       {/* What it does / doesn't do */}
