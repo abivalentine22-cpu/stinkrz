@@ -192,6 +192,7 @@ export default function ScentBlock() {
     async function initialLoad() {
       // Retry through transient rate-limit (429) errors so the user isn't
       // stuck on a blank map when the gateway is briefly overloaded.
+      let failure = null;
       for (let attempt = 0; attempt < 3; attempt++) {
         try {
           const all = await base44.entities.ScentProfile.list();
@@ -206,11 +207,21 @@ export default function ScentBlock() {
           );
           setProfileError(null);
           return;
-        } catch {
-          if (attempt < 2) await new Promise(r => setTimeout(r, 1500));
+        } catch (error) {
+          failure = error;
+          const status = error?.response?.status || error?.status;
+          if (status === 401 || status === 403 || status === 400) break;
+          if (attempt < 2) await new Promise(r => setTimeout(r, (attempt + 1) * 2000));
         }
       }
-      if (!cancelled) setProfileError("Profiles could not be loaded. Refresh to try again.");
+      if (!cancelled) {
+        const status = failure?.response?.status || failure?.status;
+        const detail = status === 401 ? "Your login expired. Please sign in again."
+          : status === 429 ? "Too many requests. Wait a moment, then retry."
+          : status ? `Request failed (HTTP ${status}). Please retry.`
+          : "The request could not complete. Please check your connection and retry.";
+        setProfileError(`Profiles could not be loaded. ${detail}`);
+      }
     }
 
     initialLoad().finally(() => { if (!cancelled) setLoading(false); });
