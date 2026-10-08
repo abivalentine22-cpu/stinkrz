@@ -3,10 +3,24 @@ const SECURED = new Set(['ScentProfile','ChatMessage','Favorite','ProfileView','
 
 export function secureClient(client) {
   const channels = new Map();
-  const call = async (entity, action, params = {}) => {
+  const inFlightReads = new Map();
+  const invoke = async (entity, action, params = {}) => {
     const response = await client.functions.invoke('secureEntities', { entity, action, ...params });
     if (response.data?.error) throw new Error(response.data.error);
     return response.data.result;
+  };
+  const call = (entity, action, params = {}) => {
+    if (action !== 'list' && action !== 'get') return invoke(entity, action, params);
+    const normalized = action === 'list'
+      ? { query: {}, sort: '-created_date', limit: 1000, skip: 0, ...params }
+      : params;
+    const key = JSON.stringify([entity, action, normalized]);
+    if (inFlightReads.has(key)) return inFlightReads.get(key);
+    const request = invoke(entity, action, normalized).finally(() => {
+      if (inFlightReads.get(key) === request) inFlightReads.delete(key);
+    });
+    inFlightReads.set(key, request);
+    return request;
   };
   const channelFor = (entity) => {
     if (channels.has(entity)) return channels.get(entity);
