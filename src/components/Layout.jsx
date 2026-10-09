@@ -1,4 +1,5 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
 import Navbar from "./Navbar";
 import ProfileCompletenessBanner from "./ProfileCompletenessBanner";
@@ -13,41 +14,25 @@ export default function Layout() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const isMap = pathname === "/scent-block";
-  const [myProfile, setMyProfile] = useState(null);
-  const [profileChecked, setProfileChecked] = useState(false);
+  const { data: myProfile, isSuccess } = useQuery({
+    queryKey: ["layout-profile", user?.email],
+    enabled: !!user?.email,
+    queryFn: async () => (await base44.entities.ScentProfile.filter({ user_email: user.email }))[0] || null,
+    staleTime: 60000,
+    retry: false,
+  });
 
   useEffect(() => {
+    if (!user?.email || !isSuccess || myProfile || NO_GATE_PATHS.includes(pathname)) return;
     let cancelled = false;
-    setMyProfile(null);
-    if (!user?.email) { setProfileChecked(true); return; }
-    setProfileChecked(false);
-    // Safety timeout: if the profile check hangs (slow network), don't leave
-    // the user stuck on the Layout spinner forever — render the page after 10s.
-    const timeoutId = setTimeout(() => { if (!cancelled) setProfileChecked(true); }, 10000);
-    base44.entities.ScentProfile.filter({ user_email: user.email })
-      .then(async p => {
-        if (cancelled) return;
-        const profile = p[0] || null;
-        setMyProfile(profile);
-        setProfileChecked(true);
-        // Redirect to onboarding if user has no profile and isn't already on an exempt path.
-        // Confirm auth before treating an empty successful result as a missing profile.
-        if (!profile && !NO_GATE_PATHS.includes(pathname)) {
-          try {
-            await base44.auth.me();
-            if (!cancelled) navigate("/onboarding", { replace: true });
-          } catch {
-            if (!cancelled) base44.auth.redirectToLogin(window.location.href);
-          }
-        }
-      })
-      .catch(() => {
-        // Never leave the app stuck on a blank screen if the profile check fails
-        if (!cancelled) setProfileChecked(true);
-      })
-      .finally(() => clearTimeout(timeoutId));
-    return () => { cancelled = true; clearTimeout(timeoutId); };
-  }, [user?.email, pathname, navigate]);
+    // A successful empty profile result needs fresh auth before onboarding.
+    base44.auth.me().then(() => {
+      if (!cancelled) navigate("/onboarding", { replace: true });
+    }).catch(() => {
+      if (!cancelled) base44.auth.redirectToLogin(window.location.href);
+    });
+    return () => { cancelled = true; };
+  }, [user?.email, isSuccess, myProfile, pathname, navigate]);
 
   // App-wide presence: keep the user "online" + location fresh on every page,
   // respecting invisible/fuzzy privacy toggles. (The Scent Block map owns its
@@ -55,14 +40,6 @@ export default function Layout() {
   usePresence({ userEmail: user?.email, profile: myProfile, pathname });
 
   const showBanner = !isMap && myProfile && myProfile.onboarding_complete;
-
-  if (!profileChecked && user?.email) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="w-8 h-8 border-4 border-primary/20 border-t-primary rounded-full animate-spin" />
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen bg-background">
