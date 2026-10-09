@@ -85,7 +85,8 @@ export function secureClient(client) {
     const channel = {
       refresh,
       subscribe(callback) {
-        if (!listeners.size) generation++;
+        const firstListener = !listeners.size;
+        if (firstListener) generation++;
         listeners.add(callback);
         // New listeners receive the approved snapshot, including existing typing.
         for (const [id,row] of snapshot) callback({ type: 'create', id, data: row });
@@ -94,7 +95,9 @@ export function secureClient(client) {
           timer = setInterval(() => { if (document.visibilityState === 'visible') void refresh(); }, delay);
           document.addEventListener('visibilitychange', refresh);
         }
-        void refresh();
+        // Existing listeners already own a refresh loop and any pending read.
+        // Joining it must not queue a second fetch after that read completes.
+        if (firstListener) void refresh();
         return () => {
           listeners.delete(callback);
           if (!listeners.size) {
