@@ -9,8 +9,12 @@ export function useBlockedUsers() {
 
   useEffect(() => {
     if (!user?.email) return;
-    base44.entities.BlockedUser.filter({ blocker_email: user.email })
-      .then(rows => setBlockedEmails(rows.map(r => r.blocked_email)));
+    let cancelled = false;
+    // The gateway already restricts this list to the signed-in blocker. Match
+    // the subscription read so both callers share one pending request.
+    base44.entities.BlockedUser.list()
+      .then(rows => { if (!cancelled) setBlockedEmails(rows.map(r => r.blocked_email)); })
+      .catch(() => {});
 
     const unsub = base44.entities.BlockedUser.subscribe((event) => {
       if (event.data?.blocker_email !== user.email) return;
@@ -20,7 +24,7 @@ export function useBlockedUsers() {
         setBlockedEmails(prev => prev.filter(e => e !== event.data.blocked_email));
       }
     });
-    return unsub;
+    return () => { cancelled = true; unsub(); };
   }, [user?.email]);
 
   const blockUser = useCallback(async (email) => {
