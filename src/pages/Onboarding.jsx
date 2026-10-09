@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from "react";
+import { scentIntensity } from "@/lib/scentIntensity";
+import IntensityGuide from "@/components/scent/IntensityGuide";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -268,7 +270,7 @@ export default function Onboarding() {
         </div>
       </div>
       <div className="space-y-3">
-        <Label className="font-body text-sm">Scent intensity (1–5): {profile.scent_intensity}</Label>
+        <Label className="font-body text-sm">Scent intensity: {scentIntensity(profile.scent_intensity).label} ({profile.scent_intensity}/5)</Label>
         <input
           type="range"
           min={1}
@@ -277,9 +279,7 @@ export default function Onboarding() {
           onChange={(e) => updateProfile("scent_intensity", parseInt(e.target.value))}
           className="w-full accent-primary"
         />
-        <div className="flex justify-between text-[10px] font-body text-muted-foreground">
-          <span>Subtle</span><span>Nuclear</span>
-        </div>
+        <IntensityGuide value={profile.scent_intensity} />
       </div>
       <div className="space-y-3">
         <Label className="font-body text-sm">Shower frequency</Label>
@@ -340,7 +340,7 @@ export default function Onboarding() {
           <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center text-3xl">🤙</div>
           <div>
             <h3 className="font-heading font-bold text-lg">{profile.display_name || "Anonymous"}, {profile.age || "?"}</h3>
-            <p className="font-body text-xs text-muted-foreground">{profile.scent_category || "Neutral"} · Intensity {profile.scent_intensity}/5</p>
+            <p className="font-body text-xs text-muted-foreground">{profile.scent_category || "Neutral"} · {scentIntensity(profile.scent_intensity).label} ({profile.scent_intensity}/5)</p>
           </div>
         </div>
         {profile.vibe_badges.length > 0 && (
