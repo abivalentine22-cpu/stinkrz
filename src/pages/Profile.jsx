@@ -1,4 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
+import { scentIntensity } from "@/lib/scentIntensity";
+import IntensityGuide from "@/components/scent/IntensityGuide";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -384,7 +386,7 @@ export default function Profile() {
         </div>
 
         <div className="space-y-2">
-          <Label className="font-body text-sm">Scent Intensity: {form.scent_intensity}/5</Label>
+          <Label className="font-body text-sm">Scent Intensity: {scentIntensity(form.scent_intensity).label} ({form.scent_intensity}/5)</Label>
           <div className="flex items-center gap-2">
             <input type="range" min={1} max={5} value={form.scent_intensity} onChange={(e) => setForm({ ...form, scent_intensity: parseInt(e.target.value) })} className="flex-1 accent-primary" />
             <div className="flex gap-0.5">
@@ -394,6 +396,8 @@ export default function Profile() {
             </div>
           </div>
         </div>
+
+        <IntensityGuide value={form.scent_intensity} />
 
         <div className="space-y-2">
           <Label className="font-body text-sm">Scent Preferences</Label>
