@@ -1,13 +1,30 @@
+import { startProfileDiagnostic, updateProfileDiagnostic, shareProfileDiagnostic } from "../lib/profileDiagnostics.js";
+
 // Authenticated server gateway preserves the existing entity API used by screens.
 const SECURED = new Set(['ScentProfile','ChatMessage','Favorite','ProfileView','TypingIndicator','MessageReaction','StatusPost','Notification','BlockedUser']);
 
 export function secureClient(client) {
   const channels = new Map();
   const inFlightReads = new Map();
-  const invoke = async (entity, action, params = {}) => {
-    const response = await client.functions.invoke('secureEntities', { entity, action, ...params });
-    if (response.data?.error) throw new Error(response.data.error);
-    return response.data.result;
+  const diagnosticIds = new Map();
+  const invoke = async (entity, action, params = {}, diagnosticId) => {
+    const started = Date.now();
+    try {
+      const response = await client.functions.invoke('secureEntities', { entity, action, ...params });
+      if (response.data?.error) throw new Error(response.data.error);
+      if (diagnosticId) updateProfileDiagnostic(diagnosticId, {
+        state: "complete", duration: Date.now() - started, status: response.status || 200,
+        server: response.data?.diagnostics || null,
+      });
+      return response.data.result;
+    } catch (error) {
+      if (diagnosticId) updateProfileDiagnostic(diagnosticId, {
+        state: "failed", duration: Date.now() - started,
+        status: error?.response?.status || error?.status || null,
+        server: error?.response?.data?.diagnostics || null,
+      });
+      throw error;
+    }
   };
   const call = (entity, action, params = {}) => {
     if (action !== 'list' && action !== 'get') return invoke(entity, action, params);
@@ -15,9 +32,17 @@ export function secureClient(client) {
       ? { query: {}, sort: '-created_date', limit: 1000, skip: 0, ...params }
       : params;
     const key = JSON.stringify([entity, action, normalized]);
-    if (inFlightReads.has(key)) return inFlightReads.get(key);
-    const request = invoke(entity, action, normalized).finally(() => {
-      if (inFlightReads.get(key) === request) inFlightReads.delete(key);
+    if (inFlightReads.has(key)) {
+      shareProfileDiagnostic(diagnosticIds.get(key));
+      return inFlightReads.get(key);
+    }
+    const diagnosticId = entity === "ScentProfile" ? startProfileDiagnostic(action, normalized, inFlightReads.size) : null;
+    if (diagnosticId) diagnosticIds.set(key, diagnosticId);
+    const request = invoke(entity, action, normalized, diagnosticId).finally(() => {
+      if (inFlightReads.get(key) === request) {
+        inFlightReads.delete(key);
+        diagnosticIds.delete(key);
+      }
     });
     inFlightReads.set(key, request);
     return request;
@@ -74,7 +99,14 @@ export function secureClient(client) {
           listeners.delete(callback);
           if (!listeners.size) {
             // Do not reuse pending reads when the old screen/session is torn down.
-            inFlightReads.clear();
+            // Tearing down notifications must not discard a pending profile
+            // read and cause the new screen to send the same request again.
+            for (const key of inFlightReads.keys()) {
+              if (JSON.parse(key)[0] === entity) {
+                inFlightReads.delete(key);
+                diagnosticIds.delete(key);
+              }
+            }
             generation++;
             clearInterval(timer); timer = null; snapshot = new Map();
             document.removeEventListener('visibilitychange', refresh);
