@@ -195,7 +195,11 @@ export default function ScentBlock() {
       let failure = null;
       for (let attempt = 0; attempt < 3; attempt++) {
         try {
-          const all = await base44.entities.ScentProfile.list();
+          let timeoutId;
+          const all = await Promise.race([
+            base44.entities.ScentProfile.list(),
+            new Promise((_, reject) => { timeoutId = setTimeout(() => reject(new Error('Profile request timed out')), 15000); }),
+          ]).finally(() => clearTimeout(timeoutId));
           if (cancelled) return;
           const mine = all.find(p => p.user_email === user.email);
           setMyProfile(mine || null);
@@ -210,7 +214,8 @@ export default function ScentBlock() {
         } catch (error) {
           failure = error;
           const status = error?.response?.status || error?.status;
-          if (status === 401 || status === 403 || status === 400) break;
+          // Retry only explicit transient server/rate-limit failures.
+          if (![429, 502, 503, 504].includes(status)) break;
           if (attempt < 2) await new Promise(r => setTimeout(r, (attempt + 1) * 2000));
         }
       }
