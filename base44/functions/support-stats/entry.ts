@@ -64,9 +64,13 @@ export async function handleRequest(req,options={}) {
     });
     if(!options.api) {
       if(cache?.start===range.start&&cache.until>Date.now())return Response.json({available:true,...cache.total},{headers});
-      if(!pending)pending=collectTotal(api,range).then(total=>{cache={start:range.start,until:Date.now()+60000,total};return total}).finally(()=>{pending=null});
+      if(!pending||pending.start!==range.start) {
+        const work={start:range.start,promise:null};
+        work.promise=collectTotal(api,range).then(total=>{cache={start:range.start,until:Date.now()+60000,total};return total}).finally(()=>{if(pending===work)pending=null});
+        pending=work;
+      }
     }
-    const total=options.api?await collectTotal(api,range):await pending;
+    const total=options.api?await collectTotal(api,range):await pending.promise;
     return Response.json({available:true,...total},{headers});
   }catch{
     return Response.json({available:false},{headers});
