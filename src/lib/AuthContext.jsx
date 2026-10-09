@@ -32,7 +32,9 @@ export const AuthProvider = ({ children }) => {
       setIsLoadingPublicSettings(true);
       setAuthError(null);
       
-      // First, check app public settings (with token if available)
+      // Start independent checks together instead of adding their latencies.
+      const userAuthPromise = appParams.token ? checkUserAuth() : Promise.resolve();
+      // Check app public settings (with token if available)
       // This will tell us if auth is required, user not registered, etc.
       const appClient = createAxiosClient({
         baseURL: `/api/apps/public`,
@@ -49,7 +51,7 @@ export const AuthProvider = ({ children }) => {
         
         // If we got the app public settings successfully, check if user is authenticated
         if (appParams.token) {
-          await checkUserAuth();
+          await userAuthPromise;
         } else {
           setIsLoadingAuth(false);
           setIsAuthenticated(false);
