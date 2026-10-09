@@ -1,15 +1,24 @@
 import React from "react";
+import { useQuery } from "@tanstack/react-query";
+import { base44 } from "@/api/base44Client";
 import { motion } from "framer-motion";
 import { Heart, Sparkles, ArrowLeft, Info, Gift } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 
 const MONTHLY_GOAL = 150;
-const RAISED_SO_FAR = 0; // Preview only; real totals require verified payment events.
 const SUPPORT_LINK = "https://buy.stripe.com/aFa7sMdjY7Cddfue6qbwk00";
 
 export default function Support() {
-  const progressPct = Math.min(100, Math.round((RAISED_SO_FAR / MONTHLY_GOAL) * 100));
+  const { data: stats, isLoading } = useQuery({
+    queryKey: ["support-stats"],
+    queryFn: async () => (await base44.functions.invoke("support-stats", {})).data,
+    staleTime: 60000, refetchInterval: 60000, retry: false,
+  });
+  const available = stats?.available === true && Number.isSafeInteger(stats.raised_cents);
+  const raised = available ? stats.raised_cents / 100 : null;
+  const money = value => new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(value);
+  const progressPct = available ? Math.min(100, Math.round((raised / MONTHLY_GOAL) * 100)) : 0;
 
   return (
     <div className="max-w-2xl mx-auto px-4 py-8">
@@ -48,10 +57,10 @@ export default function Support() {
         <div className="flex items-center justify-between mb-3">
           <h3 className="font-heading font-semibold flex items-center gap-2">
             <Sparkles className="w-4 h-4 text-primary" />
-            Monthly goal · preview
+            {available ? stats.month : "Monthly goal"}
           </h3>
           <span className="font-body text-sm text-muted-foreground">
-            <span className="text-foreground font-semibold">${RAISED_SO_FAR}</span> of ${MONTHLY_GOAL}
+            <span className="text-foreground font-semibold">{available ? money(raised) : "—"}</span> of ${MONTHLY_GOAL}
           </span>
         </div>
         <div className="h-3 w-full rounded-full bg-muted overflow-hidden border border-border">
@@ -63,7 +72,9 @@ export default function Support() {
           />
         </div>
         <p className="font-body text-xs text-muted-foreground mt-3">
-          Goal preview only — contribution totals are not connected yet, so this meter does not show payments received.
+          {isLoading ? "Checking contributions…" : available
+            ? "Completed USD contributions before Stripe fees, minus refunds; disputed payments excluded. By checkout date, Pacific time. Updates about every minute."
+            : "Contribution total is temporarily unavailable. You can still support Stinkrz through Stripe."}
         </p>
       </div>
 
