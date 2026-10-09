@@ -1,5 +1,4 @@
 import { useEffect, useRef, useCallback } from "react";
-import { base44 } from "@/api/base44Client";
 
 // Compatible scent preference pairings
 const COMPATIBLE = {
@@ -66,15 +65,19 @@ function showLocalNotification(title, body, url = "/scent-block") {
   }
 }
 
-export function useScentMatchNotifications(userPos, myProfile) {
+export function useScentMatchNotifications(userPos, myProfile, profiles = []) {
+  const profilesRef = useRef(profiles);
+  useEffect(() => { profilesRef.current = profiles; }, [profiles]);
   const notifiedIds = useRef(new Set());
   const intervalRef = useRef(null);
   const permittedRef = useRef(false);
 
   const checkMatches = useCallback(async () => {
-    if (!userPos || !myProfile || !permittedRef.current) return;
+    if (!userPos || !myProfile || !permittedRef.current || document.visibilityState !== "visible") return;
     try {
-      const all = await base44.entities.ScentProfile.list();
+      // Reuse the map's already approved live profiles rather than fetching
+      // every profile again as soon as the owner profile arrives.
+      const all = profilesRef.current;
       const matches = all.filter((p) => {
         if (p.user_email === myProfile.user_email) return false;
         if (!p.location_lat || !p.location_lng) return false;
