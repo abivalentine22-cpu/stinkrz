@@ -54,8 +54,9 @@ function sanitizeProfile(row, email) {
   return publicRow;
 }
 async function readRows(entities, entity, email, query) {
-  const blocks = await all(entities.BlockedUser, { $or: [{ blocker_email: email }, { blocked_email: email }] });
-  const hidden = new Set(blocks.map(b => b.blocker_email === email ? b.blocked_email : b.blocker_email));
+  // Read permissions and records concurrently; filter only after both finish.
+  const blocksPromise = all(entities.BlockedUser, { $or: [{ blocker_email: email }, { blocked_email: email }] });
+  let hidden;
   let scope = {};
   if (entity === 'ChatMessage') scope = participant(email);
   if (entity === 'Favorite') scope = { $or: [{ from_email: email }, { to_email: email }] };
@@ -64,12 +65,15 @@ async function readRows(entities, entity, email, query) {
   if (entity === 'Notification') scope = { user_email: email };
   if (entity === 'BlockedUser') scope = { blocker_email: email };
   if (entity === 'MessageReaction') {
+    const blocks = await blocksPromise;
+    hidden = new Set(blocks.map(b => b.blocker_email === email ? b.blocked_email : b.blocker_email));
     const messages = await all(entities.ChatMessage, participant(email));
     const ids = messages.filter(m => !hidden.has(m.sender_email) && !hidden.has(m.receiver_email)).map(m => m.id);
     if (!ids.length) return [];
     scope = { message_id: { $in: ids } };
   }
-  const rows = await all(entities[entity], { $and: [scope, query] });
+  const [blocks, rows] = await Promise.all([blocksPromise, all(entities[entity], { $and: [scope, query] })]);
+  hidden = new Set(blocks.map(b => b.blocker_email === email ? b.blocked_email : b.blocker_email));
   return rows.filter(row => {
     if (entity === 'BlockedUser') return true;
     const emails = ['user_email','sender_email','receiver_email','from_email','to_email','viewer_email','viewed_email','conversation_partner','actor_email'];
