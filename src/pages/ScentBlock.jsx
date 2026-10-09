@@ -576,7 +576,7 @@ export default function ScentBlock() {
               · <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: "#4ade80", display: "inline-block" }} /> {onlineCount} online
             </span>
           )
-        )
+        )}
         {totalUsers !== null && <span> · {totalUsers.toLocaleString()} total users</span>}
       </div>
 
@@ -601,7 +601,7 @@ export default function ScentBlock() {
             </DialogPrimitive.Content>
           </DialogPrimitive.Portal>
         </DialogPrimitive.Root>
-      )
+      )}
 
       {/* Empty state for brand new users with no profile/location */}
       {!loading && myProfile && !myProfile.location_lat && !userPos && !enableLocDismissed && (
