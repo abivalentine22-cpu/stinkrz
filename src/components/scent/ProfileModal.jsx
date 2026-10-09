@@ -1,4 +1,5 @@
 import React from "react";
+import { scentIntensity } from "@/lib/scentIntensity";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -65,7 +66,7 @@ export default function ProfileModal({ profile, open, onClose, onMessage }) {
             </div>
             <div className="w-px h-8 bg-border" />
             <div>
-              <p className="text-xs text-muted-foreground font-body">Intensity</p>
+              <p className="text-xs text-muted-foreground font-body">Intensity · {scentIntensity(profile.scent_intensity).label}</p>
               <div className="flex gap-0.5 mt-0.5">
                 {intensityDots.map((filled, i) => (
                   <Droplets key={i} className={`w-3.5 h-3.5 ${filled ? "text-primary" : "text-muted-foreground/20"}`} />
