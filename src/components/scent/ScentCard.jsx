@@ -1,4 +1,5 @@
 import React from "react";
+import { scentIntensity } from "@/lib/scentIntensity";
 import { Badge } from "@/components/ui/badge";
 import { Droplets } from "lucide-react";
 import { motion } from "framer-motion";
@@ -57,6 +58,7 @@ export default function ScentCard({ profile, onClick, index = 0 }) {
             <Badge variant="outline" className={`text-[10px] px-1.5 py-0 border ${SCENT_COLORS[profile.scent_category]}`}>
               {profile.scent_category}
             </Badge>
+            <span className="text-[10px] font-body text-muted-foreground" title={scentIntensity(profile.scent_intensity).description}>{scentIntensity(profile.scent_intensity).label}</span>
             <div className="flex gap-0.5">
               {intensityDots.map((filled, i) => (
                 <Droplets key={i} className={`w-2.5 h-2.5 ${filled ? "text-primary" : "text-muted-foreground/30"}`} />
