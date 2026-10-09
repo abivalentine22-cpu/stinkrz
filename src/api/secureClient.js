@@ -31,7 +31,7 @@ export function secureClient(client) {
     let timer = null;
     let generation = 0;
     const refresh = async () => {
-      if (!listeners.size) return;
+      if (!listeners.size || document.visibilityState !== 'visible') return;
       if (running) { pending = true; return; }
       running = true;
       const requestGeneration = generation;
