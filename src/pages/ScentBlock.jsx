@@ -8,6 +8,7 @@ import { locationPatch } from "@/lib/location";
 import { useNavigate } from "react-router-dom";
 import { Crosshair, Eye, Home, MessageCircle, Minus, Plus, User } from "lucide-react";
 import MapFilterPanel from "@/components/map/MapFilterPanel";
+import ProfileDiagnostics from "@/components/map/ProfileDiagnostics";
 import { Link } from "react-router-dom";
 import { useScentMatchNotifications } from "@/hooks/useScentMatchNotifications";
 import { useBlockedUsers } from "@/hooks/useBlockedUsers";
@@ -226,6 +227,7 @@ export default function ScentBlock() {
         const detail = status === 401 ? "Your login expired. Please sign in again."
           : status === 429 ? "Too many requests. Wait a moment, then retry."
           : status ? `Request failed (HTTP ${status}). Please retry.`
+          : failure?.message === "Profile request timed out" ? "The profile request took longer than 15 seconds. Please retry."
           : "The request could not complete. Please check your connection and retry.";
         setProfileError(`Profiles could not be loaded. ${detail}`);
       }
@@ -480,6 +482,8 @@ export default function ScentBlock() {
           <button onClick={() => window.location.reload()} style={{ textDecoration: "underline" }}>Retry</button>
         </div>
       )}
+
+      {hasOwnerMapView(user) && <ProfileDiagnostics />}
 
       {/* Top nav bar */}
       <div style={{ position: "absolute", top: "14px", left: "14px", right: "14px", zIndex: 1000, display: "flex", alignItems: "center", gap: "8px" }}>
