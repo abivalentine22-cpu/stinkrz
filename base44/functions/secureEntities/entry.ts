@@ -53,9 +53,9 @@ function sanitizeProfile(row, email) {
   }
   return publicRow;
 }
-async function readRows(entities, entity, email, query) {
+async function readRows(entities, entity, email, query, measure = (_stage, work) => work()) {
   // Read permissions and records concurrently; filter only after both finish.
-  const blocksPromise = all(entities.BlockedUser, { $or: [{ blocker_email: email }, { blocked_email: email }] });
+  const blocksPromise = measure("permissions", () => all(entities.BlockedUser, { $or: [{ blocker_email: email }, { blocked_email: email }] }));
   let hidden;
   let scope = {};
   if (entity === 'ChatMessage') scope = participant(email);
@@ -72,9 +72,9 @@ async function readRows(entities, entity, email, query) {
     if (!ids.length) return [];
     scope = { message_id: { $in: ids } };
   }
-  const [blocks, rows] = await Promise.all([blocksPromise, all(entities[entity], { $and: [scope, query] })]);
+  const [blocks, rows] = await Promise.all([blocksPromise, measure("records", () => all(entities[entity], { $and: [scope, query] }))]);
   hidden = new Set(blocks.map(b => b.blocker_email === email ? b.blocked_email : b.blocker_email));
-  return rows.filter(row => {
+  return measure("filter", () => rows.filter(row => {
     if (entity === 'BlockedUser') return true;
     const emails = ['user_email','sender_email','receiver_email','from_email','to_email','viewer_email','viewed_email','conversation_partner','actor_email'];
     if (emails.some(key => hidden.has(row[key]))) return false;
@@ -90,15 +90,32 @@ async function readRows(entities, entity, email, query) {
       return safe;
     }
     return row;
-  });
+  }));
 }
 export async function handleRequest(req, makeClient = createClientFromRequest) {
+  const started = Date.now();
+  const timings = {};
+  const requestId = crypto.randomUUID();
+  let profileRead = false;
+  let ownerDiagnostics = false;
+  const measure = async (stage, work) => {
+    const before = Date.now();
+    try { return await work(); }
+    finally { timings[stage] = Date.now() - before; }
+  };
+  const respond = (body, options = {}) => {
+    const diagnostics = { requestId, total: Date.now() - started, ...timings };
+    if (profileRead) console.info("profile_request_timing", JSON.stringify({ ...diagnostics, status: options.status || 200 }));
+    return Response.json(ownerDiagnostics ? { ...body, diagnostics } : body, options);
+  };
   try {
     const client = makeClient(req);
     let me;
-    try { me = await client.auth.me(); } catch { return Response.json({ error: 'Unauthorized' }, { status: 401 }); }
-    if (!me?.email) return Response.json({ error: 'Unauthorized' }, { status: 401 });
+    try { me = await measure("authentication", () => client.auth.me()); } catch { return respond({ error: 'Unauthorized' }, { status: 401 }); }
+    if (!me?.email) return respond({ error: 'Unauthorized' }, { status: 401 });
     const { entity, action, id, data = {}, query = {}, sort = '-created_date', limit = 1000, skip = 0 } = await req.json();
+    profileRead = entity === "ScentProfile" && (action === "list" || action === "get");
+    ownerDiagnostics = profileRead && me.id === "69faa8a3ff7324c96aef6557" && me.role === "admin";
     if (!Object.hasOwn(FIELDS, entity)) fail('Unsupported entity', 400);
     const entities = client.asServiceRole.entities;
     if (action === 'list' || action === 'get') {
@@ -107,16 +124,16 @@ export async function handleRequest(req, makeClient = createClientFromRequest) {
         if (!['id', 'created_date', ...(entity === 'Notification' ? ['user_email','actor_email','type','message_id','read'] : FIELDS[entity])].includes(key) || !['string','boolean','number'].includes(typeof value)) fail('Invalid query', 400);
       }
       if (typeof sort !== 'string' || !['id','created_date','updated_date',...FIELDS[entity]].includes(sort.replace(/^-/, ''))) fail('Invalid sort', 400);
-      const rows = await readRows(entities, entity, me.email, action === 'get' ? { id } : query);
+      const rows = await readRows(entities, entity, me.email, action === 'get' ? { id } : query, measure);
       const descending = sort.startsWith('-');
       const key = sort.replace(/^-/, '');
       rows.sort((a,b) => ((a[key] > b[key]) ? 1 : (a[key] < b[key] ? -1 : 0)) * (descending ? -1 : 1));
       if (action === 'get') {
         if (!rows[0]) fail('Record unavailable', 404);
-        return Response.json({ result: rows[0] });
+        return respond({ result: rows[0] });
       }
       if (!Number.isInteger(limit) || limit < 1 || limit > 1000 || !Number.isInteger(skip) || skip < 0) fail('Invalid pagination', 400);
-      return Response.json({ result: rows.slice(skip, skip + limit) });
+      return respond({ result: rows.slice(skip, skip + limit) });
     }
     if (!['create','update','delete'].includes(action)) fail('Unsupported action', 400);
     if (!data || typeof data !== 'object' || Array.isArray(data)) fail('Invalid data', 400);
@@ -129,7 +146,7 @@ export async function handleRequest(req, makeClient = createClientFromRequest) {
       if (row[owner] !== me.email && !(action === 'delete' && me.role === 'admin' && ['ScentProfile','StatusPost'].includes(entity))) fail('Forbidden');
       if (action === 'delete') {
         await entities[entity].delete(id);
-        return Response.json({ result: { success: true } });
+        return respond({ result: { success: true } });
       }
     }
     const patch = { ...data };
@@ -149,7 +166,7 @@ export async function handleRequest(req, makeClient = createClientFromRequest) {
         if (profiles[0]?.send_read_receipts === false) {
           const safe = { ...row, has_private_media: !!row.media_uri, legacy_media_unavailable: !!row.media_url && !row.media_uri };
           delete safe.media_uri; delete safe.media_url;
-          return Response.json({ result: safe });
+          return respond({ result: safe });
         }
       }
       await assertUnblocked(entities, me.email, action === 'create' ? patch.receiver_email : row.sender_email);
@@ -174,7 +191,7 @@ export async function handleRequest(req, makeClient = createClientFromRequest) {
       if (entity === 'BlockedUser') {
         if (!patch.blocked_email || patch.blocked_email === me.email) fail('Invalid block', 400);
         const existing = await entities.BlockedUser.filter({ blocker_email: me.email, blocked_email: patch.blocked_email }, undefined, 1);
-        if (existing[0]) return Response.json({ result: existing[0] });
+        if (existing[0]) return respond({ result: existing[0] });
       }
       if (entity === 'ScentProfile') {
         if (patch.age !== undefined && (!Number.isInteger(patch.age) || patch.age < 18 || patch.age > 120)) fail('Stinkrz is for adults 18 or older', 400);
@@ -200,11 +217,11 @@ export async function handleRequest(req, makeClient = createClientFromRequest) {
     if (entity === 'ChatMessage') {
       const safe = { ...result, has_private_media: !!result.media_uri, legacy_media_unavailable: !!result.media_url && !result.media_uri };
       delete safe.media_uri; delete safe.media_url;
-      return Response.json({ result: safe });
+      return respond({ result: safe });
     }
-    return Response.json({ result });
+    return respond({ result });
   } catch (error) {
-    return Response.json({ error: error instanceof Rejection ? error.message : 'Request failed' }, { status: error.status || 500 });
+    return respond({ error: error instanceof Rejection ? error.message : 'Request failed' }, { status: error.status || 500 });
   }
 }
 // Deno passes connection info as its second argument; keep it out of the test client factory.
