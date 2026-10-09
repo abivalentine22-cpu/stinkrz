@@ -1,8 +1,8 @@
 import { Toaster } from "@/components/ui/toaster";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { queryClientInstance } from "@/lib/query-client";
-import { BrowserRouter as Router, Route, Routes, Navigate } from "react-router-dom";
-import React, { lazy, Suspense } from "react";
+import { BrowserRouter as Router, Route, Routes, Navigate, useLocation } from "react-router-dom";
+import React, { lazy, Suspense, useEffect } from "react";
 import PageNotFound from "./lib/PageNotFound";
 import { AuthProvider, useAuth } from "@/lib/AuthContext";
 import UserNotRegisteredError from "@/components/UserNotRegisteredError";
@@ -22,7 +22,19 @@ import Terms from "@/pages/Terms";
 import Privacy from "@/pages/Privacy";
 
 // Lazy-loaded heavy pages
-const ScentBlock = lazy(() => import("@/pages/ScentBlock"));
+// Share the background download with React.lazy so navigation does not
+// start another load. A failed warm-up can be retried when the page opens.
+let scentBlockModulePromise;
+const loadScentBlock = () => {
+  if (!scentBlockModulePromise) {
+    scentBlockModulePromise = import("@/pages/ScentBlock").catch((error) => {
+      scentBlockModulePromise = null;
+      throw error;
+    });
+  }
+  return scentBlockModulePromise;
+};
+const ScentBlock = lazy(loadScentBlock);
 const Messages = lazy(() => import("@/pages/Messages"));
 const Feed = lazy(() => import("@/pages/Feed"));
 const Profile = lazy(() => import("@/pages/Profile"));
@@ -48,6 +60,15 @@ const PageLoader = () => (
 const AuthenticatedApp = () => {
   const { user, isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
   usePushNotifications(user?.email);
+  const { pathname } = useLocation();
+
+  useEffect(() => {
+    // Download code while the homepage/authentication is loading. Importing
+    // the module does not mount the map, ask for location, or read profiles.
+    if (pathname === "/" || pathname === "/scent-block") {
+      void loadScentBlock().catch(() => {});
+    }
+  }, [pathname]);
 
   if (isLoadingPublicSettings || isLoadingAuth) {
     return (
