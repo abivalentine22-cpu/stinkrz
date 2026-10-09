@@ -72,7 +72,11 @@ async function readRows(entities, entity, email, query, measure = (_stage, work)
     if (!ids.length) return [];
     scope = { message_id: { $in: ids } };
   }
-  const [blocks, rows] = await Promise.all([blocksPromise, measure("records", () => all(entities[entity], { $and: [scope, query] }))]);
+  // Avoid an unnecessary compound filter around empty scopes. Profile reads
+  // have no additional scope; send their validated query straight to storage.
+  const storageQuery = !Object.keys(scope).length ? query
+    : !Object.keys(query).length ? scope : { $and: [scope, query] };
+  const [blocks, rows] = await Promise.all([blocksPromise, measure("records", () => all(entities[entity], storageQuery))]);
   hidden = new Set(blocks.map(b => b.blocker_email === email ? b.blocked_email : b.blocker_email));
   return measure("filter", () => rows.filter(row => {
     if (entity === 'BlockedUser') return true;
