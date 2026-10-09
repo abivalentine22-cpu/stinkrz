@@ -73,7 +73,7 @@ export function secureClient(client) {
         snapshot = next;
       } catch (error) {
         // Never fall back to raw entity access on errors.
-        if (error?.response?.status === 401) {
+        if (requestGeneration === generation && listeners.size && error?.response?.status === 401) {
           for (const [id,row] of snapshot) listeners.forEach(fn => fn({ type: 'delete', id, data: row }));
           snapshot = new Map();
         }
@@ -123,7 +123,7 @@ export function secureClient(client) {
   const handlers = new Map();
   const entities = new Proxy(client.entities, {
     get(target, name) {
-      if (!SECURED.has(name)) return target[name];
+      if (typeof name !== 'string' || !SECURED.has(name)) return target[name];
       if (!handlers.has(name)) {
         const mutate = async (action, params) => {
           const result = await call(name, action, params);
