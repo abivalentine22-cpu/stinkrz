@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from "react";
+import { scentIntensity } from "@/lib/scentIntensity";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, MapPin, Droplets, ShowerHead, MessageCircle, Wifi, WifiOff, Ban, ChevronLeft, ChevronRight, ShieldAlert } from "lucide-react";
 import HangLooseLogo from "@/components/HangLooseLogo";
@@ -351,7 +352,7 @@ export default function ProfileDrawer({ profile, open, onClose, onMessage, onRep
                 </div>
                 <div style={{ width: "1px", height: "32px", background: "rgba(255,255,255,0.08)" }} />
                 <div>
-                  <div style={{ fontSize: "10px", color: "#64748b", marginBottom: "4px", fontFamily: "var(--font-body)" }}>Intensity</div>
+                  <div style={{ fontSize: "10px", color: "#64748b", marginBottom: "4px", fontFamily: "var(--font-body)" }}>Intensity · {scentIntensity(profile.scent_intensity).label}</div>
                   <div style={{ display: "flex", gap: "2px" }}>
                     {intensityDots.map((filled, i) => (
                       <Droplets key={i} size={12} color={filled ? "#a78bfa" : "rgba(255,255,255,0.1)"} />
