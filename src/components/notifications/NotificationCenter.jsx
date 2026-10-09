@@ -1,8 +1,15 @@
 import React, { useState, useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { Bell, X, MessageCircle, Zap } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import { format } from "date-fns";
+import { parseServerTimestamp } from "@/lib/timestamps";
+import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
+
+function notificationTime(value) {
+  const date = parseServerTimestamp(value);
+  return Number.isFinite(date.getTime()) ? format(date, "MMM d · h:mm a") : "Time unavailable";
+}
 
 export default function NotificationCenter({ userEmail }) {
   const [open, setOpen] = useState(false);
@@ -42,12 +49,13 @@ export default function NotificationCenter({ userEmail }) {
   };
 
   return (
-    <div className="relative">
+    <Popover open={open} onOpenChange={setOpen}>
       {/* Bell icon */}
+      <PopoverTrigger asChild>
       <button
-        onClick={() => setOpen(!open)}
         className="relative p-2 text-muted-foreground hover:text-foreground transition-colors"
         title="Notifications"
+        aria-label="Notifications"
       >
         <Bell className="w-5 h-5" />
         {unreadCount > 0 && (
@@ -56,30 +64,24 @@ export default function NotificationCenter({ userEmail }) {
           </span>
         )}
       </button>
+      </PopoverTrigger>
 
       {/* Dropdown panel */}
-      <AnimatePresence>
-        {open && (
-          <>
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setOpen(false)}
-              className="fixed inset-0 z-40"
-            />
-            <motion.div
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              className="absolute top-full right-0 mt-2 w-96 bg-card border border-border rounded-2xl shadow-xl shadow-black/30 z-50 max-h-[500px] overflow-y-auto"
-            >
+      <PopoverContent
+        align="end"
+        side="bottom"
+        sideOffset={8}
+        collisionPadding={12}
+        className="w-96 max-w-[calc(100vw-24px)] p-0 bg-card border-border rounded-2xl shadow-xl shadow-black/30 max-h-[min(500px,var(--radix-popover-content-available-height))] overflow-y-auto overflow-x-hidden"
+        aria-label="Notifications"
+      >
               {/* Header */}
               <div className="sticky top-0 bg-card border-b border-border p-4 flex items-center justify-between z-10">
                 <h3 className="font-heading font-semibold">Notifications</h3>
                 <button
                   onClick={() => setOpen(false)}
-                  className="text-muted-foreground hover:text-foreground"
+                  aria-label="Close notifications"
+                  className="p-2 text-muted-foreground hover:text-foreground"
                 >
                   <X className="w-4 h-4" />
                 </button>
@@ -121,16 +123,16 @@ export default function NotificationCenter({ userEmail }) {
 
                         {/* Content */}
                         <div className="flex-1 min-w-0">
-                          <p className="font-body text-sm font-semibold text-foreground">
+                          <p className="font-body text-sm font-semibold text-foreground break-words">
                             {notif.title}
                           </p>
                           {notif.description && (
-                            <p className="font-body text-xs text-muted-foreground mt-0.5 line-clamp-2">
+                            <p className="font-body text-xs text-muted-foreground mt-0.5 line-clamp-2 break-words">
                               {notif.description}
                             </p>
                           )}
                           <p className="font-body text-[10px] text-muted-foreground/70 mt-1">
-                            {format(new Date(notif.created_date), "h:mm a")}
+                            {notificationTime(notif.created_date)}
                           </p>
                         </div>
 
@@ -161,10 +163,7 @@ export default function NotificationCenter({ userEmail }) {
                   ))}
                 </div>
               )}
-            </motion.div>
-          </>
-        )}
-      </AnimatePresence>
-    </div>
+      </PopoverContent>
+    </Popover>
   );
 }
