@@ -9,22 +9,13 @@ import { base44 } from "@/api/base44Client";
 export function useMessageReactions(messages, myEmail) {
   const [reactions, setReactions] = useState({});
 
-  // Load reactions for all visible messages
-  useEffect(() => {
-    if (!messages?.length) return;
-    const ids = messages.map(m => m.id);
-    // Fetch in bulk — filter by message_id in the set
-    Promise.all(ids.map(id => base44.entities.MessageReaction.filter({ message_id: id })))
-      .then(results => {
-        const map = {};
-        ids.forEach((id, i) => { map[id] = results[i] || []; });
-        setReactions(map);
-      })
-      .catch(() => {});
-  }, [messages?.map(m => m.id).join(",")]);
+  const hasMessages = !!messages?.length;
 
-  // Subscribe to reaction changes
+  // The shared channel supplies the authorized initial snapshot and updates.
+  // Avoid a separate request for every message, and poll only with a chat open.
   useEffect(() => {
+    setReactions({});
+    if (!myEmail || !hasMessages) return;
     const unsub = base44.entities.MessageReaction.subscribe((event) => {
       const d = event.data;
       if (!d) return;
@@ -44,7 +35,7 @@ export function useMessageReactions(messages, myEmail) {
       }
     });
     return unsub;
-  }, []);
+  }, [myEmail, hasMessages]);
 
   const toggleReaction = async (messageId, emoji) => {
     const existing = (reactions[messageId] || []).find(
