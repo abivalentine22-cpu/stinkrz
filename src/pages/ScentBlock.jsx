@@ -120,7 +120,7 @@ export default function ScentBlock() {
   const myProfileRef = useRef(null); // stable ref to avoid stale closure in saveLocation
   const navigate = useNavigate();
 
-  useScentMatchNotifications(userPos, myProfile);
+  useScentMatchNotifications(userPos, myProfile, profiles);
   const { isBlocked } = useBlockedUsers();
 
   // Load users I've reported so we can hide them from the map (consistent with Feed)
