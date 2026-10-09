@@ -26,17 +26,28 @@ export function usePresence({ userEmail, profile, pathname }) {
   useEffect(() => {
     if (!userEmail || !profile?.id) return;
 
-    const beat = () =>
-      base44.entities.ScentProfile
-        .update(profile.id, {
+    let running = false;
+    let cancelled = false;
+    const beat = async () => {
+      if (cancelled || running || document.visibilityState !== "visible") return;
+      running = true;
+      try {
+        await base44.entities.ScentProfile.update(profile.id, {
           is_online: profileRef.current?.show_online_status !== false,
           last_active: profileRef.current?.show_online_status === false ? null : new Date().toISOString(),
-        })
-        .catch(() => {});
+        });
+      } catch { /* Retry on the next visible heartbeat. */ }
+      finally { running = false; }
+    };
 
-    beat();
+    void beat();
     const id = setInterval(beat, HEARTBEAT_MS);
-    return () => clearInterval(id);
+    document.addEventListener("visibilitychange", beat);
+    return () => {
+      cancelled = true;
+      clearInterval(id);
+      document.removeEventListener("visibilitychange", beat);
+    };
   }, [userEmail, profile?.id]);
 
   // Location refresh — only on non-map pages, only if already granted.
