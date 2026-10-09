@@ -454,11 +454,13 @@ export default function ScentBlock() {
     <div style={{ position: "relative", width: "100vw", height: "100vh", overflow: "hidden" }}>
       {loading && (
         <div style={{
-          position: "absolute", inset: 0, zIndex: 2000,
+          position: "absolute", top: "64px", left: "14px", zIndex: 1000,
+          padding: "10px 14px", borderRadius: "12px", gap: "10px", pointerEvents: "none",
           background: "rgba(10,8,25,0.9)",
           display: "flex", alignItems: "center", justifyContent: "center",
         }}>
-          <div style={{ width: "28px", height: "28px", borderRadius: "50%", border: "2px solid rgba(167,139,250,0.2)", borderTopColor: "#a78bfa", animation: "spin 0.8s linear infinite" }} />
+          <div style={{ width: "20px", height: "20px", borderRadius: "50%", border: "2px solid rgba(167,139,250,0.2)", borderTopColor: "#a78bfa", animation: "spin 0.8s linear infinite" }} />
+          <span role="status" style={{ color: "#c4b5fd", fontSize: "13px" }}>Loading profiles…</span>
         </div>
       )}
 
