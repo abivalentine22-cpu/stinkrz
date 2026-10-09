@@ -242,3 +242,50 @@ test('hidden subscriptions make no requests and refresh once on return',async()=
   assert.equal(calls,1);
  }finally{unsubscribe();assert.equal(handlers.size,0);globalThis.document=oldDocument;}
 });
+
+test('profile timing metadata is owner-only and contains no profile data', async () => {
+ const ordinary = await fixture().invoke({entity:'ScentProfile',action:'list'});
+ assert.equal(ordinary.body.diagnostics, undefined);
+ for (const [id, role, allowed] of [
+  ['69faa8a3ff7324c96aef6557','admin',true],
+  ['another-admin','admin',false],
+  ['69faa8a3ff7324c96aef6557','user',false],
+ ]) {
+  const f=fixture();
+  const response=await f.invoke({entity:'ScentProfile',action:'list'}, (req, factory) => {
+   const client=factory();
+   client.auth.me=async()=>({id,role,email:'alice@example.com'});
+   return gateway(req,()=>client);
+  });
+  assert.equal(response.status,200);
+  if (!allowed) { assert.equal(response.body.diagnostics,undefined); continue; }
+  assert.deepEqual(Object.keys(response.body.diagnostics).sort(), ['authentication','filter','permissions','records','requestId','total'].sort());
+  for (const key of ['authentication','filter','permissions','records','total']) assert.ok(response.body.diagnostics[key]>=0);
+  assert.ok(!JSON.stringify(response.body.diagnostics).includes('alice'));
+ }
+});
+
+test('closing notifications preserves deduplication of pending profile reads', async () => {
+ const oldDocument=globalThis.document;
+ globalThis.document={visibilityState:'visible',addEventListener(){},removeEventListener(){}};
+ let resolveProfiles;
+ let profileCalls=0;
+ const client=secureClient({entities:{},functions:{async invoke(_name,payload){
+  if(payload.entity==='ScentProfile') {
+   profileCalls++;
+   return new Promise(resolve=>{resolveProfiles=resolve;});
+  }
+  return {data:{result:[]}};
+ }}});
+ const unsubscribe=client.entities.Notification.subscribe(()=>{});
+ try {
+  const first=client.entities.ScentProfile.list();
+  unsubscribe();
+  const second=client.entities.ScentProfile.list();
+  assert.equal(first,second);
+  assert.equal(profileCalls,1);
+  resolveProfiles({data:{result:[]}});
+  assert.deepEqual(await first,[]);
+  assert.deepEqual(await second,[]);
+ } finally { unsubscribe();globalThis.document=oldDocument; }
+});
