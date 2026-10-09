@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import maplibregl from "maplibre-gl";
+import * as DialogPrimitive from "@radix-ui/react-dialog";
 import "maplibre-gl/dist/maplibre-gl.css";
 import ProfileDrawer from "@/components/scent/ProfileDrawer";
 import { base44 } from "@/api/base44Client";
@@ -94,6 +95,7 @@ export default function ScentBlock() {
   const { user } = useAuth();
   const [mapFilters, setMapFilters] = useState({ minAge: "", maxAge: "", maxDistance: "", showerFrequency: "Any", lookingFor: "Any", scentCategory: "All", gender: "Any", sexuality: "Any" });
   const [selectedProfile, setSelectedProfile] = useState(null);
+  const [onlineListOpen, setOnlineListOpen] = useState(false);
   const [userPos, setUserPos] = useState(null);
   const [tracking, setTracking] = useState(false);
   const [geoError, setGeoError] = useState(null);
@@ -366,7 +368,9 @@ export default function ScentBlock() {
       .filter(p => mapFilters.maxDistance === "" || parseFloat(p.distance) <= parseFloat(mapFilters.maxDistance));
   }, [profiles, mapFilters, isBlocked, reportedEmails, youPos.lat, youPos.lng]);
 
-  const onlineCount = useMemo(() => filtered.filter(p => p.is_online).length, [filtered]);
+  const onlineProfiles = useMemo(() => filtered.filter(p => p.is_online)
+    .sort((a, b) => (a.display_name || "").localeCompare(b.display_name || "")), [filtered]);
+  const onlineCount = onlineProfiles.length;
 
   // Sync "You" marker — only move if already exists, recreate only on avatar change
   useEffect(() => {
@@ -546,8 +550,7 @@ export default function ScentBlock() {
         </button>
       </div>
 
-      <button
-        onClick={toggleTracking}
+      <div
         style={{
           position: "absolute", bottom: "20px", left: "14px", zIndex: 1000,
           background: "rgba(20,17,40,0.85)", border: "1px solid rgba(255,255,255,0.1)",
@@ -558,16 +561,47 @@ export default function ScentBlock() {
           cursor: "pointer", fontFamily: "var(--font-body)",
         }}
       >
-        <Eye size={13} color={tracking ? "#c4b5fd" : "#94a3b8"} />
-        {filtered.length} nearby
+        <button onClick={toggleTracking} aria-label={tracking ? "Stop location tracking" : "Start location tracking"} style={{ display: "flex", alignItems: "center", gap: "6px", background: "transparent", border: "none", padding: 0, color: "inherit", font: "inherit", cursor: "pointer" }}>
+          <Eye size={13} color={tracking ? "#c4b5fd" : "#94a3b8"} />
+          {filtered.length} nearby
+        </button>
         {hasOwnerMapView(user) && <span> · Admin view: includes inactive members</span>}
-        {onlineCount > 0 && (
-          <span style={{ color: "#4ade80", display: "flex", alignItems: "center", gap: "3px" }}>
-            · <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: "#4ade80", display: "inline-block" }} /> {onlineCount} online
-          </span>
-        )}
+        {(onlineCount > 0 || hasOwnerMapView(user)) && (
+          hasOwnerMapView(user) ? (
+            <button onClick={() => setOnlineListOpen(true)} aria-label={`Show ${onlineCount} online members`} aria-haspopup="dialog" style={{ color: "#4ade80", display: "flex", alignItems: "center", gap: "3px", background: "transparent", border: "none", padding: "5px 2px", font: "inherit", cursor: "pointer" }}>
+              · <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: "#4ade80", display: "inline-block" }} /> {onlineCount} online
+            </button>
+          ) : (
+            <span style={{ color: "#4ade80", display: "flex", alignItems: "center", gap: "3px" }}>
+              · <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: "#4ade80", display: "inline-block" }} /> {onlineCount} online
+            </span>
+          )
+        )
         {totalUsers !== null && <span> · {totalUsers.toLocaleString()} total users</span>}
-      </button>
+      </div>
+
+      {hasOwnerMapView(user) && (
+        <DialogPrimitive.Root open={onlineListOpen} onOpenChange={setOnlineListOpen}>
+          <DialogPrimitive.Portal>
+            <DialogPrimitive.Overlay style={{ position: "fixed", inset: 0, zIndex: 2000, background: "rgba(0,0,0,0.7)" }} />
+            <DialogPrimitive.Content className="fixed left-1/2 top-1/2 w-[calc(100%-32px)] max-w-sm -translate-x-1/2 -translate-y-1/2 rounded-2xl border border-primary/30 bg-background p-5 text-foreground shadow-xl" style={{ zIndex: 2001 }}>
+              <DialogPrimitive.Title className="font-heading text-lg font-bold pr-8">Online members ({onlineCount})</DialogPrimitive.Title>
+              <DialogPrimitive.Description className="text-xs text-muted-foreground mt-2">Members marked online on your current map. Map filters and privacy settings apply.</DialogPrimitive.Description>
+              <DialogPrimitive.Close aria-label="Close online members" className="absolute right-4 top-4 text-muted-foreground p-1">✕</DialogPrimitive.Close>
+              <div className="mt-4 max-h-[60vh] overflow-y-auto space-y-2">
+                {onlineProfiles.length === 0 && <p className="text-sm text-muted-foreground py-4">No members are currently marked online.</p>}
+                {onlineProfiles.map(profile => (
+                  <button key={profile.id} className="w-full flex items-center gap-3 rounded-xl p-3 text-left hover:bg-primary/10 focus-visible:outline focus-visible:outline-primary" onClick={() => { setOnlineListOpen(false); setSelectedProfile(profile); }}>
+                    {profile.avatar_url ? <img src={profile.avatar_url} alt="" loading="lazy" className="h-10 w-10 rounded-full object-cover" /> : <span className="h-10 w-10 rounded-full bg-primary/20 flex items-center justify-center">{profile.display_name?.[0] || "?"}</span>}
+                    <span className="flex-1 min-w-0 break-words text-sm font-semibold">{profile.display_name || "Member"}</span>
+                    <span className="text-xs text-green-400">● Online</span>
+                  </button>
+                ))}
+              </div>
+            </DialogPrimitive.Content>
+          </DialogPrimitive.Portal>
+        </DialogPrimitive.Root>
+      )
 
       {/* Empty state for brand new users with no profile/location */}
       {!loading && myProfile && !myProfile.location_lat && !userPos && !enableLocDismissed && (
