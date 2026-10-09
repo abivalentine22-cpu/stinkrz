@@ -225,3 +225,20 @@ test('expired profile sessions reject rather than claiming the profile is missin
  const client = secureClient({ entities: {}, functions: { invoke: async () => { throw expired; } } });
  await assert.rejects(client.entities.ScentProfile.filter({user_email:'alice@example.com'}), error => error === expired);
 });
+
+test('hidden subscriptions make no requests and refresh once on return',async()=>{
+ const oldDocument=globalThis.document;
+ const handlers=new Set();
+ globalThis.document={visibilityState:'hidden',addEventListener(_,fn){handlers.add(fn)},removeEventListener(_,fn){handlers.delete(fn)}};
+ let calls=0;
+ const client=secureClient({entities:{},functions:{async invoke(){calls++;return {data:{result:[]}}}}});
+ const unsubscribe=client.entities.ChatMessage.subscribe(()=>{});
+ try{
+  assert.equal(calls,0);
+  for(const fn of handlers) await fn();
+  assert.equal(calls,0);
+  document.visibilityState='visible';
+  for(const fn of handlers) await fn();
+  assert.equal(calls,1);
+ }finally{unsubscribe();assert.equal(handlers.size,0);globalThis.document=oldDocument;}
+});
