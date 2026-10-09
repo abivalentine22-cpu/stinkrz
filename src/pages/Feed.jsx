@@ -9,6 +9,8 @@ import { useBlockedUsers } from "@/hooks/useBlockedUsers";
 import { useAuth } from "@/lib/AuthContext";
 import { haversineDistance } from "@/lib/distance";
 
+import { parseServerTimestamp } from "@/lib/timestamps";
+
 const FEED_RADIUS_MILES = 25;
 
 export default function Feed() {
@@ -96,7 +98,7 @@ export default function Feed() {
     // Who viewed my profile today
     base44.entities.ProfileView.filter({ viewed_email: me.email }).then(views => {
       const today = new Date().toDateString();
-      setProfileViewers(views.filter(v => new Date(v.created_date).toDateString() === today && v.viewer_email !== me.email).length);
+      setProfileViewers(views.filter(v => parseServerTimestamp(v.created_date).toDateString() === today && v.viewer_email !== me.email).length);
     });
     // Auto-hide: load emails I've reported
     base44.entities.Report.filter({ reporter_email: me.email }).then(reports => {

@@ -5,6 +5,7 @@ import { useAuth } from "@/lib/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { MessageCircle, Eye } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { parseServerTimestamp } from "@/lib/timestamps";
 import { formatDistanceToNow } from "date-fns";
 import { useFavorites } from "@/hooks/useFavorites";
 import { markViewersSeen } from "@/hooks/useNewViewersBadge";
@@ -45,10 +46,19 @@ export default function Viewers() {
   // Deduplicate — keep most recent view per viewer
   const uniqueViews = useMemo(() => {
     const seen = {};
-    [...views].sort((a, b) => new Date(b.created_date) - new Date(a.created_date))
+    [...views].sort((a, b) => (parseServerTimestamp(b.created_date).getTime() || 0) - (parseServerTimestamp(a.created_date).getTime() || 0))
       .forEach(v => { if (!seen[v.viewer_email]) seen[v.viewer_email] = v; });
     return Object.values(seen);
   }, [views]);
+
+  const viewTimeLabel = (value) => {
+    const date = parseServerTimestamp(value);
+    if (!Number.isFinite(date.getTime())) return "View time unavailable";
+    const ahead = date.getTime() - Date.now();
+    if (ahead > 60_000) return "View time unavailable";
+    if (ahead > 0) return "just now";
+    return formatDistanceToNow(date, { addSuffix: true });
+  };
 
   return (
     <div className="max-w-2xl mx-auto px-4 py-8">
@@ -107,7 +117,7 @@ export default function Viewers() {
                     </div>
                     <p className="font-body text-xs text-muted-foreground">
                       {profile?.scent_category && `${profile.scent_category} · `}
-                      {formatDistanceToNow(new Date(view.created_date), { addSuffix: true })}
+                      {viewTimeLabel(view.created_date)}
                     </p>
                   </div>
                 </button>

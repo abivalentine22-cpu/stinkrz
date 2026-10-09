@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef } from "react";
 import { base44 } from "@/api/base44Client";
 
+import { parseServerTimestamp } from "@/lib/timestamps";
+
 // Local event — when markViewersSeen() runs, it notifies all active badge
 // hooks to clear. This replaces the old ScentProfile.subscribe() watcher,
 // which kept the entire ScentProfile channel polling every 15s app-wide.
@@ -30,7 +32,7 @@ export function useNewViewersBadge(userEmail) {
 
       let lastCheck = null;
       if (myProfile?.last_viewers_check) {
-        lastCheck = new Date(myProfile.last_viewers_check);
+        lastCheck = parseServerTimestamp(myProfile.last_viewers_check);
       } else if (myProfile) {
         // First-time: stamp "now" so the entire historical view backlog is
         // NOT marked as new. Only views after this moment count as new.
@@ -43,7 +45,7 @@ export function useNewViewersBadge(userEmail) {
       // Evaluate current views against the cutoff.
       const views = await base44.entities.ProfileView.filter({ viewed_email: userEmail });
       if (cancelled) return;
-      const hasNew = views.some((v) => !lastCheck || new Date(v.created_date) > lastCheck);
+      const hasNew = views.some((v) => !lastCheck || parseServerTimestamp(v.created_date) > lastCheck);
       setHasNewViews(hasNew);
     };
 
@@ -53,7 +55,7 @@ export function useNewViewersBadge(userEmail) {
     const unsubViews = base44.entities.ProfileView.subscribe((event) => {
       if (event.type === "create" && event.data?.viewed_email === userEmail) {
         const lastCheck = lastCheckRef.current;
-        if (!lastCheck || new Date(event.data.created_date) > lastCheck) {
+        if (!lastCheck || parseServerTimestamp(event.data.created_date) > lastCheck) {
           setHasNewViews(true);
         }
       }
