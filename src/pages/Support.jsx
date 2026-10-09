@@ -10,12 +10,12 @@ const MONTHLY_GOAL = 150;
 const SUPPORT_LINK = "https://buy.stripe.com/aFa7sMdjY7Cddfue6qbwk00";
 
 export default function Support() {
-  const { data: stats, isLoading } = useQuery({
+  const { data: stats, isLoading, isError } = useQuery({
     queryKey: ["support-stats"],
     queryFn: async () => (await base44.functions.invoke("support-stats", {})).data,
     staleTime: 60000, refetchInterval: 60000, retry: false,
   });
-  const available = stats?.available === true && Number.isSafeInteger(stats.raised_cents);
+  const available = !isError && stats?.available === true && Number.isSafeInteger(stats.raised_cents);
   const raised = available ? stats.raised_cents / 100 : null;
   const money = value => new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(value);
   const progressPct = available ? Math.min(100, Math.round((raised / MONTHLY_GOAL) * 100)) : 0;
