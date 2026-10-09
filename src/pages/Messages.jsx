@@ -24,20 +24,9 @@ export default function Messages() {
 
   useEffect(() => {
     if (!me?.email) return;
-    // Initial load (with retry for transient 429s)
-    (async () => {
-      for (let attempt = 0; attempt < 3; attempt++) {
-        try {
-          const msgs = await base44.entities.ChatMessage.list("-created_date", 50);
-          setAllMessages(prev => [...prev, ...msgs.filter(msg => !prev.some(saved => saved.id === msg.id))]
-            .sort((a, b) => b.created_date.localeCompare(a.created_date)).slice(0, 50));
-          return;
-        } catch {
-          if (attempt < 2) await new Promise(r => setTimeout(r, 1500));
-        }
-      }
-    })();
-    // Real-time subscription
+    setAllMessages([]);
+    // Shared subscription supplies initial messages and subsequent updates.
+    // Navbar uses the same channel, so opening Messages adds no separate fetch.
     const unsub = base44.entities.ChatMessage.subscribe((event) => {
       if (event.type === "create") {
         const msg = event.data;
