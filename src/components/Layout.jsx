@@ -14,13 +14,15 @@ export default function Layout() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const isMap = pathname === "/scent-block";
-  const { data: myProfile, isSuccess } = useQuery({
-    queryKey: ["layout-profile", user?.email],
+  const { data: profiles = [], isSuccess } = useQuery({
+    queryKey: ["my-profile", user?.email],
     enabled: !!user?.email,
-    queryFn: async () => (await base44.entities.ScentProfile.filter({ user_email: user.email }))[0] || null,
+    queryFn: () => base44.entities.ScentProfile.filter({ user_email: user.email }),
     staleTime: 60000,
     retry: false,
   });
+
+  const myProfile = profiles[0] || null;
 
   useEffect(() => {
     if (!user?.email || !isSuccess || myProfile || NO_GATE_PATHS.includes(pathname)) return;
