@@ -142,7 +142,11 @@ export async function handleRequest(req, makeClient = createClientFromRequest) {
       } else {
         if (Object.keys(patch).some(k => k !== 'read') || patch.read !== true) fail('Forbidden');
         const profiles = await entities.ScentProfile.filter({ user_email: me.email }, undefined, 1);
-        if (profiles[0]?.send_read_receipts === false) return Response.json({ result: row });
+        if (profiles[0]?.send_read_receipts === false) {
+          const safe = { ...row, has_private_media: !!row.media_uri, legacy_media_unavailable: !!row.media_url && !row.media_uri };
+          delete safe.media_uri; delete safe.media_url;
+          return Response.json({ result: safe });
+        }
       }
       await assertUnblocked(entities, me.email, action === 'create' ? patch.receiver_email : row.sender_email);
     } else {
@@ -189,6 +193,11 @@ export async function handleRequest(req, makeClient = createClientFromRequest) {
       }
     }
     const result = action === 'create' ? await entities[entity].create(patch) : await entities[entity].update(id, patch);
+    if (entity === 'ChatMessage') {
+      const safe = { ...result, has_private_media: !!result.media_uri, legacy_media_unavailable: !!result.media_url && !result.media_uri };
+      delete safe.media_uri; delete safe.media_url;
+      return Response.json({ result: safe });
+    }
     return Response.json({ result });
   } catch (error) {
     return Response.json({ error: error instanceof Rejection ? error.message : 'Request failed' }, { status: error.status || 500 });
