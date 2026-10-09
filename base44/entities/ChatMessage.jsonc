@@ -33,6 +33,10 @@
     "read": {
       "type": "boolean",
       "default": false
+    },
+    "media_uri": {
+      "type": "string",
+      "description": "Private storage reference; only the server may assign it."
     }
   },
   "required": [

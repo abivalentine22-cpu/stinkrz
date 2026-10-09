@@ -77,7 +77,16 @@ async function readRows(entities, entity, email, query) {
     if (entity === 'ScentProfile' && row.user_email !== email && row.invisible_mode) return false;
     if (entity === 'TypingIndicator' && Date.parse(row.expires_at) <= Date.now()) return false;
     return true;
-  }).map(row => entity === 'ScentProfile' ? sanitizeProfile(row, email) : row);
+  }).map(row => {
+    if (entity === 'ScentProfile') return sanitizeProfile(row, email);
+    if (entity === 'ChatMessage') {
+      const safe = { ...row, has_private_media: !!row.media_uri, legacy_media_unavailable: !!row.media_url && !row.media_uri };
+      delete safe.media_uri;
+      delete safe.media_url;
+      return safe;
+    }
+    return row;
+  });
 }
 export async function handleRequest(req, makeClient = createClientFromRequest) {
   try {
@@ -128,6 +137,7 @@ export async function handleRequest(req, makeClient = createClientFromRequest) {
         if (patch.sender_email && patch.sender_email !== me.email) fail('Forbidden');
         patch.sender_email = me.email;
         patch.read = false;
+        if (patch.media_url || patch.media_type) fail('Use protected media upload', 400);
         if (typeof patch.content !== 'string' || !patch.content.trim() || patch.content.length > 10000) fail('Invalid message', 400);
       } else {
         if (Object.keys(patch).some(k => k !== 'read') || patch.read !== true) fail('Forbidden');

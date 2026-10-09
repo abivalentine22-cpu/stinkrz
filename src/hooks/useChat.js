@@ -105,12 +105,18 @@ export function useChat({ me, conversation, onMessageSent, playSend, broadcastTy
       return;
     }
 
+    const recipient = conversation?.partnerEmail;
+    if (!me?.email || !recipient || uploading || sendingRef.current) return;
     setUploading(true);
     try {
       const uploadFile = isVideo ? file : await compressImage(file);
-      const { file_url } = await base44.integrations.Core.UploadFile({ file: uploadFile });
-      const message = isVideo ? "🎥 Sent a video" : "📸 Sent a photo";
-      await sendMessage(message, false, file_url, isVideo ? "video" : "image");
+      const result = await base44.functions.invoke('private-chat-media', { file: uploadFile, receiver_email: recipient });
+      const msg = result.data?.message;
+      if (!msg?.id) throw new Error("Upload could not be saved.");
+      if (partnerEmailRef.current === recipient) onMessageSent?.(msg);
+      playSend();
+      base44.functions.invoke('createMessageNotification', { message_id: msg.id }).catch(() => {});
+
     } catch (err) {
       toast({ title: "Upload failed", description: err?.message || "Couldn't upload file. Try a smaller file.", variant: "destructive" });
     } finally {
