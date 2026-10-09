@@ -289,3 +289,26 @@ test('closing notifications preserves deduplication of pending profile reads', a
   assert.deepEqual(await second,[]);
  } finally { unsubscribe();globalThis.document=oldDocument; }
 });
+
+test('joining a shared channel does not queue a duplicate read and both listeners receive the snapshot', async () => {
+ const oldDocument = globalThis.document;
+ globalThis.document = {visibilityState:'visible',addEventListener(){},removeEventListener(){}};
+ let resolveRead;
+ let calls = 0;
+ const client = secureClient({entities:{},functions:{invoke(){
+  calls++;
+  return new Promise(resolve => {resolveRead = resolve;});
+ }}});
+ const first = [], second = [];
+ const stopFirst = client.entities.ChatMessage.subscribe(e => first.push(e));
+ const stopSecond = client.entities.ChatMessage.subscribe(e => second.push(e));
+ try {
+  resolveRead({data:{result:[{id:'shared-message'}]}});
+  await new Promise(resolve => setTimeout(resolve, 10));
+  assert.equal(calls, 1);
+  assert.equal(first[0]?.id, 'shared-message');
+  assert.equal(second[0]?.id, 'shared-message');
+ } finally {
+  stopFirst(); stopSecond(); globalThis.document = oldDocument;
+ }
+});
