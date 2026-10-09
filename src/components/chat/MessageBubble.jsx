@@ -1,6 +1,8 @@
 import React from "react";
 import { format } from "date-fns";
 import { Loader } from "lucide-react";
+import PrivateMedia from "./PrivateMedia";
+import { parseServerTimestamp } from "@/lib/timestamps";
 import { REACTION_EMOJIS } from "./chatConstants";
 
 export default function MessageBubble({
@@ -66,19 +68,17 @@ export default function MessageBubble({
             ? "bg-primary text-primary-foreground rounded-br-md"
             : "bg-muted text-foreground rounded-bl-md"
         }`}>
-          {msg.media_url && msg.media_type === "image" && (
-            <img src={msg.media_url} alt="shared" className="max-w-full rounded-lg mb-2" />
+          {msg.has_private_media && (
+            <PrivateMedia key={`${me?.email}:${msg.id}`} messageId={msg.id} mediaType={msg.media_type} userEmail={me?.email} />
           )}
-          {msg.media_url && msg.media_type === "video" && (
-            <video controls className="max-w-full rounded-lg mb-2" style={{ maxHeight: "300px" }}>
-              <source src={msg.media_url} type="video/mp4" />
-            </video>
+          {(msg.legacy_media_unavailable || msg.media_url) && !msg.has_private_media && (
+            <p className="font-body text-xs mb-2">Older attachment temporarily unavailable while privacy protection is updated.</p>
           )}
           <p className={msg.is_sticker ? "text-3xl" : "font-body text-sm"}>{msg.content}</p>
           <p className={`text-[10px] mt-1 flex items-center gap-1 ${isMe ? "text-primary-foreground/60" : "text-muted-foreground"}`}>
             {msg._optimistic
               ? <><Loader className="w-2.5 h-2.5 animate-spin inline" /> Sending…</>
-              : format(new Date(msg.created_date), "h:mm a")
+              : Number.isFinite(parseServerTimestamp(msg.created_date).getTime()) ? format(parseServerTimestamp(msg.created_date), "h:mm a") : "Time unavailable"
             }
             {isMe && !msg._optimistic && !hideReadReceipts && (
               <span style={{ fontSize: "10px" }} title={msg.read ? "Read" : "Sent"}>
