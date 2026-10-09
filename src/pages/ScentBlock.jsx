@@ -262,7 +262,7 @@ export default function ScentBlock() {
   // saveLocation uses ref — never re-creates, no stale closure
   const saveLocation = useCallback(async (lat, lng) => {
     const profile = myProfileRef.current;
-    if (!profile) return;
+    if (!profile || document.visibilityState !== "visible") return;
     try {
       await base44.entities.ScentProfile.update(
         profile.id,
