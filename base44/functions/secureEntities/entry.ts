@@ -122,6 +122,7 @@ export async function handleRequest(req, makeClient = createClientFromRequest) {
     ownerDiagnostics = profileRead && me.id === "69faa8a3ff7324c96aef6557" && me.role === "admin";
     if (!Object.hasOwn(FIELDS, entity)) fail('Unsupported entity', 400);
     const entities = client.asServiceRole.entities;
+    if (['get','update','delete'].includes(action) && (typeof id !== 'string' || !id.trim())) fail('Invalid record id', 400);
     if (action === 'list' || action === 'get') {
       if (!query || typeof query !== 'object' || Array.isArray(query)) fail('Invalid query', 400);
       for (const [key, value] of Object.entries(query)) {
@@ -198,6 +199,7 @@ export async function handleRequest(req, makeClient = createClientFromRequest) {
         if (existing[0]) return respond({ result: existing[0] });
       }
       if (entity === 'ScentProfile') {
+        if (patch.scent_intensity !== undefined && (!Number.isInteger(patch.scent_intensity) || patch.scent_intensity < 1 || patch.scent_intensity > 5)) fail('Scent intensity must be between 1 and 5', 400);
         if (patch.age !== undefined && (!Number.isInteger(patch.age) || patch.age < 18 || patch.age > 120)) fail('Stinkrz is for adults 18 or older', 400);
         if (action === 'create') {
           patch.fuzzy_location = patch.fuzzy_location !== false;
