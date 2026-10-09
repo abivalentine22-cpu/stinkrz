@@ -62,7 +62,7 @@ export function usePresence({ userEmail, profile, pathname }) {
     const acquire = () => {
       navigator.geolocation.getCurrentPosition(
         (pos) => {
-          if (cancelled) return;
+          if (cancelled || document.visibilityState !== "visible") return;
           const { latitude, longitude } = pos.coords;
           setUserPos({ lat: latitude, lng: longitude });
           base44.entities.ScentProfile
