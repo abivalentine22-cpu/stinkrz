@@ -11,6 +11,7 @@ import SexKinkTagPicker from "@/components/profile/SexKinkTagPicker";
 import { ArrowRight, ArrowLeft, Sparkles } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/lib/AuthContext";
+import { queryClientInstance } from "@/lib/query-client";
 
 const SCENT_CATEGORIES = ["Fresh", "Musky", "Ripe", "Earthy", "Neutral"];
 const SCENT_EMOJIS = { Fresh: "🧼", Musky: "🌲", Ripe: "🧀", Earthy: "🍂", Neutral: "⚖️" };
@@ -129,6 +130,7 @@ export default function Onboarding() {
           onboarding_complete: true,
         });
       }
+      queryClientInstance.invalidateQueries({ queryKey: ["my-profile", user.email] });
       await base44.functions.invoke("trackReferral", { action: "complete" }).catch(() => {});
       navigate("/scent-block");
     } catch (err) {
