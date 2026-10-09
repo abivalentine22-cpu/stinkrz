@@ -20,6 +20,27 @@ const whiffNotification = (await loadHandler('base44/functions/sendWhiffNotifica
 const statusNotification = (await loadHandler('base44/functions/createStatusInteractionNotification/entry.ts')).capturedHandler;
 const push = (await loadHandler('base44/functions/sendPushNotification/entry.ts')).capturedHandler;
 
+test('record actions reject operator objects and missing ids', async () => {
+ for (const action of ['get','update','delete']) {
+  for (const id of [undefined, '', { $ne: null }]) {
+   const f = fixture();
+   const response = await f.invoke({entity:'ScentProfile',action,id,data:{}});
+   assert.equal(response.status,400);
+   assert.equal(f.writes.length,0);
+  }
+ }
+});
+test('profile intensity accepts only integer ratings from one to five', async () => {
+ for (const value of [0,6,2.5,'5',null]) {
+  const f = fixture();
+  assert.equal((await f.invoke({entity:'ScentProfile',action:'update',id:'pa',data:{scent_intensity:value}})).status,400);
+  assert.equal(f.writes.length,0);
+ }
+ for (const value of [1,5]) {
+  assert.equal((await fixture().invoke({entity:'ScentProfile',action:'update',id:'pa',data:{scent_intensity:value}})).status,200);
+ }
+});
+
 function matches(row, query) {
   return Object.entries(query).every(([key,value]) => {
     if (key === '$and') return value.every(q => matches(row,q));
