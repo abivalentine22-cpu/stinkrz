@@ -32,7 +32,9 @@ Deno.serve(async (req) => {
       if (!t.expires_at) return true; // no expiry = delete
       return new Date(t.expires_at) < now;
     });
-    await Promise.all(stale.map(t => base44.asServiceRole.entities.TypingIndicator.delete(t.id)));
+    for (let start = 0; start < stale.length; start += 10) {
+      await Promise.all(stale.slice(start, start + 10).map(t => base44.asServiceRole.entities.TypingIndicator.delete(t.id)));
+    }
     return Response.json({ deleted: stale.length });
   } catch (error) {
     return Response.json({ error: error.message }, { status: 500 });
