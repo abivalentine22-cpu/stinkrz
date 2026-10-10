@@ -1,4 +1,5 @@
 import React from "react";
+import ProfilePhotoZoom from "./ProfilePhotoZoom";
 import { scentIntensity } from "@/lib/scentIntensity";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
@@ -25,12 +26,14 @@ export default function ProfileModal({ profile, open, onClose, onMessage }) {
         {/* Hero image */}
         <div className="relative aspect-[4/3] bg-muted overflow-hidden rounded-t-lg">
           {profile.avatar_url ? (
-            <img src={profile.avatar_url} alt={profile.display_name} className="w-full h-full object-cover" />
+            <ProfilePhotoZoom src={profile.avatar_url} name={profile.display_name}>
+              <img src={profile.avatar_url} alt={profile.display_name} className="w-full h-full object-cover" />
+            </ProfilePhotoZoom>
           ) : (
             <div className="w-full h-full flex items-center justify-center text-8xl opacity-20">🤙</div>
           )}
-          <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-card to-transparent h-24" />
-          <div className="absolute bottom-3 left-4 flex items-center gap-2">
+          <div className="pointer-events-none absolute bottom-0 left-0 right-0 bg-gradient-to-t from-card to-transparent h-24" />
+          <div className="pointer-events-none absolute bottom-3 left-4 flex items-center gap-2">
             {profile.is_online ? (
               <div className="w-2.5 h-2.5 rounded-full bg-green-500 shadow-lg shadow-green-500/50" />
             ) : (
