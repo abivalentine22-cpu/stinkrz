@@ -36,6 +36,11 @@
     "scent_category": {
       "type": "string"
     },
+    "expiry_reminder_sent": {
+      "type": "boolean",
+      "default": false,
+      "description": "Backend claim to prevent repeated expiry reminders for this post"
+    },
     "expires_at": {
       "type": "string",
       "format": "date-time",
