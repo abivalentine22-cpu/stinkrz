@@ -27,7 +27,7 @@ messaging.onBackgroundMessage((payload) => {
     icon: STINKRZ_ICON,
     data,
     tag: data.tag || (data.type ? `stinkrz-${data.type}` : "stinkrz"),
-    renotify: true,
+    renotify: false,
     requireInteraction: false,
   });
 });

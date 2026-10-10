@@ -42,6 +42,28 @@
     "push_attempted": {
       "type": "boolean",
       "default": false
+    },
+    "push_completed": {
+      "type": "boolean",
+      "default": false
+    },
+    "push_state": {
+      "type": "string"
+    },
+    "push_claim_id": {
+      "type": "string",
+      "default": ""
+    },
+    "push_claim_until": {
+      "type": "number",
+      "default": 0
+    },
+    "push_delivered_token_ids": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "default": []
     }
   },
   "required": [

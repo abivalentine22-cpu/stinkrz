@@ -16,7 +16,10 @@ Deno.serve(async (req) => {
     ] }, undefined, 1);
     if (blocks.length) return Response.json({ error: 'Interaction unavailable' }, { status: 403 });
     const existing = await entities.Notification.filter({ message_id, type: 'new_message', user_email: message.receiver_email }, undefined, 1);
-    if (existing.length) return Response.json({ success: true });
+    if (existing.length) {
+      await base44.functions.invoke('sendPushNotification', { notification_id: existing[0].id }).catch(() => {});
+      return Response.json({ success: true });
+    }
     const profile = (await entities.ScentProfile.filter({ user_email: me.email }, undefined, 1))[0];
     const name = profile?.display_name || 'Someone';
     const notification = await entities.Notification.create({
