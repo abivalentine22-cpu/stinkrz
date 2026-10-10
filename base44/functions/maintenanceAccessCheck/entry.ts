@@ -23,6 +23,12 @@ Deno.serve(async (req) => {
   } catch {
     result.auth_result = 'client_error';
   }
+  if (!result.authenticated) {
+    return Response.json(result, { status: 401, headers: { 'Cache-Control': 'no-store' } });
+  }
+  if (!result.owner_admin) {
+    return Response.json(result, { status: 403, headers: { 'Cache-Control': 'no-store' } });
+  }
   try {
     const base44 = createClientFromRequest(req);
     await base44.asServiceRole.entities.MaintenanceDiagnostic.create({
