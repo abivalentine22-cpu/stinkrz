@@ -1,0 +1,45 @@
+{
+  "definition": {
+    "document": {
+      "dsl": "1.0.0",
+      "name": "maintenance_access_check_one_time",
+      "version": "1.0",
+      "namespace": "base44"
+    },
+    "do": [
+      {
+        "run_check": {
+          "call": "invoke_backend_function",
+          "with": {
+            "function_name": "maintenanceAccessCheck",
+            "args": {}
+          },
+          "then": "end",
+          "x-base44": {
+            "title": "Run maintenance access check",
+            "description": "One-time invocation"
+          }
+        }
+      }
+    ]
+  },
+  "trigger": {
+    "condition": null,
+    "config": {
+      "trigger_type": "scheduled",
+      "events": [],
+      "schedule_mode": "one_time",
+      "cron_expression": null,
+      "one_time_date": "2026-10-10T00:56:00Z",
+      "timezone": "UTC",
+      "interval_value": null,
+      "interval_unit": null,
+      "interval_anchor": null,
+      "ends_type": "never",
+      "ends_on_date": null,
+      "ends_after_count": null
+    }
+  },
+  "name": "Maintenance Access Check (One-Time)",
+  "description": "Runs maintenanceAccessCheck once at a scheduled instant and keeps the result in run history."
+}
