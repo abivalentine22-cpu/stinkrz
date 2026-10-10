@@ -15,6 +15,12 @@ for (const name of ['markOfflineUsers','cleanupOldNotifications','deleteExpiredP
   const handler = await load(name);
   test(`${name} reads beyond the first page before changing records`,async () => {
     const pages=[], writes=[];
+    let active=0, peak=0;
+    async function write(id) {
+      active++; peak=Math.max(peak,active);
+      await new Promise(resolve=>setTimeout(resolve,1));
+      writes.push(id); active--; return {success:true};
+    }
     const records=Array.from({length:205},(_,i)=>({
       id:String(i),is_online:true,last_active:'2000-01-01T00:00:00Z',
       created_date:'2000-01-01T00:00:00Z',expires_at:'2000-01-01T00:00:00Z',
@@ -24,14 +30,14 @@ for (const name of ['markOfflineUsers','cleanupOldNotifications','deleteExpiredP
       auth:{me:async()=>owner},
       asServiceRole:{entities:new Proxy({}, {get:(_,entity)=>({
         list:async(sort,limit,skip)=>{pages.push([entity,skip]);return records.slice(skip,skip+limit);},
-        delete:async id=>{writes.push(id);return {success:true};},
-        update:async id=>{writes.push(id);return {success:true};},
+        delete:write,
+        update:write,
       })})},
     };
     const response=await handler(request());
     assert.equal(response.status,200);
     assert.ok(pages.some(([,skip])=>skip===200));
-    if(name!=='sendMissedMessageEmail') assert.equal(writes.length,205);
+    if(name!=='sendMissedMessageEmail') { assert.equal(writes.length,205); assert.ok(peak<=10, `Peak concurrency: ${peak}`); }
   });
 }
 const notify = await load('notifyExpiringPosts');
