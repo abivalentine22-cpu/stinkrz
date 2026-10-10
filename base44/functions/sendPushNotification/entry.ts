@@ -69,7 +69,8 @@ async function getAccessToken(clientEmail, privateKeyPem) {
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
-    const me = await base44.auth.me();
+    let me;
+    try { me = await base44.auth.me(); } catch { return Response.json({ error: 'Unauthorized' }, { status: 401 }); }
     if (!me?.email) return Response.json({ error: 'Unauthorized' }, { status: 401 });
     const { notification_id } = await req.json();
     if (typeof notification_id !== 'string') return Response.json({ error: 'Missing notification' }, { status: 400 });
@@ -81,7 +82,8 @@ Deno.serve(async (req) => {
       { blocker_email: me.email, blocked_email: user_email }, { blocker_email: user_email, blocked_email: me.email },
     ] }, undefined, 1);
     if (blocks.length) return Response.json({ error: 'Interaction unavailable' }, { status: 403 });
-    if (notification.push_attempted) return Response.json({ success: true, sent: 0 });
+    // Legacy attempts remain closed; new attempts have recoverable delivery state.
+    if (notification.push_completed || (notification.push_attempted && !notification.push_state)) return Response.json({ success: true, sent: 0 });
     const title = notification.title;
     const body = notification.description || 'Tap to view';
     const data = {
@@ -102,52 +104,63 @@ Deno.serve(async (req) => {
       return Response.json({ success: true, sent: 0, reason: 'no_tokens' });
     }
 
-    await entities.Notification.update(notification.id, { push_attempted: true });
-
     let accessToken;
     try {
       accessToken = await getAccessToken(sa.client_email, sa.private_key);
     } catch (e) {
-      return Response.json({ error: 'Token mint failed: ' + e.message }, { status: 500 });
+      return Response.json({ error: 'Push provider unavailable; retry later' }, { status: 500 });
     }
 
-    // Build string-only data payload (FCM requirement). Include title/body so the
-    // service worker can render the notification from a data-only message.
-    const dataPayload = { title, body: body || '' };
-    if (data && typeof data === 'object') {
-      for (const k of Object.keys(data)) dataPayload[k] = String(data[k]);
-    }
-
-    const endpoint = `https://fcm.googleapis.com/v1/projects/${sa.project_id}/messages:send`;
-    const invalidIds = [];
+    const claimId = crypto.randomUUID();
+    const claim = await entities.Notification.updateMany({
+      id: notification.id, push_completed: { $ne: true },
+      $or: [{ push_claim_until: { $exists: false } }, { push_claim_until: { $lte: Date.now() } }],
+    }, { $set: { push_claim_id: claimId, push_claim_until: Date.now() + 10 * 60000, push_state: 'sending' } });
+    if (!claim?.success || claim.updated !== 1) return Response.json({ success: true, sent: 0, reason: 'already_claimed' });
     let sent = 0;
-
-    for (const t of tokens) {
-      const message = { token: t.token, data: dataPayload };
-      const res = await fetch(endpoint, {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message }),
-      });
-      if (res.ok) {
-        sent++;
-      } else {
-        const errText = await res.text();
-        if (/UNREGISTERED|NOT_FOUND|invalid|404/i.test(errText)) {
-          invalidIds.push(t.id);
-        }
+    try {
+      const current = (await entities.Notification.filter({ id: notification.id }, undefined, 1))[0];
+      const delivered = new Set<string>(current?.push_delivered_token_ids || []);
+      const dataPayload: Record<string, string> = { title: String(title || 'Stinkrz'), body: String(body), tag: 'stinkrz-' + notification.id };
+      for (const [key, value] of Object.entries(data)) dataPayload[key] = String(value);
+      const endpoint = 'https://fcm.googleapis.com/v1/projects/' + sa.project_id + '/messages:send';
+      let failed = 0;
+      const deadline = Date.now() + 60000;
+      for (const t of tokens) {
+        if (delivered.has(t.id)) continue;
+        if (Date.now() >= deadline) { failed++; break; }
+        try {
+          const res = await fetch(endpoint, {
+            method: 'POST', signal: AbortSignal.timeout(10000),
+            headers: { Authorization: 'Bearer ' + accessToken, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ message: { token: t.token, data: dataPayload } }),
+          });
+          if (res.ok) {
+            delivered.add(t.id); sent++;
+            await entities.Notification.updateMany({ id: notification.id, push_claim_id: claimId },
+              { $set: { push_delivered_token_ids: [...delivered] } });
+          } else {
+            const providerError = await res.json().catch(() => ({}));
+            const unregistered = providerError.error?.details?.some(d => d.errorCode === 'UNREGISTERED');
+            if (unregistered) {
+              await entities.PushToken.delete(t.id);
+              delivered.add(t.id);
+            } else failed++;
+          }
+        } catch { failed++; }
       }
+      await entities.Notification.updateMany({ id: notification.id, push_claim_id: claimId }, { $set: {
+        push_delivered_token_ids: [...delivered], push_completed: failed === 0,
+        push_attempted: failed === 0, push_state: failed ? 'retryable' : 'complete',
+        push_claim_id: '', push_claim_until: 0,
+      } });
+      return Response.json({ success: failed === 0, sent, total: tokens.length, retryable: failed > 0 }, { status: failed ? 503 : 200 });
+    } catch {
+      await entities.Notification.updateMany({ id: notification.id, push_claim_id: claimId },
+        { $set: { push_state: 'retryable', push_claim_id: '', push_claim_until: 0 } });
+      return Response.json({ error: 'Push delivery failed; retry later' }, { status: 503 });
     }
-
-    // Clean up stale tokens
-    for (const id of invalidIds) {
-      try {
-        await base44.asServiceRole.entities.PushToken.delete(id);
-      } catch (_) {}
-    }
-
-    return Response.json({ success: true, sent, total: tokens.length });
   } catch (error) {
-    return Response.json({ error: error.message }, { status: 500 });
+    return Response.json({ error: 'Push delivery failed' }, { status: 500 });
   }
 });
