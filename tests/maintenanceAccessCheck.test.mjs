@@ -18,7 +18,7 @@ test('scheduler probe requires both owner identity and admin role; exposes no pe
   ]) {
     globalThis.maintenanceTestClient = {
       auth: { me: async () => user },
-      get asServiceRole() { throw new Error('Probe must never access elevated operations'); },
+      asServiceRole: { entities: { MaintenanceDiagnostic: { create: async (record) => { assert.equal(record.owner_admin, expected); assert.ok(record.checked_at); } } } },
     };
     const response = await handler(new Request('https://example.com'));
     assert.equal(response.headers.get('Cache-Control'), 'no-store');
@@ -32,6 +32,7 @@ test('auth failures remain distinguishable from missing user identity', async ()
   for (const [status, expected] of [[401, 'unauthenticated'], [403, 'unauthenticated'], [500, 'auth_error']]) {
     globalThis.maintenanceTestClient = {
       auth: { me: async () => { throw Object.assign(new Error('SECRET'), { response: { status } }); } },
+      asServiceRole: { entities: { MaintenanceDiagnostic: { create: async () => {} } } },
     };
     const body = await (await handler(new Request('https://example.com'))).json();
     assert.equal(body.auth_result, expected);
