@@ -30,7 +30,7 @@
       "cron_expression": null,
       "one_time_date": null,
       "timezone": "UTC",
-      "interval_value": 60,
+      "interval_value": 10,
       "interval_unit": "minutes",
       "interval_anchor": "2026-05-11T09:27:13.873000",
       "ends_type": "never",
