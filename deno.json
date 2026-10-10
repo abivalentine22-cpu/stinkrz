@@ -2,5 +2,5 @@
   "compilerOptions": {
     "strict": false
   },
-  "nodeModulesDir": "auto"
+  "nodeModulesDir": "none"
 }

@@ -48,7 +48,7 @@ export async function collectTotal(api,range) {
 }
 let cache=null;
 let pending=null;
-export async function handleRequest(req,options={}) {
+export async function handleRequest(req,options: {now?: Date; key?: string; api?: (path: string, params: Record<string, unknown>) => Promise<any>}={}) {
   const now=options.now||new Date();
   const key=options.key??Deno.env.get("STRIPE_SUPPORT_READ_KEY");
   const headers={"Cache-Control":"no-store"};

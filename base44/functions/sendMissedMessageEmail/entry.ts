@@ -34,7 +34,7 @@ Deno.serve(async (req) => {
     const recent = unread.filter(m => !m.read && m.created_date >= since);
 
     // Group by receiver
-    const byReceiver = {};
+    const byReceiver: Record<string, any[]> = {};
     for (const m of recent) {
       if (!byReceiver[m.receiver_email]) byReceiver[m.receiver_email] = [];
       byReceiver[m.receiver_email].push(m);

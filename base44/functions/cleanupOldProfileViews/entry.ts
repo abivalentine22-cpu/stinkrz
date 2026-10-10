@@ -24,9 +24,7 @@ Deno.serve(async (req) => {
       created_date: { $lt: cutoff }
     });
 
-    const deleted =
-      (result && (result.deleted ?? result.deleted_count ?? result.deletedCount)) ??
-      (typeof result === 'number' ? result : 0);
+    const deleted = result?.deleted ?? 0;
 
     return Response.json({ deleted, cutoff });
   } catch (error) {

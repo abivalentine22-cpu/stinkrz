@@ -1,6 +1,7 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.52';
 
 class Denied extends Error {
+  status: number;
   constructor(message, status = 403) { super(message); this.status = status; }
 }
 async function allowed(entities, me, other) {

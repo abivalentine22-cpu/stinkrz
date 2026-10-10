@@ -4,6 +4,7 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.52';
 // storage and removes the public URL reference from each message. Participant
 // access is preserved through the existing private-chat-media signed-URL flow.
 class Rejection extends Error {
+  status: number;
   constructor(message, status = 403) { super(message); this.status = status; }
 }
 

@@ -16,6 +16,7 @@ const FIELDS = {
   Notification: ['read'], BlockedUser: ['blocker_email','blocked_email'],
 };
 class Rejection extends Error {
+  status: number;
   constructor(message, status = 403) { super(message); this.status = status; }
 }
 const fail = (message, status = 403) => { throw new Rejection(message, status); };
@@ -107,7 +108,7 @@ export async function handleRequest(req, makeClient = createClientFromRequest) {
     try { return await work(); }
     finally { timings[stage] = Date.now() - before; }
   };
-  const respond = (body, options = {}) => {
+  const respond = (body, options: ResponseInit = {}) => {
     const diagnostics = { requestId, total: Date.now() - started, ...timings };
     if (profileRead) console.info("profile_request_timing", JSON.stringify({ ...diagnostics, status: options.status || 200 }));
     return Response.json(ownerDiagnostics ? { ...body, diagnostics } : body, options);

@@ -38,7 +38,7 @@ Deno.serve(async (req) => {
     const email = user.email;
     const entities = base44.asServiceRole.entities;
     const either = (...fields) => ({ $or: fields.map(field => ({ [field]: email })) });
-    const queries = [
+    const queries: [string, Record<string, unknown>][] = [
       ['ScentProfile', { user_email: email }],
       ['UserPreferences', { user_email: email }],
       ['PushToken', { user_email: email }],
