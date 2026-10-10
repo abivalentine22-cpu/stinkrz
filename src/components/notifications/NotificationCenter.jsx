@@ -54,6 +54,11 @@ export default function NotificationCenter({ userEmail }) {
         ? `/messages?with=${encodeURIComponent(notification.actor_email)}`
         : "/messages";
       navigate(target);
+    } else if (notification.actor_email && (
+      notification.message_id?.startsWith("whiff:") || /whiff|caught each other.s scent/i.test(notification.title || "")
+    )) {
+      setOpen(false);
+      navigate(`/matches?profile=${encodeURIComponent(notification.actor_email)}`);
     }
   };
 
