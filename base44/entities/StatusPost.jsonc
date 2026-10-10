@@ -39,12 +39,20 @@
     "expiry_reminder_sent": {
       "type": "boolean",
       "default": false,
-      "description": "Backend claim to prevent repeated expiry reminders for this post"
+      "description": "Backend completion flag set after the reminder exists"
     },
     "expires_at": {
       "type": "string",
       "format": "date-time",
       "description": "When this status expires (auto set to 1-4 hours)"
+    },
+    "expiry_reminder_claim_until": {
+      "type": "number",
+      "default": 0
+    },
+    "expiry_reminder_claim_id": {
+      "type": "string",
+      "default": ""
     }
   },
   "required": [

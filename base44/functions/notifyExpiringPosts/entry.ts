@@ -38,16 +38,23 @@ Deno.serve(async (req) => {
 
     let notified = 0;
     for (const p of expiring) {
-      // Conditional update gives overlapping runs only one claim per post.
+      // A timed lease can be reclaimed after a crashed run; sent is set only after delivery.
+      const claimId = crypto.randomUUID();
       const claim = await base44.asServiceRole.entities.StatusPost.updateMany(
-        { id: p.id, expiry_reminder_sent: { $ne: true } },
-        { $set: { expiry_reminder_sent: true } },
+        { id: p.id, expires_at: p.expires_at, expiry_reminder_sent: { $ne: true },
+          $or: [{ expiry_reminder_claim_until: { $exists: false } }, { expiry_reminder_claim_until: { $lte: Date.now() } }] },
+        { $set: { expiry_reminder_claim_id: claimId, expiry_reminder_claim_until: Date.now() + 10 * 60000 } },
       );
       if (!claim?.success || claim.updated !== 1) continue;
       try {
         const minutes = Math.max(1, Math.ceil((new Date(p.expires_at).getTime() - now.getTime()) / 60000));
         const content = p.content || '';
-        await base44.asServiceRole.entities.Notification.create({
+        // A previous run may have created the notification before crashing.
+        const existing = await base44.asServiceRole.entities.Notification.filter({
+          user_email: p.user_email, message_id: p.id, type: 'status_interaction',
+          title: 'Your vibe is expiring soon! ⏰',
+        }, undefined, 1);
+        if (!existing.length) await base44.asServiceRole.entities.Notification.create({
           user_email: p.user_email,
           type: "status_interaction",
           actor_email: p.user_email,
@@ -57,10 +64,17 @@ Deno.serve(async (req) => {
           description: `"${content.slice(0, 60)}${content.length > 60 ? '…' : ''}" expires in ~${minutes} minutes. Post again to keep the energy going!`,
           read: false,
         });
-        notified++;
+        await base44.asServiceRole.entities.StatusPost.updateMany(
+          { id: p.id, expiry_reminder_claim_id: claimId },
+          { $set: { expiry_reminder_sent: true, expiry_reminder_claim_until: 0, expiry_reminder_claim_id: '' } },
+        );
+        if (!existing.length) notified++;
       } catch (error) {
         // Release a failed create so a later run can retry.
-        await base44.asServiceRole.entities.StatusPost.update(p.id, { expiry_reminder_sent: false });
+        await base44.asServiceRole.entities.StatusPost.updateMany(
+          { id: p.id, expiry_reminder_claim_id: claimId },
+          { $set: { expiry_reminder_claim_until: 0, expiry_reminder_claim_id: '' } },
+        );
         throw error;
       }
     }

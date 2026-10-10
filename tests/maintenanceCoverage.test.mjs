@@ -44,7 +44,7 @@ const notify = await load('notifyExpiringPosts');
 function reminderClient(failCreate=false) {
   const posts=Array.from({length:205},(_,i)=>({
     id:String(i),user_email:'member',display_name:'Member',content:'Hello',
-    expires_at:new Date(Date.now()+10*60000).toISOString(),
+    expires_at:new Date(Date.now()+10*60000).toISOString(),expiry_reminder_sent:false,
   }));
   let created=0;
   globalThis.coverageClient={
@@ -54,13 +54,14 @@ function reminderClient(failCreate=false) {
         list:async(sort,limit,skip)=>posts.slice(skip,skip+limit),
         updateMany:async(query,patch)=>{
           const post=posts.find(p=>p.id===query.id);
-          if(post.expiry_reminder_sent) return {success:true,updated:0};
+          if (query.expiry_reminder_claim_id && post.expiry_reminder_claim_id!==query.expiry_reminder_claim_id) return {success:true,updated:0};
+          if (query.$or && (post.expiry_reminder_sent || post.expiry_reminder_claim_until>Date.now())) return {success:true,updated:0};
           Object.assign(post,patch.$set);
           return {success:true,updated:1};
         },
         update:async(id,patch)=>Object.assign(posts.find(p=>p.id===id),patch),
       },
-      Notification:{create:async record=>{
+      Notification:{filter:async()=>[],create:async record=>{
         if(failCreate) throw new Error('failed');
         assert.ok(record.message_id);
         assert.match(record.description,/~10 minutes/);
