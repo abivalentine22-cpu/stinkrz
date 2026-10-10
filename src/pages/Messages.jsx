@@ -31,7 +31,7 @@ export default function Messages() {
       if (event.type === "create") {
         const msg = event.data;
         if (msg.sender_email === me.email || msg.receiver_email === me.email) {
-          setAllMessages(prev => [msg, ...prev.filter(m => m.id !== msg.id)].sort((a,b) => b.created_date.localeCompare(a.created_date)).slice(0, 50));
+          setAllMessages(prev => [msg, ...prev.filter(m => m.id !== msg.id)].sort((a,b) => b.created_date.localeCompare(a.created_date)));
         }
       } else if (event.type === "update") {
         setAllMessages(prev => prev.map(m => m.id === event.id ? event.data : m));
@@ -41,6 +41,26 @@ export default function Messages() {
     });
     return unsub;
   }, [me?.email]);
+
+  const [historyPages, setHistoryPages] = useState(0);
+  useEffect(() => { setHistoryPages(0); }, [me?.email]);
+  const { data: history = [], isFetching: loadingHistory, isError: historyError } = useQuery({
+    queryKey: ['message-history', me?.email, historyPages],
+    enabled: !!me?.email && historyPages > 0,
+    queryFn: async () => {
+      const rows = [];
+      for (let page = 1; page <= historyPages; page++) {
+        const batch = await base44.entities.ChatMessage.list('-created_date', 1000, page * 1000);
+        rows.push(...batch);
+        if (batch.length < 1000) break;
+      }
+      return rows;
+    },
+    staleTime: 30000,
+    refetchInterval: 60000,
+    refetchIntervalInBackground: false,
+  });
+  const canLoadHistory = allMessages.length >= 1000 && (historyPages === 0 || history.length >= historyPages * 1000);
 
   // Fetch all scent profiles for partner info (stale-while-revalidate, 5min cache)
   const { data: allProfiles = [] } = useQuery({
@@ -79,8 +99,10 @@ export default function Messages() {
 
   // Build conversation list — memoized so it only recomputes when messages change
   const myMessages = useMemo(
-    () => allMessages.filter(m => m.sender_email === me?.email || m.receiver_email === me?.email),
-    [allMessages, me?.email]
+    () => [...new Map([...history, ...allMessages].map(m => [m.id, m])).values()]
+      .filter(m => m.sender_email === me?.email || m.receiver_email === me?.email)
+      .sort((a, b) => b.created_date.localeCompare(a.created_date)),
+    [allMessages, history, me?.email]
   );
 
   const conversations = useMemo(() => {
@@ -112,7 +134,7 @@ export default function Messages() {
   // Mark messages as read when conversation opens or new messages arrive in active convo
   useEffect(() => {
     if (!activeConversation || !me?.email || !profileByEmail[me.email] || profileByEmail[me.email].send_read_receipts === false) return;
-    const unread = allMessages.filter(
+    const unread = myMessages.filter(
       m => m.receiver_email === me.email && m.sender_email === activeConversation.partnerEmail && !m.read
     );
     if (unread.length === 0) return;
@@ -120,7 +142,7 @@ export default function Messages() {
       unread.forEach(m => base44.entities.ChatMessage.update(m.id, { read: true }).catch(() => {}));
     }, 300);
     return () => clearTimeout(timer);
-  }, [activeConversation?.partnerEmail, allMessages, profileByEmail, me?.email]);
+  }, [activeConversation?.partnerEmail, myMessages, profileByEmail, me?.email]);
 
   const handleVibeCheck = () => {
     const vibes = [
@@ -202,6 +224,12 @@ export default function Messages() {
               />
             )}
           </div>
+          {canLoadHistory && (
+            <Button variant="ghost" disabled={loadingHistory} onClick={() => setHistoryPages(count => count + 1)}>
+              {loadingHistory ? 'Loading history…' : 'Load older messages and chats'}
+            </Button>
+          )}
+          {historyError && <p role="alert" className="p-3 text-sm text-destructive">Older messages could not load. Please try again.</p>}
         </div>
 
         {/* Chat window */}
@@ -220,7 +248,7 @@ export default function Messages() {
             messages={activeMessages}
             onVibeCheck={handleVibeCheck}
             onMessageSent={msg => setAllMessages(prev => [msg, ...prev.filter(saved => saved.id !== msg.id)]
-              .sort((a, b) => b.created_date.localeCompare(a.created_date)).slice(0, 50))}
+              .sort((a, b) => b.created_date.localeCompare(a.created_date)))}
           />
         </div>
       </div>
