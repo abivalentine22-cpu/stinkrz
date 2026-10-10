@@ -104,3 +104,21 @@ test('existing reminder is reconciled without creating a duplicate after a crash
   assert.equal((await notify(request())).status,200);
   assert.equal(state.created,0);assert.equal(state.posts[0].expiry_reminder_sent,true);
 });
+
+for(const [name,entity,countKey] of [
+  ['markOfflineUsers','ScentProfile','marked_offline'],
+  ['cleanupTypingIndicators','TypingIndicator','deleted'],
+  ['deleteExpiredPosts','StatusPost','deleted'],
+]) {
+  const handler=await load(name);
+  test(name+' preserves records renewed after the initial scan',async()=>{
+    const oldDate='2000-01-01T00:00:00Z';let conditional=false;
+    globalThis.coverageClient={auth:{me:async()=>owner},asServiceRole:{entities:{[entity]:{
+      list:async()=>[{id:'renewed',is_online:true,last_active:oldDate,expires_at:oldDate}],
+      updateMany:async query=>{conditional=true;assert.equal(query.last_active,oldDate);assert.equal(query.is_online,true);return {success:true,updated:0};},
+      deleteMany:async query=>{conditional=true;assert.equal(query.expires_at,oldDate);return {success:true,deleted:0};},
+    }}}};
+    const response=await handler(request());assert.equal(response.status,200);
+    assert.equal((await response.json())[countKey],0);assert.ok(conditional);
+  });
+}

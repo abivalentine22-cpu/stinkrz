@@ -21,10 +21,12 @@ export default function Messages() {
 
   // Real-time messages via subscribe + fallback polling
   const [allMessages, setAllMessages] = useState([]);
+  const readMarkIds = useRef(new Set());
 
   useEffect(() => {
     if (!me?.email) return;
     setAllMessages([]);
+    readMarkIds.current.clear();
     // Shared subscription supplies initial messages and subsequent updates.
     // Navbar uses the same channel, so opening Messages adds no separate fetch.
     const unsub = base44.entities.ChatMessage.subscribe((event) => {
@@ -138,10 +140,18 @@ export default function Messages() {
       m => m.receiver_email === me.email && m.sender_email === activeConversation.partnerEmail && !m.read
     );
     if (unread.length === 0) return;
-    const timer = setTimeout(() => {
-      unread.forEach(m => base44.entities.ChatMessage.update(m.id, { read: true }).catch(() => {}));
+    let cancelled = false;
+    const timer = setTimeout(async () => {
+      for (let start = 0; start < unread.length && !cancelled; start += 10) {
+        await Promise.all(unread.slice(start, start + 10).map(async message => {
+          if (readMarkIds.current.has(message.id)) return;
+          readMarkIds.current.add(message.id);
+          try { await base44.entities.ChatMessage.update(message.id, { read: true }); }
+          catch { readMarkIds.current.delete(message.id); }
+        }));
+      }
     }, 300);
-    return () => clearTimeout(timer);
+    return () => { cancelled = true; clearTimeout(timer); };
   }, [activeConversation?.partnerEmail, myMessages, profileByEmail, me?.email]);
 
   const handleVibeCheck = () => {
