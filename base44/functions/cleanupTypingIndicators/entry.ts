@@ -1,5 +1,15 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 
+async function allRecords(entity) {
+  const records = [];
+  for (let skip = 0; ; ) {
+    const page = await entity.list('id', 100, skip);
+    records.push(...page);
+    if (page.length < 100) return records;
+    skip += page.length;
+  }
+}
+
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
@@ -16,7 +26,7 @@ Deno.serve(async (req) => {
     if (caller.id !== '69faa8a3ff7324c96aef6557' || caller.role !== 'admin') {
       return Response.json({ error: 'Forbidden' }, { status: 403 });
     }
-    const all = await base44.asServiceRole.entities.TypingIndicator.list();
+    const all = await allRecords(base44.asServiceRole.entities.TypingIndicator);
     const now = new Date();
     const stale = all.filter(t => {
       if (!t.expires_at) return true; // no expiry = delete
