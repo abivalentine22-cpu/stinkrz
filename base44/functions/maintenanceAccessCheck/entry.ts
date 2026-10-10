@@ -1,6 +1,7 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 
-// Read-only scheduler diagnostic. Never return headers, tokens or user details.
+// Scheduler diagnostic: saves only authentication flags in an admin-only table.
+// Never return or store headers, tokens, email addresses or user details.
 // Elevated credentials being present is NOT an authorization decision.
 Deno.serve(async (req) => {
   const result = {
@@ -21,6 +22,15 @@ Deno.serve(async (req) => {
     }
   } catch {
     result.auth_result = 'client_error';
+  }
+  try {
+    const base44 = createClientFromRequest(req);
+    await base44.asServiceRole.entities.MaintenanceDiagnostic.create({
+      checked_at: new Date().toISOString(),
+      ...result,
+    });
+  } catch {
+    return Response.json({ ...result, saved: false }, { status: 503, headers: { 'Cache-Control': 'no-store' } });
   }
   console.info('maintenanceAccessCheck', JSON.stringify(result));
   return Response.json(result, { headers: { 'Cache-Control': 'no-store' } });
