@@ -358,7 +358,7 @@ export default function Settings() {
         ) : (
           <div className="space-y-3">
             <p className="font-body text-sm text-destructive font-semibold text-center">
-              Are you absolutely sure? All your data will be gone forever.
+              Delete your account, profile, messages, and preferences permanently? Moderation reports from other members may be retained with your account identity removed.
             </p>
             <div className="flex gap-2">
               <Button
@@ -376,7 +376,7 @@ export default function Settings() {
                   setDeleting(true);
                   try {
                     const response = await base44.functions.invoke("deleteAccount", {});
-                    if (response.data?.error) throw new Error(response.data.error);
+                    if (!response.data?.success || !response.data?.account_deleted) throw new Error(response.data?.error || "Account deletion incomplete");
                     base44.auth.logout("/");
                   } catch {
                     setDeleting(false);
