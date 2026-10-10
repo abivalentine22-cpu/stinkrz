@@ -54,7 +54,7 @@ function sanitizeProfile(row, email) {
   }
   return publicRow;
 }
-async function readRows(entities, entity, email, query, measure = (_stage, work) => work()) {
+async function readRows(entities, entity, email, query, measure = (_stage, work) => work(), pagination = null) {
   // Read permissions and records concurrently; filter only after both finish.
   const blocksPromise = measure("permissions", () => all(entities.BlockedUser, { $or: [{ blocker_email: email }, { blocked_email: email }] }));
   let hidden;
@@ -77,6 +77,26 @@ async function readRows(entities, entity, email, query, measure = (_stage, work)
   // have no additional scope; send their validated query straight to storage.
   const storageQuery = !Object.keys(scope).length ? query
     : !Object.keys(query).length ? scope : { $and: [scope, query] };
+  // Message lists page through scoped storage instead of reading the entire inbox.
+  // Apply blocks before counting pagination so hidden conversations create no gaps.
+  if (entity === 'ChatMessage' && pagination) {
+    const blocks = await blocksPromise;
+    const hidden = new Set(blocks.map(b => b.blocker_email === email ? b.blocked_email : b.blocker_email));
+    const approved = [];
+    const needed = pagination.skip + pagination.limit;
+    await measure("records", async () => {
+      for (let offset = 0; approved.length < needed; offset += 500) {
+        const page = await entities.ChatMessage.filter(storageQuery, pagination.sort, 500, offset);
+        approved.push(...page.filter(row => !hidden.has(row.sender_email) && !hidden.has(row.receiver_email)));
+        if (page.length < 500) break;
+      }
+    });
+    return approved.slice(pagination.skip, needed).map(row => {
+      const safe = { ...row, has_private_media: !!row.media_uri, legacy_media_unavailable: !!row.media_url && !row.media_uri };
+      delete safe.media_uri; delete safe.media_url;
+      return safe;
+    });
+  }
   const [blocks, rows] = await Promise.all([blocksPromise, measure("records", () => all(entities[entity], storageQuery))]);
   hidden = new Set(blocks.map(b => b.blocker_email === email ? b.blocked_email : b.blocker_email));
   return measure("filter", () => rows.filter(row => {
@@ -130,7 +150,9 @@ export async function handleRequest(req, makeClient = createClientFromRequest) {
         if (!['id', 'created_date', ...(entity === 'Notification' ? ['user_email','actor_email','type','message_id','read'] : FIELDS[entity])].includes(key) || !['string','boolean','number'].includes(typeof value)) fail('Invalid query', 400);
       }
       if (typeof sort !== 'string' || !['id','created_date','updated_date',...FIELDS[entity]].includes(sort.replace(/^-/, ''))) fail('Invalid sort', 400);
-      const rows = await readRows(entities, entity, me.email, action === 'get' ? { id } : query, measure);
+      if (!Number.isInteger(limit) || limit < 1 || limit > 1000 || !Number.isInteger(skip) || skip < 0 || skip > 100000) fail('Invalid pagination', 400);
+      const messagePage = entity === 'ChatMessage' && action === 'list' ? { sort, limit, skip } : null;
+      const rows = await readRows(entities, entity, me.email, action === 'get' ? { id } : query, measure, messagePage);
       const descending = sort.startsWith('-');
       const key = sort.replace(/^-/, '');
       rows.sort((a,b) => ((a[key] > b[key]) ? 1 : (a[key] < b[key] ? -1 : 0)) * (descending ? -1 : 1));
@@ -139,7 +161,7 @@ export async function handleRequest(req, makeClient = createClientFromRequest) {
         return respond({ result: rows[0] });
       }
       if (!Number.isInteger(limit) || limit < 1 || limit > 1000 || !Number.isInteger(skip) || skip < 0) fail('Invalid pagination', 400);
-      return respond({ result: rows.slice(skip, skip + limit) });
+      return respond({ result: messagePage ? rows : rows.slice(skip, skip + limit) });
     }
     if (!['create','update','delete'].includes(action)) fail('Unsupported action', 400);
     if (!data || typeof data !== 'object' || Array.isArray(data)) fail('Invalid data', 400);
