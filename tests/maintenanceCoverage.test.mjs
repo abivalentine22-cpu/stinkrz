@@ -31,7 +31,9 @@ for (const name of ['markOfflineUsers','cleanupOldNotifications','deleteExpiredP
       asServiceRole:{entities:new Proxy({}, {get:(_,entity)=>({
         list:async(sort,limit,skip)=>{pages.push([entity,skip]);return records.slice(skip,skip+limit);},
         delete:write,
+        deleteMany:async query=>{await write(query.id); return {success:true,deleted:1};},
         update:write,
+        updateMany:async query=>{await write(query.id); return {success:true,updated:1};},
       })})},
     };
     const response=await handler(request());

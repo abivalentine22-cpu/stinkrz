@@ -32,10 +32,19 @@ Deno.serve(async (req) => {
       if (!t.expires_at) return true; // no expiry = delete
       return new Date(t.expires_at) < now;
     });
+    let deleted = 0;
     for (let start = 0; start < stale.length; start += 10) {
-      await Promise.all(stale.slice(start, start + 10).map(t => base44.asServiceRole.entities.TypingIndicator.delete(t.id)));
+      const results = await Promise.all(stale.slice(start, start + 10).map(t =>
+        base44.asServiceRole.entities.TypingIndicator.deleteMany({
+          id: t.id, expires_at: t.expires_at === undefined ? { $exists: false } : t.expires_at,
+        })
+      ));
+      for (const result of results) {
+        if (!result?.success) throw new Error('Cleanup failed');
+        deleted += result.deleted;
+      }
     }
-    return Response.json({ deleted: stale.length });
+    return Response.json({ deleted });
   } catch (error) {
     return Response.json({ error: error.message }, { status: 500 });
   }

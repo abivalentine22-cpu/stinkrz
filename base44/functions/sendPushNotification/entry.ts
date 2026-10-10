@@ -49,6 +49,7 @@ async function getAccessToken(clientEmail, privateKeyPem) {
   const jwt = `${unsigned}.${base64urlEncode(signature)}`;
 
   const tokenRes = await fetch('https://oauth2.googleapis.com/token', {
+    signal: AbortSignal.timeout(10000),
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
     body: new URLSearchParams({

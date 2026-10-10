@@ -36,13 +36,21 @@ Deno.serve(async (req) => {
       return new Date(p.last_active) < cutoff;
     });
 
+    let marked = 0;
     for (let start = 0; start < stale.length; start += 10) {
-      await Promise.all(stale.slice(start, start + 10).map(p =>
-        base44.asServiceRole.entities.ScentProfile.update(p.id, { is_online: false })
+      const results = await Promise.all(stale.slice(start, start + 10).map(p =>
+        base44.asServiceRole.entities.ScentProfile.updateMany({
+          id: p.id, is_online: true,
+          last_active: p.last_active === undefined ? { $exists: false } : p.last_active,
+        }, { $set: { is_online: false } })
       ));
+      for (const result of results) {
+        if (!result?.success) throw new Error('Offline update failed');
+        marked += result.updated;
+      }
     }
 
-    return Response.json({ marked_offline: stale.length });
+    return Response.json({ marked_offline: marked });
   } catch (error) {
     return Response.json({ error: error.message }, { status: 500 });
   }

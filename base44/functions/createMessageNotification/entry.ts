@@ -1,5 +1,20 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.52';
 
+// Retry transient provider failures against the same notification ID.
+// The delivery function's lease and per-device progress prevent repeat sends.
+async function tryPush(base44, notificationId) {
+  for (let attempt = 0; attempt < 3; attempt++) {
+    try {
+      await base44.functions.invoke('sendPushNotification', { notification_id: notificationId });
+      return;
+    } catch (error) {
+      const status = error?.response?.status ?? error?.status;
+      if ((status && status !== 429 && status < 500) || attempt === 2) return;
+      await new Promise(resolve => setTimeout(resolve, 500 * 2 ** attempt));
+    }
+  }
+}
+
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
@@ -17,7 +32,7 @@ Deno.serve(async (req) => {
     if (blocks.length) return Response.json({ error: 'Interaction unavailable' }, { status: 403 });
     const existing = await entities.Notification.filter({ message_id, type: 'new_message', user_email: message.receiver_email }, undefined, 1);
     if (existing.length) {
-      await base44.functions.invoke('sendPushNotification', { notification_id: existing[0].id }).catch(() => {});
+      await tryPush(base44, existing[0].id);
       return Response.json({ success: true });
     }
     const profile = (await entities.ScentProfile.filter({ user_email: me.email }, undefined, 1))[0];
@@ -27,7 +42,7 @@ Deno.serve(async (req) => {
       actor_name: name, actor_avatar: profile?.avatar_url || null, message_id,
       title: `New message from ${name}`, description: 'Tap to view your messages', read: false,
     });
-    await base44.functions.invoke('sendPushNotification', { notification_id: notification.id }).catch(() => {});
+    await tryPush(base44, notification.id);
     return Response.json({ success: true });
   } catch {
     return Response.json({ error: 'Notification failed' }, { status: 500 });
