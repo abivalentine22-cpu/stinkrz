@@ -1,5 +1,15 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 
+async function allRecords(entity) {
+  const records = [];
+  for (let skip = 0; ; ) {
+    const page = await entity.list('id', 100, skip);
+    records.push(...page);
+    if (page.length < 100) return records;
+    skip += page.length;
+  }
+}
+
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
@@ -17,7 +27,7 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    const notifications = await base44.asServiceRole.entities.Notification.list();
+    const notifications = await allRecords(base44.asServiceRole.entities.Notification);
     const cutoff = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000); // 7 days ago
 
     const old = notifications.filter(n => new Date(n.created_date) < cutoff);
