@@ -2,7 +2,8 @@ import React, { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { useAuth } from "@/lib/AuthContext";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import ProfileDrawer from "@/components/scent/ProfileDrawer";
 import { MessageCircle, Wind } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import EmptyState from "@/components/EmptyState";
@@ -16,9 +17,13 @@ const SCENT_COLORS = {
 export default function Matches() {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const selectedEmail = searchParams.get("profile");
+  const openProfile = email => setSearchParams({ profile: email });
+  const closeProfile = () => setSearchParams({});
   const { favorites, favoritedBy, sendWhiff } = useFavorites(user?.email);
 
-  const { data: profiles = [] } = useQuery({
+  const { data: profiles = [], isLoading: profilesLoading, isError: profilesError } = useQuery({
     queryKey: ["all-profiles"],
     queryFn: () => base44.entities.ScentProfile.list(),
     enabled: !!user?.email,
@@ -67,6 +72,7 @@ export default function Matches() {
                     key={email}
                     email={email}
                     profile={profileMap[email]}
+                    onProfile={() => openProfile(email)}
                     mutual
                     onMessage={() => goToMessage(profileMap[email], email)}
                   />
@@ -84,6 +90,7 @@ export default function Matches() {
                     key={email}
                     email={email}
                     profile={profileMap[email]}
+                    onProfile={() => openProfile(email)}
                     onWhiffBack={() => sendWhiff(email)}
                     onMessage={() => goToMessage(profileMap[email], email)}
                   />
@@ -97,31 +104,44 @@ export default function Matches() {
               <h2 className="font-heading text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3">⏳ Waiting on Them</h2>
               <div className="space-y-3">
                 {pendingThem.map((email) => (
-                  <WhiffCard key={email} email={email} profile={profileMap[email]} />
+                  <WhiffCard key={email} email={email} profile={profileMap[email]} onProfile={() => openProfile(email)} />
                 ))}
               </div>
             </section>
           )}
         </>
       )}
+      {selectedEmail && !profileMap[selectedEmail] && (
+        <div role="status" className="mt-4 rounded-xl border border-border p-4">
+          <p>{profilesLoading ? "Loading profile…" : profilesError ? "Profile could not load. Please refresh and try again." : "This profile is no longer available."}</p>
+          <Button variant="ghost" onClick={closeProfile}>Close</Button>
+        </div>
+      )}
+      <ProfileDrawer
+        profile={profileMap[selectedEmail] || null}
+        open={!!profileMap[selectedEmail]}
+        onClose={closeProfile}
+        onMessage={profile => goToMessage(profile, profile.user_email)}
+        onReport={profile => navigate("/report", { state: { reportedName: profile.display_name, reportedEmail: profile.user_email } })}
+      />
     </div>
   );
 }
 
-function WhiffCard({ email, profile, mutual = false, onWhiffBack = undefined, onMessage = undefined }) {
+function WhiffCard({ email, profile, mutual = false, onProfile, onWhiffBack = undefined, onMessage = undefined }) {
   const color = SCENT_COLORS[profile?.scent_category] || "#94a3b8";
   return (
     <div className="flex items-center gap-3 bg-card border border-border rounded-xl px-4 py-3"
       style={{ borderColor: mutual ? "rgba(167,139,250,0.3)" : undefined }}>
-      <div className="w-12 h-12 rounded-full bg-muted overflow-hidden shrink-0 flex items-center justify-center"
+      <button type="button" onClick={onProfile} aria-label={`View ${profile?.display_name || email} profile`} className="w-12 h-12 rounded-full bg-muted overflow-hidden shrink-0 flex items-center justify-center"
         style={{ border: `2px solid ${mutual ? "#a78bfa" : color}` }}>
         {profile?.avatar_url
           ? <img src={profile.avatar_url} alt="" className="w-full h-full object-cover" />
           : <span className="text-xl">🤙</span>}
-      </div>
+      </button>
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2">
-          <p className="font-body font-semibold text-sm truncate">{profile?.display_name || email}</p>
+          <button type="button" onClick={onProfile} className="font-body font-semibold text-sm truncate text-left hover:underline">{profile?.display_name || email}</button>
           {mutual && <span className="text-[10px] bg-primary/10 border border-primary/25 text-primary rounded-full px-2 py-0.5 font-body font-semibold shrink-0">Mutual ✨</span>}
         </div>
         <p className="font-body text-xs text-muted-foreground">
