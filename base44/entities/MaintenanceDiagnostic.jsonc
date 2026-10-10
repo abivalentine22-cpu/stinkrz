@@ -1,0 +1,39 @@
+{
+  "name": "MaintenanceDiagnostic",
+  "type": "object",
+  "properties": {
+    "checked_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "authenticated": {
+      "type": "boolean"
+    },
+    "owner_admin": {
+      "type": "boolean"
+    },
+    "auth_result": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "checked_at",
+    "authenticated",
+    "owner_admin",
+    "auth_result"
+  ],
+  "rls": {
+    "read": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "create": false,
+    "update": false,
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}
