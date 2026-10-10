@@ -91,7 +91,9 @@ Deno.serve(async (req) => {
       type: notification.type,
       message_id: notification.message_id || '',
       partner_email: notification.actor_email,
-      url: notification.type === 'new_message' ? '/messages' : '/matches',
+      url: notification.type === 'new_message'
+        ? (notification.actor_email ? `/messages?with=${encodeURIComponent(notification.actor_email)}` : '/messages')
+        : '/matches',
     };
 
     const saRaw = Deno.env.get('FIREBASE_SERVICE_ACCOUNT_JSON');
