@@ -44,7 +44,7 @@ export default function Messages() {
 
   const [historyPages, setHistoryPages] = useState(0);
   useEffect(() => { setHistoryPages(0); }, [me?.email]);
-  const { data: history = [], isFetching: loadingHistory, isError: historyError } = useQuery({
+  const { data: history = [], isFetching: loadingHistory, isError: historyError, refetch: retryHistory } = useQuery({
     queryKey: ['message-history', me?.email, historyPages],
     enabled: !!me?.email && historyPages > 0,
     queryFn: async () => {
@@ -229,7 +229,7 @@ export default function Messages() {
               {loadingHistory ? 'Loading history…' : 'Load older messages and chats'}
             </Button>
           )}
-          {historyError && <p role="alert" className="p-3 text-sm text-destructive">Older messages could not load. Please try again.</p>}
+          {historyError && <p role="alert" className="p-3 text-sm text-destructive">Older messages could not load. <button className="underline" onClick={() => retryHistory()}>Try again</button></p>}
         </div>
 
         {/* Chat window */}

@@ -70,8 +70,14 @@ function fixture(blocks = [], me = 'alice@example.com') {
     BlockedUser:blocks, StatusPost:[{id:'p1',user_email:'bob@example.com',display_name:'Bob',content:'Hello',expires_at:'2099-01-01T00:00:00Z'}],
   };
   const writes = [];
+  const reads = [];
   const entities = Object.fromEntries(Object.entries(database).map(([name,rows]) => [name, {
-    async filter(query={},sort,limit=500,skip=0) { return rows.filter(r => matches(r,query)).slice(skip,skip+limit).map(r => ({...r})); },
+    async filter(query={},sort,limit=500,skip=0) {
+      reads.push({name,limit,skip});
+      const key=(sort || '-created_date').replace(/^-/, '');
+      const direction=(sort || '-created_date').startsWith('-')?-1:1;
+      return rows.filter(r => matches(r,query)).sort((a,b)=>(a[key]>b[key]?1:a[key]<b[key]?-1:0)*direction).slice(skip,skip+limit).map(r => ({...r}));
+    },
     async create(data) { const row = {id:'created-'+writes.length,...data}; rows.push(row);writes.push([name,'create',row]);return row; },
     async update(id,data) { const row=rows.find(r=>r.id===id);Object.assign(row,data);writes.push([name,'update',data]);return {...row}; },
     async delete(id) { const index=rows.findIndex(r=>r.id===id);rows.splice(index,1);writes.push([name,'delete',id]); },
@@ -83,7 +89,7 @@ function fixture(blocks = [], me = 'alice@example.com') {
     const response=await handler(req,()=>client);
     return {status:response.status,body:await response.json()};
   };
-  return {database,writes,invoke};
+  return {database,writes,reads,invoke};
 }
 const block = (reverse=false) => [{id:'b1',blocker_email:reverse?'bob@example.com':'alice@example.com',blocked_email:reverse?'alice@example.com':'bob@example.com'}];
 
@@ -332,4 +338,25 @@ test('joining a shared channel does not queue a duplicate read and both listener
  } finally {
   stopFirst(); stopSecond(); globalThis.document = oldDocument;
  }
+});
+
+test('large inbox pages remain scoped and do not scan all twelve thousand messages',async()=>{
+  const f=fixture();f.database.ChatMessage.length=0;
+  for(let i=0;i<12000;i++) f.database.ChatMessage.push({id:'history-'+i,sender_email:'alice@example.com',receiver_email:'bob@example.com',created_date:new Date(1800000000000-i*1000).toISOString(),media_uri:'private-uri',media_url:'public-link'});
+  f.database.ChatMessage.push({id:'foreign',sender_email:'bob@example.com',receiver_email:'carol@example.com'});
+  const first=await f.invoke({entity:'ChatMessage',action:'list',limit:1000});
+  assert.equal(first.status,200);assert.equal(first.body.result.length,1000);
+  assert.equal(f.reads.filter(r=>r.name==='ChatMessage').length,2);
+  assert.ok(first.body.result.every(r=>r.media_uri===undefined && r.media_url===undefined && r.has_private_media));
+  const next=await f.invoke({entity:'ChatMessage',action:'list',limit:1000,skip:1000});
+  assert.equal(next.status,200);assert.equal(next.body.result[0].id,'history-1000');
+  assert.equal(next.body.result[999].id,'history-1999');
+});
+test('blocked messages are excluded before pagination counts',async()=>{
+  const f=fixture(block());f.database.ChatMessage.length=0;
+  for(let i=0;i<1200;i++) f.database.ChatMessage.push({id:'page-'+i,sender_email:i%2?'carol@example.com':'bob@example.com',receiver_email:'alice@example.com',created_date:new Date(1800000000000-i*1000).toISOString()});
+  const response=await f.invoke({entity:'ChatMessage',action:'list',limit:100,skip:500});
+  assert.equal(response.status,200);assert.equal(response.body.result.length,100);
+  assert.equal(response.body.result[0].id,'page-1001');
+  assert.ok(response.body.result.every(r=>r.sender_email==='carol@example.com'));
 });

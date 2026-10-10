@@ -89,3 +89,16 @@ test('offline workflow interval matches its ten-minute name',async()=>{
   assert.equal(workflow.trigger.config.interval_value,10);
   assert.equal(workflow.trigger.config.interval_unit,'minutes');
 });
+
+test('expired reminder lease recovers after a crashed run',async()=>{
+  const state=reminderClient();state.posts.length=1;
+  Object.assign(state.posts[0],{expiry_reminder_claim_until:Date.now()-1,expiry_reminder_claim_id:'crashed'});
+  assert.equal((await notify(request())).status,200);
+  assert.equal(state.created,1);assert.equal(state.posts[0].expiry_reminder_sent,true);
+});
+test('existing reminder is reconciled without creating a duplicate after a crash',async()=>{
+  const state=reminderClient();state.posts.length=1;
+  globalThis.coverageClient.asServiceRole.entities.Notification.filter=async()=>[{id:'already-created'}];
+  assert.equal((await notify(request())).status,200);
+  assert.equal(state.created,0);assert.equal(state.posts[0].expiry_reminder_sent,true);
+});
