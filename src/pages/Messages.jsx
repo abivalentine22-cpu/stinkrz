@@ -97,7 +97,7 @@ export default function Messages() {
         ? { ...current, partnerProfile: profile }
         : current;
     });
-  }, [profileByEmail]);
+  }, [profileByEmail, activeConversation?.partnerEmail, activeConversation?.partnerProfile]);
 
   // Build conversation list — memoized so it only recomputes when messages change
   const myMessages = useMemo(
