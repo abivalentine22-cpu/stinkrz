@@ -1,6 +1,16 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 
 // Called every 15 minutes — emails users who received messages while inactive
+async function allRecords(entity, query = null) {
+  const records = [];
+  for (let skip = 0; ; ) {
+    const page = query ? await entity.filter(query, 'id', 100, skip) : await entity.list('id', 100, skip);
+    records.push(...page);
+    if (page.length < 100) return records;
+    skip += page.length;
+  }
+}
+
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
@@ -20,7 +30,7 @@ Deno.serve(async (req) => {
 
     // Find unread messages created in last 15 mins
     const since = new Date(Date.now() - 15 * 60 * 1000).toISOString();
-    const unread = await base44.asServiceRole.entities.ChatMessage.list();
+    const unread = await allRecords(base44.asServiceRole.entities.ChatMessage);
     const recent = unread.filter(m => !m.read && m.created_date >= since);
 
     // Group by receiver
@@ -31,15 +41,15 @@ Deno.serve(async (req) => {
     }
 
     // For each receiver, check if they were active in last 15 mins
-    const profiles = await base44.asServiceRole.entities.ScentProfile.list();
+    const profiles = await allRecords(base44.asServiceRole.entities.ScentProfile);
     const profileMap = {};
     for (const p of profiles) profileMap[p.user_email] = p;
 
     let sent = 0;
     for (const [email, pendingMessages] of Object.entries(byReceiver)) {
-      const blocks = await base44.asServiceRole.entities.BlockedUser.filter({
+      const blocks = await allRecords(base44.asServiceRole.entities.BlockedUser, {
         $or: [{ blocker_email: email }, { blocked_email: email }],
-      }, undefined, 500);
+      });
       const hidden = new Set(blocks.map(b => b.blocker_email === email ? b.blocked_email : b.blocker_email));
       const msgs = pendingMessages.filter(m => !hidden.has(m.sender_email));
       if (!msgs.length) continue;
