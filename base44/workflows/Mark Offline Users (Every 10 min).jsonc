@@ -1,4 +1,6 @@
 {
+  "description": "Marks users as offline if their last_active is older than 15 minutes",
+  "name": "Mark Offline Users (Every 10 min)",
   "definition": {
     "document": {
       "dsl": "1.0.0",
@@ -19,8 +21,6 @@
       }
     ]
   },
-  "name": "Mark Offline Users (Every 10 min)",
-  "description": "Marks users as offline if their last_active is older than 15 minutes",
   "trigger": {
     "condition": null,
     "config": {
