@@ -29,7 +29,9 @@ Deno.serve(async (req) => {
     const posts = await allRecords(base44.asServiceRole.entities.StatusPost);
     const now = new Date();
     const expired = posts.filter(p => p.expires_at && new Date(p.expires_at) < now);
-    await Promise.all(expired.map(p => base44.asServiceRole.entities.StatusPost.delete(p.id)));
+    for (let start = 0; start < expired.length; start += 10) {
+      await Promise.all(expired.slice(start, start + 10).map(p => base44.asServiceRole.entities.StatusPost.delete(p.id)));
+    }
     return Response.json({ deleted: expired.length });
   } catch (error) {
     return Response.json({ error: error.message }, { status: 500 });
