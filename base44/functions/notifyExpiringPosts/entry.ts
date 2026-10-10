@@ -3,6 +3,19 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
+    // Scheduled runs were verified to authenticate as the owner/admin.
+    let caller;
+    try {
+      caller = await base44.auth.me();
+    } catch {
+      return Response.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+    if (!caller) {
+      return Response.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+    if (caller.id !== '69faa8a3ff7324c96aef6557' || caller.role !== 'admin') {
+      return Response.json({ error: 'Forbidden' }, { status: 403 });
+    }
     const posts = await base44.asServiceRole.entities.StatusPost.list();
     const now = new Date();
     const soon = new Date(now.getTime() + 20 * 60 * 1000); // 20 min window
