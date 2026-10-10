@@ -78,26 +78,26 @@ export default function Messages() {
     return map;
   }, [allProfiles]);
 
-  // Auto-open conversation from profile drawer OR from ?with=email deep link (notifications).
-  // A ref guards the navigation state so we only process it once per mount — this
-  // avoids re-opening on unrelated re-renders AND avoids mutating browser history
-  // outside React Router (which previously corrupted router state).
-  const openedFromNavRef = useRef(false);
+  // Handle every navigation, including notification clicks while Messages is open.
+  // Open immediately; profile details can arrive separately from the cached query.
   useEffect(() => {
     const profile = location.state?.openConversationWith;
-    if (profile && !openedFromNavRef.current) {
-      openedFromNavRef.current = true;
-      setActiveConversation({ partnerEmail: profile.user_email, partnerProfile: profile });
-      return;
+    const withEmail = new URLSearchParams(location.search).get("with");
+    const partnerEmail = withEmail || profile?.user_email;
+    if (partnerEmail) {
+      setActiveConversation({ partnerEmail, partnerProfile: withEmail ? null : profile });
     }
-    // Deep link: /messages?with=someone@email.com
-    const params = new URLSearchParams(window.location.search);
-    const withEmail = params.get("with");
-    if (withEmail && allProfiles.length > 0) {
-      const p = allProfiles.find(x => x.user_email === withEmail);
-      setActiveConversation({ partnerEmail: withEmail, partnerProfile: p || null });
-    }
-  }, [location.state, allProfiles]);
+  }, [location.key, location.search, location.state]);
+
+  useEffect(() => {
+    setActiveConversation(current => {
+      if (!current) return current;
+      const profile = profileByEmail[current.partnerEmail];
+      return profile && profile !== current.partnerProfile
+        ? { ...current, partnerProfile: profile }
+        : current;
+    });
+  }, [profileByEmail]);
 
   // Build conversation list — memoized so it only recomputes when messages change
   const myMessages = useMemo(
