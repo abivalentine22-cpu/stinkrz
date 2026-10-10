@@ -80,7 +80,7 @@ export function useScentMatchNotifications(userPos, myProfile, profiles = []) {
       const all = profilesRef.current;
       const matches = all.filter((p) => {
         if (p.user_email === myProfile.user_email) return false;
-        if (!p.location_lat || !p.location_lng) return false;
+        if (!Number.isFinite(p.location_lat) || !Number.isFinite(p.location_lng)) return false;
         if (!p.is_online) return false;
         const dist = haversineDistance(
           userPos.lat,
@@ -115,6 +115,9 @@ export function useScentMatchNotifications(userPos, myProfile, profiles = []) {
     }
   }, [userPos, myProfile]);
 
+  const checkMatchesRef = useRef(checkMatches);
+  useEffect(() => { checkMatchesRef.current = checkMatches; }, [checkMatches]);
+
   useEffect(() => {
     let cancelled = false;
 
@@ -123,17 +126,20 @@ export function useScentMatchNotifications(userPos, myProfile, profiles = []) {
       if (!granted || cancelled) return;
       permittedRef.current = true;
       await registerSW();
-      // Check immediately, then every 2 minutes
-      checkMatches();
+      if (cancelled) return;
+      // Read current position and profile instead of capturing mount-time values.
+      checkMatchesRef.current();
       intervalRef.current = setInterval(() => {
-        checkMatches();
+        checkMatchesRef.current();
       }, 2 * 60 * 1000);
     }
 
     init();
     return () => {
       cancelled = true;
+      permittedRef.current = false;
       if (intervalRef.current) clearInterval(intervalRef.current);
+      intervalRef.current = null;
     };
   }, []); // only run once on mount
 
