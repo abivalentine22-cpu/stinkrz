@@ -32,9 +32,9 @@ Deno.serve(async (req) => {
 
     const old = notifications.filter(n => new Date(n.created_date) < cutoff);
 
-    await Promise.all(
-      old.map(n => base44.asServiceRole.entities.Notification.delete(n.id))
-    );
+    for (let start = 0; start < old.length; start += 10) {
+      await Promise.all(old.slice(start, start + 10).map(n => base44.asServiceRole.entities.Notification.delete(n.id)));
+    }
 
     return Response.json({ deleted: old.length });
   } catch (error) {
