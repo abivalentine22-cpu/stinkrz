@@ -36,11 +36,11 @@ Deno.serve(async (req) => {
       return new Date(p.last_active) < cutoff;
     });
 
-    await Promise.all(
-      stale.map(p =>
+    for (let start = 0; start < stale.length; start += 10) {
+      await Promise.all(stale.slice(start, start + 10).map(p =>
         base44.asServiceRole.entities.ScentProfile.update(p.id, { is_online: false })
-      )
-    );
+      ));
+    }
 
     return Response.json({ marked_offline: stale.length });
   } catch (error) {
