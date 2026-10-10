@@ -3,6 +3,7 @@ import { motion } from "framer-motion";
 import { Bell, X, MessageCircle, Zap } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import { format } from "date-fns";
+import { useNavigate } from "react-router-dom";
 import { parseServerTimestamp } from "@/lib/timestamps";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
 
@@ -12,6 +13,7 @@ function notificationTime(value) {
 }
 
 export default function NotificationCenter({ userEmail }) {
+  const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const [notifications, setNotifications] = useState([]);
 
@@ -46,6 +48,13 @@ export default function NotificationCenter({ userEmail }) {
 
   const handleNotificationClick = (notification) => {
     if (!notification.read) markAsRead(notification.id);
+    if (notification.type === "new_message") {
+      setOpen(false);
+      const target = notification.actor_email
+        ? `/messages?with=${encodeURIComponent(notification.actor_email)}`
+        : "/messages";
+      navigate(target);
+    }
   };
 
   return (
