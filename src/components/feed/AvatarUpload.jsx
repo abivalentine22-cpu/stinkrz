@@ -49,6 +49,7 @@ export default function AvatarUpload({ avatar_url, onUpload, loading: externalLo
             0.8
           );
         };
+        if (typeof e.target.result !== "string") { reject(new Error("Could not read image")); return; }
         img.src = e.target.result;
       };
       reader.readAsDataURL(file);

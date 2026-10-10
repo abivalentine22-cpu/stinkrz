@@ -380,6 +380,7 @@ export default function ScentBlock() {
     const map = mapRef.current;
     if (!map) return;
 
+    /** @type {[number, number]} */
     const lngLat = [youPos.lng, youPos.lat];
 
     if (youMarkerRef.current) {
@@ -404,6 +405,7 @@ export default function ScentBlock() {
     if (!mapReady || !youMarkerRef.current) return;
     const map = mapRef.current;
     if (!map) return;
+    /** @type {[number, number]} */
     const lngLat = [youPos.lng, youPos.lat];
     youMarkerRef.current.remove();
     youMarkerRef.current = null;

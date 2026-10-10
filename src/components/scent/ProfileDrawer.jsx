@@ -77,7 +77,7 @@ export default function ProfileDrawer({ profile, open, onClose, onMessage, onRep
     if (!profile) return null;
     if (profile.is_online) return null;
     if (!profile.last_active) return "Last seen: unknown";
-    const mins = (new Date() - new Date(profile.last_active)) / 60000;
+    const mins = (Date.now() - new Date(profile.last_active).getTime()) / 60000;
     if (mins < 60) return `Last seen ${Math.round(mins)}m ago`;
     if (mins < 1440) return `Last seen ${Math.round(mins / 60)}h ago`;
     return `Last seen ${Math.round(mins / 1440)}d ago`;

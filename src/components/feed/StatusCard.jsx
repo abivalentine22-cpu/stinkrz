@@ -12,7 +12,7 @@ const SCENT_COLORS = {
   Neutral: "#94a3b8",
 };
 
-export default function StatusCard({ post, currentUserEmail, onDelete, onWhiff, whiffed, isRecommended }) {
+export default function StatusCard({ post, currentUserEmail, onDelete, onWhiff, whiffed, isRecommended = false }) {
   const navigate = useNavigate();
   const isOwn = post.user_email === currentUserEmail;
   const timeLeft = post.expires_at

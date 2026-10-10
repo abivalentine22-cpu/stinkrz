@@ -27,7 +27,7 @@ export default function AdminReports() {
   const [notes, setNotes] = useState({});
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, status, admin_notes }) => base44.entities.Report.update(id, { status, ...(admin_notes !== undefined ? { admin_notes } : {}) }),
+    mutationFn: (/** @type {{ id: string, status: string, admin_notes?: string }} */ { id, status, admin_notes }) => base44.entities.Report.update(id, { status, ...(admin_notes !== undefined ? { admin_notes } : {}) }),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["reports"] }),
   });
 

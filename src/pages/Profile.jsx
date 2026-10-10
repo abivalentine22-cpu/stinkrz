@@ -88,7 +88,7 @@ export default function Profile() {
   }, [myProfile]);
 
   const saveMutation = useMutation({
-    mutationFn: async (data) => {
+    mutationFn: async (/** @type {Record<string, unknown>} */ data) => {
       if (!user?.email || profileLoading || profileLoadFailed) throw new Error("Your profile must load successfully before saving. Please refresh or sign in again.");
       if (myProfile) {
         return base44.entities.ScentProfile.update(myProfile.id, data);
@@ -96,7 +96,7 @@ export default function Profile() {
         return base44.entities.ScentProfile.create({ ...data, user_email: user.email, onboarding_complete: true });
       }
     },
-    onError: (error) => {
+    onError: (/** @type {Error & { response?: { data?: { error?: string } } }} */ error) => {
       toast({ title: "Profile could not be saved", description: error?.response?.data?.error || error?.message || "Please try again.", variant: "destructive" });
     },
     onSuccess: () => {
@@ -158,6 +158,7 @@ export default function Profile() {
             0.85
           );
         };
+        if (typeof e.target.result !== "string") { reject(new Error("Could not read image")); return; }
         img.src = e.target.result;
       };
       reader.readAsDataURL(file);

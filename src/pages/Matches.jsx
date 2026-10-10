@@ -108,7 +108,7 @@ export default function Matches() {
   );
 }
 
-function WhiffCard({ email, profile, mutual, onWhiffBack, onMessage }) {
+function WhiffCard({ email, profile, mutual = false, onWhiffBack = undefined, onMessage = undefined }) {
   const color = SCENT_COLORS[profile?.scent_category] || "#94a3b8";
   return (
     <div className="flex items-center gap-3 bg-card border border-border rounded-xl px-4 py-3"

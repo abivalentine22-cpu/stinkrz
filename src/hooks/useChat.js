@@ -71,10 +71,12 @@ export function useChat({ me, conversation, onMessageSent, playSend, broadcastTy
   };
 
   const compressImage = (file) =>
-    new Promise((resolve) => {
+    new Promise((resolve, reject) => {
       const reader = new FileReader();
+      reader.onerror = () => reject(new Error("Could not read image"));
       reader.onload = (e) => {
         const img = new Image();
+        img.onerror = () => reject(new Error("Could not load image"));
         img.onload = () => {
           const maxSize = 1280;
           let { width, height } = img;
@@ -85,9 +87,15 @@ export function useChat({ me, conversation, onMessageSent, playSend, broadcastTy
           }
           const canvas = document.createElement("canvas");
           canvas.width = width; canvas.height = height;
-          canvas.getContext("2d").drawImage(img, 0, 0, width, height);
-          canvas.toBlob((blob) => resolve(new File([blob], "photo.jpg", { type: "image/jpeg" })), "image/jpeg", 0.85);
+          const ctx = canvas.getContext("2d");
+          if (!ctx) { reject(new Error("Canvas not supported")); return; }
+          ctx.drawImage(img, 0, 0, width, height);
+          canvas.toBlob((blob) => {
+            if (!blob) { reject(new Error("Compression failed")); return; }
+            resolve(new File([blob], "photo.jpg", { type: "image/jpeg" }));
+          }, "image/jpeg", 0.85);
         };
+        if (typeof e.target.result !== "string") { reject(new Error("Could not read image")); return; }
         img.src = e.target.result;
       };
       reader.readAsDataURL(file);

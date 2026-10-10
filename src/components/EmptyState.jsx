@@ -2,7 +2,7 @@ import React from "react";
 import { Link } from "react-router-dom";
 import { cn } from "@/lib/utils";
 
-export default function EmptyState({ icon = "💨", title, subtitle, actionLabel, to, onAction, className }) {
+export default function EmptyState({ icon = "💨", title, subtitle, actionLabel = undefined, to = undefined, onAction = undefined, className = undefined }) {
   return (
     <div className={cn("flex flex-col items-center justify-center text-center text-muted-foreground", className)}>
       <div className="text-5xl mb-3 opacity-90">{icon}</div>

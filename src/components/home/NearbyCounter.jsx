@@ -11,7 +11,7 @@ export default function NearbyCounter() {
       const online = profiles.filter(p => {
         if (!p.is_online || p.invisible_mode) return false;
         if (!p.last_active) return false;
-        return (new Date() - new Date(p.last_active)) / 60000 < TIMEOUT;
+        return (Date.now() - new Date(p.last_active).getTime()) / 60000 < TIMEOUT;
       });
       setCount(online.length);
     });
