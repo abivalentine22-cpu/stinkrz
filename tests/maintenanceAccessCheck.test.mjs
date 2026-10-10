@@ -16,13 +16,16 @@ test('scheduler probe requires both owner identity and admin role; exposes no pe
     [{ id: '69faa8a3ff7324c96aef6557', role: 'user' }, false],
     [{ id: '69faa8a3ff7324c96aef6557', role: 'admin' }, true],
   ]) {
+    let writes = 0;
     globalThis.maintenanceTestClient = {
       auth: { me: async () => user },
-      asServiceRole: { entities: { MaintenanceDiagnostic: { create: async (record) => { assert.equal(record.owner_admin, expected); assert.ok(record.checked_at); } } } },
+      asServiceRole: { entities: { MaintenanceDiagnostic: { create: async (record) => { writes++; assert.equal(record.owner_admin, expected); assert.ok(record.checked_at); } } } },
     };
     const response = await handler(new Request('https://example.com'));
     assert.equal(response.headers.get('Cache-Control'), 'no-store');
     const body = await response.json();
+    assert.equal(response.status, expected ? 200 : user ? 403 : 401);
+    assert.equal(writes, expected ? 1 : 0);
     assert.equal(body.owner_admin, expected);
     assert.deepEqual(Object.keys(body).sort(), ['auth_result', 'authenticated', 'owner_admin']);
   }
@@ -32,7 +35,7 @@ test('auth failures remain distinguishable from missing user identity', async ()
   for (const [status, expected] of [[401, 'unauthenticated'], [403, 'unauthenticated'], [500, 'auth_error']]) {
     globalThis.maintenanceTestClient = {
       auth: { me: async () => { throw Object.assign(new Error('SECRET'), { response: { status } }); } },
-      asServiceRole: { entities: { MaintenanceDiagnostic: { create: async () => {} } } },
+      asServiceRole: { entities: { MaintenanceDiagnostic: { create: async () => { assert.fail('Unauthorized diagnostic write'); } } } },
     };
     const body = await (await handler(new Request('https://example.com'))).json();
     assert.equal(body.auth_result, expected);
