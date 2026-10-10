@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from "react";
+import ProfilePhotoZoom from "./ProfilePhotoZoom";
 import { scentIntensity } from "@/lib/scentIntensity";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, MapPin, Droplets, ShowerHead, MessageCircle, Wifi, WifiOff, Ban, ChevronLeft, ChevronRight, ShieldAlert } from "lucide-react";
@@ -166,12 +167,14 @@ export default function ProfileDrawer({ profile, open, onClose, onMessage, onRep
             <div style={{ position: "relative", height: "240px", flexShrink: 0, background: "hsl(258 30% 14%)" }}>
               {allPhotos.length > 0 ? (
                 <>
-                  <img
-                    src={allPhotos[galleryIndex]}
-                    alt={profile.display_name}
-                    loading={galleryIndex === 0 ? "eager" : "lazy"}
-                    style={{ width: "100%", height: "100%", objectFit: "cover", opacity: 0.85 }}
-                  />
+                  <ProfilePhotoZoom key={allPhotos[galleryIndex]} src={allPhotos[galleryIndex]} name={profile.display_name}>
+                    <img
+                      src={allPhotos[galleryIndex]}
+                      alt={profile.display_name}
+                      loading={galleryIndex === 0 ? "eager" : "lazy"}
+                      style={{ width: "100%", height: "100%", objectFit: "cover", opacity: 0.85 }}
+                    />
+                  </ProfilePhotoZoom>
                   {allPhotos.length > 1 && (
                     <>
                       <button
