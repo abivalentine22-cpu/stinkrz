@@ -54,3 +54,11 @@ test('sign-in can register again after a logout without redirect', async () => {
   await f.manager.register(f.client,'b');
   assert.equal(f.rows.find(row=>row.token==='browser')?.user_email,'b');
 });
+test('provider failure still removes DB registration and completes logout', async () => {
+  const f=fixture(); let fail=false;
+  const manager=createPushDeviceManager({supported:()=>true,acquire:async()=>'browser',revoke:async()=>{if(fail)throw new Error('provider unavailable');}});
+  await manager.register(f.client,'a');fail=true;
+  await manager.logout(f.client,()=>f.events.push('logout'));
+  assert.deepEqual(f.rows.map(row=>row.id),['other-device']);
+  assert.equal(f.events.at(-1),'logout');
+});
