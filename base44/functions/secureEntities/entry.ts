@@ -153,6 +153,10 @@ export async function handleRequest(req, makeClient = createClientFromRequest) {
     }
     if (action === 'list' || action === 'get') {
       if (!query || typeof query !== 'object' || Array.isArray(query)) fail('Invalid query', 400);
+      // Raw GPS must never influence caller-controlled predicates. Rounding
+      // response rows alone still allows exact-coordinate existence probing.
+      const privateProfileKeys = ['location_lat','location_lng','last_viewers_check','send_read_receipts'];
+      if (entity === 'ScentProfile' && (Object.keys(query).some(key => privateProfileKeys.includes(key)) || (typeof sort === 'string' && privateProfileKeys.includes(sort.replace(/^-/, ''))))) fail('Unsupported profile filter or sort', 400);
       for (const [key, value] of Object.entries(query)) {
         if (!['id', 'created_date', ...(entity === 'Notification' ? ['user_email','actor_email','type','message_id','read'] : FIELDS[entity])].includes(key) || !['string','boolean','number'].includes(typeof value)) fail('Invalid query', 400);
       }
