@@ -51,7 +51,8 @@ export function createPushDeviceManager({ revoke, acquire, supported }) {
         // revocation, and a provider outage must not skip DB removal.
         const results = await Promise.allSettled([revoke(), removeRegistration(client)]);
         if (results.some(result => result.status === 'rejected')) console.warn('Some push cleanup failed during sign-out.');
-        return finishLogout();
+        try { return await finishLogout(); }
+        finally { signingOut = false; initialized = false; logoutPromise = null; }
       });
       return logoutPromise;
     },
