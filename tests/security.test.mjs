@@ -358,3 +358,50 @@ test('blocked messages are excluded before pagination counts',async()=>{
   assert.equal(response.body.result[0].id,'page-1001');
   assert.ok(response.body.result.every(r=>r.sender_email==='carol@example.com'));
 });
+
+test('message reconciliation checks participants and blocks and strips private media', async () => {
+ const f=fixture();
+ Object.assign(f.database.ChatMessage[0],{media_uri:'private',media_url:'public'});
+ const response=await f.invoke({entity:'ChatMessage',action:'reconcileMessages',ids:['m1','m3','missing']});
+ assert.equal(response.status,200);
+ assert.deepEqual(response.body.result.map(row=>row.id),['m1']);
+ assert.equal(response.body.result[0].media_uri,undefined);
+ assert.equal(response.body.result[0].media_url,undefined);
+ assert.equal(response.body.result[0].has_private_media,true);
+ for (const reverse of [false,true]) {
+  const blocked=await fixture(block(reverse)).invoke({entity:'ChatMessage',action:'reconcileMessages',ids:['m1','m2']});
+  assert.deepEqual(blocked.body.result,[]);
+ }
+ assert.equal((await fixture([],null).invoke({entity:'ChatMessage',action:'reconcileMessages',ids:['m1']})).status,401);
+});
+test('message reconciliation rejects invalid identifiers and other entities',async()=>{
+ for(const ids of [undefined,[],[''],[{$ne:null}],Array(1001).fill('m1')]) {
+  assert.equal((await fixture().invoke({entity:'ChatMessage',action:'reconcileMessages',ids})).status,400);
+ }
+ assert.equal((await fixture().invoke({entity:'ScentProfile',action:'reconcileMessages',ids:['pa']})).status,400);
+});
+test('poll rollover retains authorized old messages but removes deleted or blocked ones',async()=>{
+ const oldDocument=globalThis.document;
+ const handlers=new Set();
+ globalThis.document={visibilityState:'visible',addEventListener(_,fn){handlers.add(fn)},removeEventListener(_,fn){handlers.delete(fn)}};
+ let page=Array.from({length:1000},(_,i)=>({id:String(i)}));
+ let retained=[{id:'999',read:true}];let reconciliationCalls=0;
+ const client=secureClient({entities:{},functions:{async invoke(_name,payload){
+  if(payload.action==='reconcileMessages'){reconciliationCalls++;assert.deepEqual(payload.ids,['999']);return {data:{result:retained}};}
+  return {data:{result:page}};
+ }}});
+ const events=[];const stop=client.entities.ChatMessage.subscribe(e=>events.push(e));
+ try {
+  await new Promise(resolve=>setTimeout(resolve,0));events.length=0;
+  page=[{id:'new'},...page.slice(0,999)];
+  for(const refresh of handlers)await refresh();
+  assert.equal(reconciliationCalls,1);
+  assert.equal(events.some(e=>e.type==='delete'&&e.id==='999'),false);
+  assert.equal(events.some(e=>e.type==='update'&&e.id==='999'&&e.data.read===true),true);
+  const replay=[];const stopReplay=client.entities.ChatMessage.subscribe(e=>replay.push(e));stopReplay();
+  assert.equal(replay.some(e=>e.id==='999'),true);
+  events.length=0;retained=[];
+  for(const refresh of handlers)await refresh();
+  assert.equal(events.some(e=>e.type==='delete'&&e.id==='999'),true);
+ }finally{stop();globalThis.document=oldDocument;}
+});
