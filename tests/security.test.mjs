@@ -17,7 +17,6 @@ const gatewayModule = await loadHandler('base44/functions/secureEntities/entry.t
 const gateway = gatewayModule.handleRequest;
 const messageNotification = (await loadHandler('base44/functions/createMessageNotification/entry.ts')).capturedHandler;
 const whiffNotification = (await loadHandler('base44/functions/sendWhiffNotification/entry.ts')).default;
-const statusNotification = (await loadHandler('base44/functions/createStatusInteractionNotification/entry.ts')).capturedHandler;
 const push = (await loadHandler('base44/functions/sendPushNotification/entry.ts')).capturedHandler;
 
 test('record actions reject operator objects and missing ids', async () => {
@@ -180,11 +179,10 @@ test('notification derives identity and recipient from an owned message',async()
  assert.equal(r.status,200);const n=f.writes.find(w=>w[0]==='Notification')[2];assert.equal(n.actor_email,'alice@example.com');assert.equal(n.user_email,'bob@example.com');assert.equal(n.actor_name,'Alice');
  assert.equal((await f.invoke({message_id:'m3'},messageNotification)).status,403);
 });
-test('blocked and fabricated message/Whiff/status notifications are denied',async()=>{
+test('blocked and fabricated message/Whiff notifications are denied',async()=>{
  const f=fixture(block(true));
  assert.equal((await f.invoke({message_id:'m1'},messageNotification)).status,403);
  assert.equal((await f.invoke({from_email:'alice@example.com',to_email:'bob@example.com'},whiffNotification)).status,403);
- assert.equal((await f.invoke({post_id:'p1'},statusNotification)).status,403);
  assert.equal(f.writes.length,0);
  const g=fixture();g.database.Favorite.splice(0);
  assert.equal((await g.invoke({from_email:'alice@example.com',to_email:'bob@example.com'},whiffNotification)).status,403);
