@@ -431,7 +431,7 @@ test('normal profile lookups preserve approximate locations and owner location u
  assert.equal(other.status,200);
  assert.equal(other.body.result[0].location_lat,46.12);
  assert.equal(other.body.result[0].location_lng,-121.99);
- const saved=await f.invoke({entity:'ScentProfile',action:'update',id:'pa',data:{location_lat:45.234567,location_lng:-122.345678}});
+ const saved=await f.invoke({entity:'ScentProfile',action:'update',id:'pa',data:{location_lat:45.234567,location_lng:-122.345678,fuzzy_location:false}});
  assert.equal(saved.status,200);
  const own=await f.invoke({entity:'ScentProfile',action:'get',id:'pa'});
  assert.equal(own.body.result.location_lat,45.234567);
