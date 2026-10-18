@@ -1,6 +1,5 @@
 import { useEffect } from "react";
-import { getToken } from "firebase/messaging";
-import { getFCMMessaging, FCM_VAPID_KEY } from "@/lib/firebase";
+import { pushDevice } from "@/lib/pushDevice";
 import { base44 } from "@/api/base44Client";
 
 /**
@@ -26,31 +25,14 @@ export function usePushNotifications(userEmail) {
       }
 
       try {
-        const messaging = await getFCMMessaging();
-        if (!messaging || cancelled) return;
-
         if (Notification.permission === "default") {
           const perm = await Notification.requestPermission();
           localStorage.setItem("stinkrz_push_prompted", "true");
           if (perm !== "granted") return;
         }
 
-        const token = await getToken(messaging, { vapidKey: FCM_VAPID_KEY });
-        if (cancelled || !token) return;
-
-        // Dedupe: don't create a duplicate PushToken for this user+token.
-        const existing = await base44.entities.PushToken.filter(
-          { user_email: userEmail, token },
-          undefined,
-          1,
-        );
-        if (!existing.length) {
-          await base44.entities.PushToken.create({
-            user_email: userEmail,
-            token,
-            device_info: navigator.userAgent.slice(0, 160),
-          });
-        }
+        if (cancelled) return;
+        await pushDevice.register(base44, userEmail, () => cancelled);
       } catch (e) {
         // Push is best-effort; never break the app over it.
          
