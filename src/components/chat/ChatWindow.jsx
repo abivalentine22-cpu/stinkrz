@@ -52,13 +52,14 @@ export default function ChatWindow({ me, conversation, messages, onVibeCheck, on
 
   const hideReadReceipts = localStorage.getItem("stinkrz_hide_read_receipts") === "true";
 
-  const handleBlock = () => {
+  const handleBlock = async () => {
     if (!blockConfirm) {
       setBlockConfirm(true);
       setTimeout(() => setBlockConfirm(false), 3000);
       return;
     }
-    blockUser(conversation.partnerEmail);
+    const saved = await blockUser(conversation.partnerEmail);
+    if (!saved) return;
     toast({ title: `${partnerName} blocked`, description: "You won't see their content anymore." });
     setBlockConfirm(false);
   };

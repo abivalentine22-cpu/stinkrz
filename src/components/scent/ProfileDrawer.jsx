@@ -102,9 +102,10 @@ export default function ProfileDrawer({ profile, open, onClose, onMessage, onRep
     return `${Math.round(miles)} miles away`;
   }, [myProfile, profile]);
 
-  const handleBlock = () => {
+  const handleBlock = async () => {
     if (!confirmBlock) { setConfirmBlock(true); return; }
-    blockUser(profile.user_email);
+    const saved = await blockUser(profile.user_email);
+    if (!saved) return;
     setConfirmBlock(false);
     onClose();
   };
