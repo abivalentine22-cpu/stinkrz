@@ -138,12 +138,19 @@ export async function handleRequest(req, makeClient = createClientFromRequest) {
     let me;
     try { me = await measure("authentication", () => client.auth.me()); } catch { return respond({ error: 'Unauthorized' }, { status: 401 }); }
     if (!me?.email) return respond({ error: 'Unauthorized' }, { status: 401 });
-    const { entity, action, id, data = {}, query = {}, sort = '-created_date', limit = 1000, skip = 0 } = await req.json();
+    const { entity, action, id, ids, data = {}, query = {}, sort = '-created_date', limit = 1000, skip = 0 } = await req.json();
     profileRead = entity === "ScentProfile" && (action === "list" || action === "get");
     ownerDiagnostics = profileRead && me.id === "69faa8a3ff7324c96aef6557" && me.role === "admin";
     if (!Object.hasOwn(FIELDS, entity)) fail('Unsupported entity', 400);
     const entities = client.asServiceRole.entities;
     if (['get','update','delete'].includes(action) && (typeof id !== 'string' || !id.trim())) fail('Invalid record id', 400);
+    if (action === 'reconcileMessages') {
+      if (entity !== 'ChatMessage' || !Array.isArray(ids) || ids.length < 1 || ids.length > 1000 || ids.some(value => typeof value !== 'string' || !value.trim() || value.length > 200)) fail('Invalid message ids', 400);
+      // Scope and block checks are identical to ordinary message reads. Never
+      // trust a cached client row to establish continued access.
+      const rows = await readRows(entities, entity, me.email, { id: { $in: [...new Set(ids)] } }, measure);
+      return respond({ result: rows });
+    }
     if (action === 'list' || action === 'get') {
       if (!query || typeof query !== 'object' || Array.isArray(query)) fail('Invalid query', 400);
       for (const [key, value] of Object.entries(query)) {
