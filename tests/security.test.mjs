@@ -405,3 +405,35 @@ test('poll rollover retains authorized old messages but removes deleted or block
   assert.equal(events.some(e=>e.type==='delete'&&e.id==='999'),true);
  }finally{stop();globalThis.document=oldDocument;}
 });
+
+test('profile reads reject GPS probing before storage, whether the candidate matches or not',async()=>{
+ for(const action of ['list','get']) {
+  for(const field of ['location_lat','location_lng']) {
+   for(const value of [46.123456,46.12,0,{$ne:null}]) {
+    const f=fixture();
+    const response=await f.invoke({entity:'ScentProfile',action,id:'pb',query:{user_email:'bob@example.com',[field]:value}});
+    assert.equal(response.status,400);
+    assert.equal(f.reads.length,0);
+   }
+  }
+ }
+});
+test('GPS cannot be used as a profile sort key',async()=>{
+ for(const sort of ['location_lat','-location_lat','location_lng','-location_lng']) {
+  const f=fixture();
+  assert.equal((await f.invoke({entity:'ScentProfile',action:'list',sort})).status,400);
+  assert.equal(f.reads.length,0);
+ }
+});
+test('normal profile lookups preserve approximate locations and owner location updates',async()=>{
+ const f=fixture();
+ const other=await f.invoke({entity:'ScentProfile',action:'list',query:{user_email:'bob@example.com'}});
+ assert.equal(other.status,200);
+ assert.equal(other.body.result[0].location_lat,46.12);
+ assert.equal(other.body.result[0].location_lng,-121.99);
+ const saved=await f.invoke({entity:'ScentProfile',action:'update',id:'pa',data:{location_lat:45.234567,location_lng:-122.345678}});
+ assert.equal(saved.status,200);
+ const own=await f.invoke({entity:'ScentProfile',action:'get',id:'pa'});
+ assert.equal(own.body.result.location_lat,45.234567);
+ assert.equal(own.body.result.location_lng,-122.345678);
+});
