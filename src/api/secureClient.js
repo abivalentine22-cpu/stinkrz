@@ -64,6 +64,16 @@ export function secureClient(client) {
         const rows = await call(entity, 'list', { limit: 1000 });
         if (requestGeneration !== generation || !listeners.size) return;
         const next = new Map(rows.map(row => [row.id, row]));
+        if (entity === 'ChatMessage') {
+          const missing = [...snapshot.keys()].filter(id => !next.has(id));
+          // Leaving the newest page is not a deletion. Reconcile missing IDs
+          // in bounded batches through the same authorization gateway.
+          for (let start = 0; start < missing.length; start += 1000) {
+            const retained = await call(entity, 'reconcileMessages', { ids: missing.slice(start, start + 1000) });
+            if (requestGeneration !== generation || !listeners.size) return;
+            for (const row of retained) next.set(row.id, row);
+          }
+        }
         const emit = (event) => listeners.forEach(fn => fn(event));
         for (const [id, row] of next) {
           if (!snapshot.has(id)) emit({ type: 'create', id, data: row });
