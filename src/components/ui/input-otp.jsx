@@ -4,7 +4,7 @@ import { Minus } from "lucide-react"
 
 import { cn } from "@/lib/utils"
 
-const InputOTP = React.forwardRef(/** @param {Omit<React.ComponentPropsWithoutRef<typeof OTPInput>, "render">} props
+const InputOTP = React.forwardRef(/** @param {Omit<React.ComponentPropsWithoutRef<typeof OTPInput>, "render"> & {children: React.ReactNode}} props
  * @param {React.ForwardedRef<React.ElementRef<typeof OTPInput>>} ref */
 ({ className, containerClassName, ...props }, ref) => (
   <OTPInput
